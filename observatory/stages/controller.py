@@ -179,7 +179,7 @@ class Stage:
         if msg.lower() in self.return_value_commands:
 
             recv = self.socket.recv(2048)
-            print(recv, len(recv), "In return vale")
+            print(recv, len(recv), "In return value")
             if len(recv) == 11 or len(recv) == 12 or len(recv) == 13:
                 print("This is a value command")
                 return recv
