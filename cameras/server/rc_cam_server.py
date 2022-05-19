@@ -23,7 +23,7 @@ logging.Formatter.converter = time.gmtime
 formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
                               "%(module)s--%(funcName)s--%(message)s")
 
-logHandler = TimedRotatingFileHandler(os.path.join(log_cfg['abspath'],
+logHandler = TimedRotatingFileHandler(os.path.join(log_cfg['cam_abspath'],
                                                    'rc_camera_server.log'),
                                       when='midnight', utc=True, interval=1,
                                       backupCount=360)
