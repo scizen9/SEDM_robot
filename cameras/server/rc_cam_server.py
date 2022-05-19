@@ -22,8 +22,8 @@ logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
 formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
                               "%(module)s--%(funcName)s--%(message)s")
-
-logHandler = TimedRotatingFileHandler(os.path.join(log_cfg['cam_abspath'],
+cam_log_dir = log_cfg['cam_abspath']
+logHandler = TimedRotatingFileHandler(os.path.join(cam_log_dir,
                                                    'rc_camera_server.log'),
                                       when='midnight', utc=True, interval=1,
                                       backupCount=360)
@@ -31,6 +31,8 @@ logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
 logger.info("Starting Logger: Logger file is %s", 'rc_camera_controller.log')
+
+exp_start_file = os.path.join(cam_log_dir, "rc_exposure_start.txt")
 
 
 class CamServer:
@@ -111,7 +113,7 @@ class CamServer:
                                         'data': "Camera already intiailzed"}
 
                     elif data['command'].upper() == 'TAKE_IMAGE':
-                        with open("rc_exposure_start.txt", 'w') as file:
+                        with open(exp_start_file, 'w') as file:
                             file.write(time.strftime('%Y-%m-%d %H:%M:%S.%d',
                                                      time.gmtime()))
                         response = self.cam.take_image(**data['parameters'])
@@ -133,7 +135,7 @@ class CamServer:
                         response = self.cam.lastError
                         print(response)
                     elif data['command'].upper() == "LASTEXPOSED":
-                        obs_time = open("rc_exposure_start.txt").readlines()[0]
+                        obs_time = open(exp_start_file).readlines()[0]
                         response = {'elaptime': time.time()-start,
                                     'data': str(obs_time)}
                     elif data['command'].upper() == "PREFIX":
