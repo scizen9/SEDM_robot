@@ -1940,7 +1940,8 @@ class SEDm:
             pass
 
         if mark_status:
-            self.sky.update_target_request(req_id, status="ACTIVE")
+            self.sky.update_target_request(req_id, status="ACTIVE",
+                                           check_growth=True)
 
         if move:
             if run_acquisition:
@@ -2059,10 +2060,12 @@ class SEDm:
             print("take_image(IFU:AB) status:\n", ret)
 
         if 'data' in ret and mark_status:
-            self.sky.update_target_request(req_id, status='COMPLETED')
+            self.sky.update_target_request(req_id, status='COMPLETED',
+                                           check_growth=True)
             print("sky.update_target_request status:", ret)
         else:
-            self.sky.update_target_request(req_id, status='FAILURE')
+            self.sky.update_target_request(req_id, status='FAILURE',
+                                           check_growth=True)
 
         return ret
 
@@ -2094,7 +2097,8 @@ class SEDm:
         object_dec = dec
 
         if mark_status:
-            self.sky.update_target_request(req_id, status="ACTIVE")
+            self.sky.update_target_request(req_id, status="ACTIVE",
+                                           check_growth=True)
 
         if move:
             if run_acquisition:
@@ -2183,7 +2187,8 @@ class SEDm:
                         else:
                             img_dict[objfilter] = ret['data']
         if mark_status:
-            self.sky.update_target_request(req_id, status="COMPLETED")
+            self.sky.update_target_request(req_id, status="COMPLETED",
+                                           check_growth=True)
 
         return {'elaptime': time.time() - start, 'data': img_dict}
 

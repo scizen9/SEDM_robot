@@ -238,11 +238,13 @@ class Sky:
         return self.__send_command(cmd="UPDATEGROWTH",
                                    parameters=parameters)
 
-    def update_target_request(self, request_id, status="COMPLETED"):
+    def update_target_request(self, request_id, status="COMPLETED",
+                              check_growth=True):
 
         parameters = {
             'request_id': request_id,
-            'status': status
+            'status': status,
+            'check_growth': check_growth
         }
         return self.__send_command(cmd="UPDATEREQUEST",
                                    parameters=parameters)

@@ -1006,7 +1006,7 @@ class Scheduler:
         return {'elaptime': time.time() - start, 'data': ret_id}
 
     def update_request(self, request_id, status="PENDING",
-                       check_growth=True):
+                       check_growth=False):
         """
 
         :param request_id:

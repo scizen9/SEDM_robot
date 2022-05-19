@@ -294,7 +294,8 @@ def run_observing_loop(do_focus=True, do_standard=True,
             # Has this request already been observed?
             if obsdict['req_id'] in done_list:
                 robot.sky.update_target_request(obsdict['req_id'],
-                                                status='COMPLETED')
+                                                status='COMPLETED',
+                                                check_growth=True)
                 continue    # skip it then
             # When will this observation end?
             end_time = datetime.datetime.utcnow() + datetime.timedelta(
