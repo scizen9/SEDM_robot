@@ -201,6 +201,26 @@ class Sky:
         return self.__send_command(cmd="GETRCFOCUS",
                                    parameters=parameters)
 
+    def add_object(self, name, typedesig, ra=None, dec=None, epoch=None,
+                   magnitude=None, iauname=None):
+        parameters = {
+            'name': name,
+            'typedesig': typedesig,
+            'ra': ra, 'dec': dec, 'epoch': epoch,
+            'magnitude': magnitude,
+            'iauname': iauname
+        }
+        return self.__send_command(cmd="ADDOBJECT",
+                                   parameters=parameters)
+
+    def get_manual_request_id(self, name="", exptime=90):
+        parameters = {
+            'name': name,
+            'exptime': exptime
+        }
+        return self.__send_command(cmd="GETMANUALREQUESTID",
+                                       parameters=parameters)
+
     def get_standard_request_id(self, name="", exptime=90):
         parameters = {
             'name': name,

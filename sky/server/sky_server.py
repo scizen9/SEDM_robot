@@ -83,6 +83,12 @@ class SkyServer:
                     elif data['command'].upper() == 'GETCALIBREQUESTID':
                         response = self.scheduler.get_calib_request_id(
                             **data['parameters'])
+                    elif data['command'].upper() == 'ADDOBJECT':
+                        response = self.scheduler.add_object(
+                            **data['parameters'])
+                    elif data['command'].upper() == 'GETMANUALREQUESTID':
+                        response = self.scheduler.get_manual_request_id(
+                            **data['parameters'])
                     elif data['command'].upper() == "GETSTANDARD":
                         response = self.scheduler.get_standard(
                             **data['parameters'])

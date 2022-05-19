@@ -925,6 +925,91 @@ class Scheduler:
         return {'elaptime': time.time() - start, 'data': {'ra': round(ra, 4),
                                                           'dec': dec}}
 
+    def add_object(self, name=None, typedesig="f", ra=0.0, dec=0.0,
+                   epoch=2000., magnitude=None, iauname=""):
+        """Add object to database on pharos
+        :param name: (str) object name (required)
+        :param typedesig: (str) type of object (required, default=f)
+                    'f' (fixed), 'v' (periodic fixed),
+                    'P' (built-in planet or satellite name),
+                    'e' (heliocentric elliptical),
+                    'h' (heliocentric hyperbolic), 'p' (heliocentric parabolic),
+                    'E' (geocentric elliptical)
+        :param ra:
+        :param dec: (float) coordinates in decimal degrees (required for
+                typedesig='f' objects)
+        :param epoch: (float) coordinate epoch (default=2000.)
+        :param magnitude: (float) r-band magnitude
+        :param iauname: (str) IAU designation for transient (optional)
+        """
+        # do we already exist in the db?
+        object_id = self.ph_db.get_object_id_from_name(name)
+        if object_id:
+            return object_id[0][0]
+        else:
+            # Required
+            pardict = {
+                'name': name,
+                'typedesig': typedesig
+            }
+            # Optional
+            if typedesig == 'f':
+                pardict['ra'] = ra
+                pardict['dec'] = dec
+                pardict['epoch'] = epoch
+            if magnitude:
+                pardict['magnitude'] = magnitude
+            if iauname:
+                pardict['iauname'] = iauname
+            # Add object
+            object_id, message = self.ph_db.add_object(pardict)
+            if object_id == -1:
+                print("Could not add object to db")
+                return -1
+            else:
+                return object_id
+
+    def get_manual_request_id(self, name="", exptime=180):
+        """
+        :param name:
+        :param exptime:
+        :return: bool, id
+        """
+        start = time.time()
+
+        object_id = self.ph_db.get_object_id_from_name(name)
+        for obj in object_id:
+            if obj[1].lower() == name.lower():
+                object_id = obj[0]
+                break
+
+        start_date = datetime.datetime.utcnow()
+        end_date = start_date + datetime.timedelta(days=1)
+        request_dict = {
+            'obs_seq': '{1ifu}',
+            'exptime': '{%s}' % int(exptime),
+            'object_id': object_id,
+            'marshal_id': '-1',
+            'user_id': 2,
+            'allocation_id': '20211011220000019',
+            'priority': '-1',
+            'inidate': start_date.strftime("%Y-%m-%d"),
+            'enddate': end_date.strftime("%Y-%m-%d"),
+            'maxairmass': '2.5',
+            'status': 'PENDING',
+            'max_fwhm': '10',
+            'min_moon_dist': '30',
+            'max_moon_illum': '1',
+            'max_cloud_cover': '1',
+            'seq_repeats': '1',
+            'seq_completed': '0'
+        }
+        request_id = self.ph_db.add_request(request_dict)[0]
+        return {
+            'elaptime': time.time() - start,
+            'data': {'object_id': object_id, 'request_id': request_id}
+        }
+
     def get_standard_request_id(self, name="", exptime=180):
         """
 
