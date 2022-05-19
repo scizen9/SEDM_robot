@@ -1884,9 +1884,10 @@ class SEDm:
         print("Observation dictionary:\n", kargs)
 
         img_dict = {}
-        # Now see if target has an ifu component
+
         pprint.pprint(obsdict)
-        # time.sleep(1000)
+
+        # Now see if target has an ifu component
         if obsdict['obs_dict']['ifu'] and self.run_ifu:
             ret = self.run_ifu_science_seq(
                 self.ifu, name=obsdict['name'], test=test,
