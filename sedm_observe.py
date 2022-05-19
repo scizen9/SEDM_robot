@@ -3,16 +3,12 @@ from utils import obstimes
 import datetime
 import time
 from astropy.time import Time
-from twilio.rest import Client
 import os
 import glob
 import json
 
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__))
-
-with open(os.path.join(SITE_ROOT, 'config', 'twilio.config.json')) as cfg_file:
-    twi_cfg = json.load(cfg_file)
 
 with open(os.path.join(SITE_ROOT, 'config', 'sedm.json')) as cfg_file:
     sedm_cfg = json.load(cfg_file)
@@ -29,19 +25,6 @@ standard_done_file = os.path.join(os.path.join(status_file_dir,
 
 status_files = [calib_done_file, focus_done_file, standard_done_file,
                 twilights_done_file]
-
-
-def make_alert_call(body):
-    account_sid = twi_cfg['account_sid']
-    auth_token = twi_cfg['auth_token']
-    to_number = twi_cfg['to_number']
-    from_number = twi_cfg['from_number']
-
-    client = Client(account_sid, auth_token)
-
-    message = client.messages.create(to=to_number, from_=from_number, body=body)
-
-    print(message.sid)
 
 
 def uttime(offset=0):
