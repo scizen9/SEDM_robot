@@ -1,0 +1,6 @@
+{
+  "get_id_url": "http://pharos.caltech.edu/get_marshal_id",
+  "growth_url": "http://skipper.caltech.edu:8080/cgi-bin/growth/update_followup_status.cgi",
+  "growth_user": "rsw",
+  "growth_pwd": "---password---"
+}

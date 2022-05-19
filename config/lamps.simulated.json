@@ -1,0 +1,4 @@
+{ "cd": {"ip": "localhost", "port": 7000, "outlet": 2, "wait": 420},
+  "hg": {"ip": "localhost", "port": 7000, "outlet": 1, "wait": 120},
+  "xe": {"ip": "localhost", "port": 7000, "outlet": 1, "wait": 120}
+}

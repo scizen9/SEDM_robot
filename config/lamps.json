@@ -1,0 +1,4 @@
+{"cd": {"ip": "10.200.155.5", "port": 23, "outlet": 2, "wait": 420},
+  "hg": {"ip": "10.200.155.5", "port": 23, "outlet": 1, "wait": 120},
+  "xe": {"ip": "198.202.125.234", "port": 23, "outlet": 1, "wait": 120},
+  "all": {"internal_ip": "10.200.155.5", "external_ip":"192.202.125.234", "port": 23, "internal_outlets": [1,2], "external_outlets":[1]}}

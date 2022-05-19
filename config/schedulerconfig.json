@@ -1,0 +1,9 @@
+{"dbconn": {
+"host": "pharos.caltech.edu",
+"port": 5432,
+"dbname": "sedmdb",
+"user": "sedmuser",
+"password": "--password--"},
+"standard_db": "/home/sedm/SEDMv5/sky/standards/standards.sql",
+"target_dir": "/home/sedm/logs/targets/"
+}

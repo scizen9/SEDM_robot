@@ -1,0 +1,6 @@
+{"path": "/home/sedm/sedmpy",
+ "host": "pharos.caltech.edu",
+ "port": 5432,
+ "dbname": "sedmdb",
+ "user": "sedmuser",
+ "password": "--password--"}

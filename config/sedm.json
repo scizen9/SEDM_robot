@@ -1,0 +1,143 @@
+{
+    "cam_image_dir": "C:/images",
+    "robot_image_dir": "/home/sedm/images",
+    "ifu_ip": "10.200.155.4",
+    "ifu_port": 5001,
+    "rc_ip": "10.200.155.4",
+    "rc_port": 5002,
+    "non_sid_dir": "/home/sedm/robot/non_sid_dir/",
+    "status_dir": "/home/sedm/robot/status/",
+    "manual_dir": "/home/sedm/robot/manual/",
+    "ifu_send_to_remote": true,
+    "ifu_set_temperature": -50,
+    "rc_send_to_remote": true,
+    "rc_set_temperature": -50,
+    "remote_config": "nemea.config.json",
+    "ifu_datacube": {
+        "cd": {
+            "N": 5,
+            "exptime": 30,
+            "readout": 2.0
+        },
+        "dome": {
+            "N": 5,
+            "exptime": [180],
+            "readout": [2.0]
+        },
+        "fast_bias": {
+            "N": 10,
+            "exptime": 0,
+            "readout": 2.0
+        },
+        "hg": {
+            "N": 5,
+            "exptime": 30,
+            "readout": 2.0
+        },
+        "order": [
+            "fast_bias",
+            "slow_bias",
+            "dome",
+            "hg",
+            "xe",
+            "cd"
+        ],
+        "slow_bias": {
+            "N": 10,
+            "exptime": 0,
+            "readout": 0.1
+        },
+        "xe": {
+            "N": 5,
+            "exptime": 60,
+            "readout": 2.0
+        }
+    },
+    "rc_datacube": {
+        "dome": {
+            "N": 5,
+            "exptime": [22,14,7,4],
+            "readout": [0.1, 2.0]
+        },
+        "fast_bias": {
+            "N": 10,
+            "exptime": 0,
+            "readout": 2.0
+        },
+        "order": [
+            "fast_bias",
+            "slow_bias",
+            "dome"
+        ],
+        "slow_bias": {
+            "N": 10,
+            "exptime": 0,
+            "readout": 0.1
+        }
+    },
+    "ifu": {
+        "cd": {
+            "N": 5,
+            "exptime": 30,
+            "readout": 2.0
+        },
+        "dome": {
+            "N": 5,
+            "exptime": [180],
+            "readout": [2.0]
+        },
+        "fast_bias": {
+            "N": 10,
+            "exptime": 0,
+            "readout": 2.0
+        },
+        "hg": {
+            "N": 5,
+            "exptime": 30,
+            "readout": 2.0
+        },
+        "order": [
+            "fast_bias",
+            "slow_bias",
+            "dome",
+            "hg",
+            "xe",
+            "cd"
+        ],
+        "slow_bias": {
+            "N": 10,
+            "exptime": 0,
+            "readout": 0.1
+        },
+        "xe": {
+            "N": 5,
+            "exptime": 60,
+            "readout": 2.0
+        }
+    },
+    "rc": {
+        "dome": {
+            "N": 5,
+            "exptime": [22,14,7,4],
+            "readout": [0.1, 2.0]
+        },
+        "fast_bias": {
+            "N": 10,
+            "exptime": 0,
+            "readout": 2.0
+        },
+        "order": [
+            "fast_bias",
+            "slow_bias",
+            "dome"
+        ],
+        "slow_bias": {
+            "N": 10,
+            "exptime": 0,
+            "readout": 0.1
+        }
+    },
+    "stow_profiles": {"calibrations": {"ha": 3.6, "dec": 50.0, "domeaz": 40},
+                      "zenith": {"ha": 0.0, "dec": 33.33, "domeaz": 90},
+                      "morning_stow": {"ha": 0.0, "dec": 109.0, "domeaz": 40}}
+}

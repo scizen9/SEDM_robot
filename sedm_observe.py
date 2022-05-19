@@ -1,0 +1,416 @@
+from sedm_robot import SEDm
+from utils import obstimes
+import datetime
+import time
+from astropy.time import Time
+from twilio.rest import Client
+import os
+import glob
+import json
+
+
+SITE_ROOT = os.path.abspath(os.path.dirname(__file__))
+
+with open(os.path.join(SITE_ROOT, 'config', 'twilio.config.json')) as cfg_file:
+    twi_cfg = json.load(cfg_file)
+
+with open(os.path.join(SITE_ROOT, 'config', 'sedm.json')) as cfg_file:
+    sedm_cfg = json.load(cfg_file)
+
+status_file_dir = sedm_cfg['status_dir']
+manual_dir = sedm_cfg['manual_dir']
+
+calib_done_file = os.path.join(os.path.join(status_file_dir, "calib_done.txt"))
+focus_done_file = os.path.join(os.path.join(status_file_dir, "focus_done.txt"))
+twilights_done_file = os.path.join(os.path.join(status_file_dir,
+                                                "twilights_done.txt"))
+standard_done_file = os.path.join(os.path.join(status_file_dir,
+                                               "standard_done.txt"))
+
+status_files = [calib_done_file, focus_done_file, standard_done_file,
+                twilights_done_file]
+
+
+def make_alert_call(body):
+    account_sid = twi_cfg['account_sid']
+    auth_token = twi_cfg['auth_token']
+    to_number = twi_cfg['to_number']
+    from_number = twi_cfg['from_number']
+
+    client = Client(account_sid, auth_token)
+
+    message = client.messages.create(to=to_number, from_=from_number, body=body)
+
+    print(message.sid)
+
+
+def uttime(offset=0):
+    if not offset:
+        return Time(datetime.datetime.utcnow())
+    else:
+        return Time(datetime.datetime.utcnow() +
+                    datetime.timedelta(seconds=offset))
+
+
+def clean_up():
+    print("Cleaning up")
+    for ff in status_files:
+        if os.path.exists(ff):
+            os.remove(ff)
+
+
+def run_observing_loop(do_focus=True, do_standard=True,
+                       do_calib=True, do_twilights=True,
+                       clean_manual=True):
+    print("\nReSTARTING OBSERVING LOOP at ", datetime.datetime.utcnow(), "\n")
+    if do_focus:
+        pass
+    if do_standard:
+        pass
+
+    if os.path.exists(focus_done_file):
+        focus_done = True
+    else:
+        focus_done = False
+
+    if os.path.exists(standard_done_file):
+        standard_done = True
+    else:
+        standard_done = False
+
+    if os.path.exists(calib_done_file):
+        calib_done = True
+    else:
+        calib_done = False
+
+    if os.path.exists(twilights_done_file):
+        twilights_done = True
+    else:
+        twilights_done = False
+
+    for i in status_files:
+        print(i, os.path.exists(i))
+
+    if clean_manual and os.path.exists(manual_dir):
+        manual_files = glob.glob(os.path.join(manual_dir, '*.json'))
+        for mf in manual_files:
+            print("Deleting residual manual file:", mf)
+            os.remove(mf)
+
+    done_list = []
+
+    loop_count = 1
+    sci_count = 0
+    std_count = 0
+
+    robot = SEDm()
+    robot.initialize()
+    ntimes = obstimes.ScheduleNight()
+    night_obs_times = ntimes.get_observing_times_by_date()
+
+    for k, v in night_obs_times.items():
+        print(k, v.iso)
+
+    if datetime.datetime.utcnow().hour >= 14:
+        print("Waiting for afternoon calibrations")
+        while datetime.datetime.utcnow().hour != 0:
+            time.sleep(60)
+
+    if do_calib:
+        if calib_done:
+            print("\nAFTERNOON CALS ALREADY COMPLETED\n")
+        else:
+            print("\nSTARTING AFTERNOON CALS:", datetime.datetime.utcnow(),
+                  "\n")
+    else:
+        print("\nSKIPPING CALS\n")
+
+    if not calib_done and do_calib:
+        if not os.path.exists(calib_done_file):
+            # ret = robot.take_datacube_eff()
+            print("Doing IFU cals")
+            ret = robot.take_datacube(robot.ifu, cube='ifu', move=True)
+            print("take_datacube - IFU status:\n", ret)
+            print("Doing RC cals")
+            ret1 = robot.take_datacube(robot.rc, cube='rc', move=True)
+            print("take_datacube - RC status:\n", ret1)
+            with open(calib_done_file, 'w') as the_file:
+                the_file.write('Datacube completed:%s' % uttime())
+    night_obs_times = ntimes.get_observing_times_by_date()
+
+    for k, v in night_obs_times.items():
+        print(k, v.iso)
+
+    print("Checking for evening civil twilight")
+
+    while uttime() < night_obs_times['evening_civil']:
+        time.sleep(60)
+
+    print("\nPAST EVENING CIVIL TWILIGHT:", datetime.datetime.utcnow(), "\n")
+
+    # Twilight flats loop (from civil to nautical twilight)
+    while uttime() < night_obs_times['evening_nautical'] and not twilights_done:
+        # Check weather/Dome closed before taking twilight flats  - JP
+        while not robot.conditions_cleared():
+            print("Faults cleared?", robot.conditions_cleared())
+            # If we are past nautical twilight, break out of fault loop
+            if uttime() > night_obs_times['evening_nautical']:
+                break
+            time.sleep(60)
+
+        # Conditions cleared, should be ready for twilights
+        print("Faults cleared?", robot.conditions_cleared())
+        # Be sure we are not past nautical twilight
+        if uttime() > night_obs_times['evening_nautical']:
+            break
+        else:
+            # Time to open dome and get twilight flats
+            robot.check_dome_status()
+            # How much time do we have for them?
+            max_time = (night_obs_times['evening_nautical'] -
+                        Time(datetime.datetime.utcnow())).sec
+            print("Time to do twilights: %.2f s" % max_time)
+            robot.take_twilight(robot.rc, max_time=max_time,
+                                end_time=night_obs_times['evening_nautical'])
+            time.sleep(60)
+            # Write file indicating completion of twilight flats - JP
+            with open(twilights_done_file, 'w') as the_file:
+                the_file.write('Twilights completed:%s' % uttime())
+            twilights_done = True
+            print("Evening twilights taken")
+    if not twilights_done:
+        print("Evening twilights NOT taken")
+
+    for k, v in night_obs_times.items():
+        print(k, v.iso)
+
+    print("Checking for evening nautical twilight")
+    while uttime() < night_obs_times['evening_nautical']:
+        time.sleep(5)
+
+    print("\nPAST EVENING NAUTICAL TWILIGHT:", datetime.datetime.utcnow(),
+          "\nSTARTING SCIENCE OBSERVATIONS\n")
+
+    print(datetime.datetime.utcnow(), 'current_time')
+    print(night_obs_times['morning_nautical'].iso, 'close_time')
+
+    # Main observing loop (until morning nautical twilight)
+    while uttime() < night_obs_times['morning_nautical']:
+        print("\n", datetime.datetime.utcnow(),
+              "START TARGET LOOP #%d" % loop_count)
+        print("number of science observations taken: %d" % sci_count)
+        print("number of standard observations taken: %d\n" % std_count)
+
+        # are we cleared to observe?
+        while not robot.conditions_cleared():
+            print("Faults cleared?", robot.conditions_cleared())
+            if uttime() > night_obs_times['morning_nautical']:
+                break
+            time.sleep(60)
+
+        # faults cleared, ready to observe
+        print('Faults cleared?', robot.conditions_cleared())
+
+        # did we wait too long?
+        if uttime() > night_obs_times['morning_nautical']:
+            break
+        else:
+            # open dome if not already open
+            print(robot.check_dome_status())
+
+        # first need to focus
+        if not focus_done:
+            print("Doing focus")
+            ret = robot.run_focus_seq(robot.rc, 'rc_focus', name="Focus",
+                                      exptime=30)
+            print("run_focus_seq status:\n", ret)
+
+            with open(focus_done_file, 'w') as the_file:
+                the_file.write('Focus completed:%s' % uttime())
+            focus_done = True
+
+        # grab a standard
+        if not standard_done:
+            print("Doing standard")
+            ret = robot.run_standard_seq(robot.ifu)
+            std_count += 1
+            print("run_standard_seq status:\n", ret)
+            with open(standard_done_file, 'w') as the_file:
+                the_file.write('Standard completed:%s' % uttime())
+            standard_done = True
+
+        # any manual commands?
+        if os.path.exists(manual_dir):
+            manual_files = sorted(glob.glob(os.path.join(manual_dir, '*.json')))
+            if len(manual_files) > 0:
+                print("\nFound manual files:", manual_files)
+                for mf in manual_files:
+                    print("\nDoing manual command in", mf)
+                    with open(mf) as man_file:
+                        obsdict = json.load(man_file)
+                    ret = robot.run_manual_command(obsdict)
+                    print('run_manual_command status:\n', ret)
+                    if 'success' in ret:
+                        if 'command' in obsdict:
+                            if obsdict['command'] == 'standard':
+                                std_count += 1
+                            elif obsdict['command'] != 'focus':
+                                sci_count += 1
+                        else:
+                            print("no command in manual file?")
+                        # increment loop count
+                        loop_count += 1
+                    print("Removing manual file", mf)
+                    os.remove(mf)
+
+                    time.sleep(10)
+                print("Manual commands completed")
+                continue
+            else:
+                print("\nNo manual files found.")
+
+        # Proceed with normal queued observations
+        try:
+            ret = robot.sky.get_next_observable_target(return_type='json')
+            print('sky.get_next_observable_target status:\n', ret)
+        except Exception as ex:
+            print(str(ex), "ERROR getting target")
+            ret = robot.sky.reinit()
+            print(ret, "sky.reinit (1)")
+            time.sleep(10)
+            ret = robot.sky.reinit()
+            print(ret, "sky.reinit (2)")
+            ret = None
+            pass
+
+        # Try again to get next target
+        if not ret:
+            ret = robot.sky.get_next_observable_target(return_type='json')
+            print('sky.get_next_observable_target status (2):\n', ret)
+
+        # did we get a target?
+        if 'data' in ret:
+            obsdict = ret['data']
+            # Has this request already been observed?
+            if obsdict['req_id'] in done_list:
+                robot.sky.update_target_request(obsdict['req_id'],
+                                                status='COMPLETED')
+                continue    # skip it then
+            # When will this observation end?
+            end_time = datetime.datetime.utcnow() + datetime.timedelta(
+                seconds=obsdict['obs_dict']['total'])
+            # If it ends after morning twilight, do a standard instead
+            if Time(end_time) > night_obs_times['morning_nautical']:
+                print("Waiting to close dome")
+                print("Doing morning standard")
+                ret = robot.run_standard_seq(robot.ifu)
+                print("run_standard_seq status:\n", ret)
+                std_count += 1
+                time.sleep(600)
+                continue
+            # If it ends before morning twilight, do observations
+            ret = robot.observe_by_dict(obsdict)
+            # Add to done list
+            done_list.append(obsdict['req_id'])
+            print('observe_by_dict status:\n', ret)
+            sci_count += 1
+
+            # Update focus done file status (in case a new focus run needed)
+            if not os.path.exists(focus_done_file):
+                ret = robot.run_focus_seq(robot.rc, 'rc_focus', name="Focus",
+                                          exptime=30)
+                print("focus ret len: ", len(ret))
+                with open(focus_done_file, 'w') as the_file:
+                    the_file.write('Focus completed:%s' % uttime())
+        # No good next target at this time, so just do a standard
+        else:
+            print("No observable target in queue, doing standard")
+            ret = robot.run_standard_seq(robot.ifu)
+            print("run_standard_seq status:\n", ret)
+            std_count += 1
+        loop_count += 1
+    # end of main observing loop
+
+    print("\nSCIENCE OBSERVATIONS COMPLETE\nMORNING NAUTICAL TWILIGHT: ",
+          datetime.datetime.utcnow(), "\n")
+    print("number of science observations taken: %d" % sci_count)
+    print("number of standard observations taken: %d" % std_count)
+
+    # Morning twilight flats loop from nautical to civil twilight
+    while uttime() < night_obs_times['morning_civil'] and not twilights_done:
+        # Check if Twilights were done at the start of the night - JP
+        if not twilights_done and do_twilights:
+            # Check weather/Dome closed before taking twilight flats  - JP
+            while not robot.conditions_cleared():
+                print("Faults cleared?", robot.conditions_cleared())
+                # If we are past morning civil twilight, break out of fault loop
+                if uttime() > night_obs_times['morning_civil']:
+                    break
+                time.sleep(60)
+
+            # conditions cleared, so ready for twilights
+            print("Faults cleared?", robot.conditions_cleared())
+            # but be sure we are not past morning civil twilight
+            if uttime() > night_obs_times['morning_civil']:
+                break
+            else:
+                # make sure dome is open
+                robot.check_dome_status()
+                # how much time do we have for twilights?
+                max_time = (night_obs_times['morning_civil'] -
+                            Time(datetime.datetime.utcnow())).sec
+                print("Seconds for twilight flats:", max_time)
+                robot.take_twilight(robot.rc, max_time=max_time,
+                                    end_time=night_obs_times['morning_civil'])
+                time.sleep(60)
+                with open(twilights_done_file, 'w') as the_file:
+                    the_file.write('Twilights completed:%s' % uttime())
+                twilights_done = True
+                print("Morning twilights taken")
+        else:
+            break
+    # end of morning twilight flats loop
+
+    if not twilights_done:
+        print("Morning twilights NOT taken")
+
+    print("\nEND OF NIGHT: ", datetime.datetime.utcnow(),
+          "\n%d observation sets taken\n" % (sci_count+std_count))
+
+    # close dome
+    ret = robot.ocs.dome('close')
+    print('ocs.dome status:', ret)
+    time.sleep(120)
+    # stow telescope
+    ret = robot.ocs.stow(ha=0, dec=109, domeaz=220)
+    print('ocs.stow status:', ret)
+
+    # clean up done files
+    print("Cleaning up")
+    clean_up()
+    # confirm telescope stow
+    ret = robot.ocs.stow(ha=0, dec=109, domeaz=220)
+    print('ocs.stow (2) status:', ret)
+    # sleep for a few hours
+    print("Going to sleep")
+    time.sleep(7200)
+    print("Gzipping images")
+    robot.gzip_images(robot.obs_dir)
+    print("Second sleep")
+    time.sleep(7200)
+    print("Third")
+    time.sleep(7200)
+
+
+if __name__ == "__main__":
+    try:
+        while True:
+            try:
+                run_observing_loop()
+            except Exception as e:
+                print(datetime.datetime.utcnow(), "FATAL (restart):", str(e))
+                time.sleep(60)
+                pass
+
+    except Exception as e:
+        print(str(e))

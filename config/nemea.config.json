@@ -1,0 +1,7 @@
+{
+  "remote_computer": "nemea.palomar.caltech.edu",
+  "remote_port": 22,
+  "remote_base_dir": "/home/sedm/images/",
+  "remote_user": "sedm",
+  "remote_pwd": "---password---"
+}
