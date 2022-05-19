@@ -28,6 +28,9 @@ from selenium.webdriver.support.select import Select
 DEF_PROG = '2022B-calib'
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__))
 
+with open(os.path.join(SITE_ROOT, 'config', 'twilio.config.json')) as cfg_file:
+    twi_cfg = json.load(cfg_file)
+
 with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as cfg_file:
     log_cfg = json.load(cfg_file)
 
@@ -48,16 +51,14 @@ logger.info("Starting Logger: Logger file is %s", 'sedm.log')
 
 
 def make_alert_call(body):
-    account_sid = 'AC4384d1796da541d47661ca560f8f99e1'
-    auth_token = '80acdcbd39e60c5ac0ac410ebd300d60'
+    account_sid = twi_cfg['account_sid']
+    auth_token = twi_cfg['auth_token']
+    to_number = twi_cfg['to_number']
+    from_number = twi_cfg['from_number']
 
     client = Client(account_sid, auth_token)
 
-    message = client.messages.create(
-        # url='http://www.astro.caltech.edu/~rsw/voice.sedm.xml',
-        to='+19188600343',
-        from_='+17406854136',
-        body=body)
+    message = client.messages.create(to=to_number, from_=from_number, body=body)
 
     print(message.sid)
 
@@ -83,7 +84,8 @@ class SEDm:
     def __init__(self, observer="SEDm", run_ifu=True, run_rc=True,
                  initialized=False, run_stage=True, run_arclamps=True,
                  run_ocs=True, run_telescope=True, run_sky=True,
-                 run_sanity=True, configuration_file='', data_dir=None):
+                 run_sanity=True, configuration_file='', data_dir=None,
+                 focus_temp=None, focus_pos=None):
         """
 
         :param observer:
@@ -94,6 +96,12 @@ class SEDm:
         :param run_arclamps:
         :param run_ocs:
         :param run_telescope:
+        :param run_sky:
+        :param run_sanity:
+        :param configuration_file:
+        :param data_dir:
+        :param focus_temp:
+        :param focus_pos:
         """
         logger.info("Robotic system initializing")
         self.observer = observer
@@ -107,6 +115,8 @@ class SEDm:
         self.run_telescope = run_telescope
         self.initialized = initialized
         self.data_dir = data_dir
+        self.focus_temp = focus_temp
+        self.focus_pos = focus_pos
 
         self.header = sedmHeader.addHeader()
         self.rc = None
@@ -1402,7 +1412,6 @@ class SEDm:
                 foc_range = np.arange(nominal_focus-0.23,
                                       nominal_focus+0.23, 0.05)
                 print("nominal focus range:", foc_range)
-                # foc_range = np.arange(15.9, 17.0, .05)
             elif focus_type == 'ifu_stage2':
                 foc_range = np.arange(2, 3.6, .2)
             else:
@@ -2743,8 +2752,6 @@ class SEDm:
             ret_lab = "MANUAL: run_standard_seq status:"
         elif command.lower() == "focus":
             if 'range' in obsdict:
-                import numpy as np
-                np.arange(16.45, 17.05, .05)
                 ret = self.run_focus_seq(self.rc, 'rc_focus', name="Focus",
                                          foc_range=np.arange(
                                              obsdict['range'][0],
