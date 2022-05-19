@@ -4,6 +4,6 @@
 "dbname": "sedmdb",
 "user": "sedmuser",
 "password": "--password--"},
-"standard_db": "/home/sedm/SEDMv5/sky/standards/standards.sql",
-"target_dir": "/home/sedm/logs/targets/"
+"standard_db": "/home/sedm/SEDM_robot/sky/standards/standards.sql",
+"target_dir": "/home/sedm/robot/targets/"
 }
