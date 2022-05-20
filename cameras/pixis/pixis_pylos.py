@@ -13,6 +13,11 @@ SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as data_file:
     params = json.load(data_file)
 
+with open(os.path.join(SITE_ROOT, 'config', 'sedm.json')) as data_file:
+    sedm_cfg = json.load(data_file)
+
+_remote_config = sedm_cfg["remote_config"]  # default remote config file
+
 # logger = logging.getLogger("pixisLogger")
 # logger.setLevel(logging.DEBUG)
 # logging.Formatter.converter = time.gmtime
@@ -32,7 +37,7 @@ with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as data_file:
 class Controller:
     def __init__(self, cam_prefix="rc", serial_number="test", output_dir="",
                  force_serial=True, set_temperature=-50, send_to_remote=False,
-                 remote_config='nemea.config.json'):
+                 remote_config=_remote_config):
         """
         Initialize the controller for the PIXIS camera and
         :param cam_prefix:
@@ -40,6 +45,8 @@ class Controller:
         :param output_dir:
         :param force_serial:
         :param set_temperature:
+        :param send_to_remote:
+        :param remote_config:
         """
 
         self.camPrefix = cam_prefix

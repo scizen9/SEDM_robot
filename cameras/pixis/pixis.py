@@ -22,7 +22,7 @@ logging.Formatter.converter = time.gmtime
 formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
                               "%(module)s--%(funcName)s--%(message)s")
 
-logHandler = TimedRotatingFileHandler(os.path.join(log_cfg['abspath'],
+logHandler = TimedRotatingFileHandler(os.path.join(log_cfg['cam_abspath'],
                                                    'pixis_controller.log'),
                                       when='midnight', utc=True, interval=1,
                                       backupCount=360)
@@ -31,7 +31,7 @@ logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
 logger.info("Starting Logger: Logger file is %s", 'pixis_controller.log')
 
-_remote_config = sedm_cfg["remote_config"]
+_remote_config = sedm_cfg["remote_config"]  # default remote config file
 
 
 class Controller:
@@ -45,6 +45,8 @@ class Controller:
         :param output_dir:
         :param force_serial:
         :param set_temperature:
+        :param send_to_remote:
+        :param remote_config:
         """
 
         self.camPrefix = cam_prefix
@@ -78,10 +80,10 @@ class Controller:
         self.send_to_remote = send_to_remote
         if self.send_to_remote:
             with open(os.path.join(SITE_ROOT, 'config',
-                                   remote_config)) as conf_data_file:
-                tparams = json.load(conf_data_file)
-                print(tparams, "params")
-            self.transfer = transfer(**tparams)
+                                   remote_config)) as cfg_file:
+                trans_cfg = json.load(cfg_file)
+                print("transfer configuration:\n", trans_cfg)
+            self.transfer = transfer(**trans_cfg)
         self.shutter_dict = {
             'normal': 'Normal',
             'closed': 'AlwaysClosed',
