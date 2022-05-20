@@ -5,8 +5,7 @@ from logging.handlers import TimedRotatingFileHandler
 import time
 import socket
 import threading
-from cameras.pixis import pixis_pylos
-# import paramiko
+from cameras.pixis import pixis
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 
@@ -75,7 +74,7 @@ class CamServer:
 
                     if data['command'].upper() == 'INITIALIZE':
                         if not self.cam:
-                            if self.port == 5002:
+                            if self.port == sedm_cfg['rc_port']:
                                 cam_prefix = "rc"
                                 send_to_remote = sedm_cfg['rc_send_to_remote']
                                 output_dir = sedm_cfg['cam_image_dir']
@@ -86,14 +85,14 @@ class CamServer:
                                 output_dir = sedm_cfg['cam_image_dir']
                                 set_temperature = sedm_cfg[
                                     'ifu_set_temperature']
-                            self.cam = pixis_pylos.Controller(
+                            self.cam = pixis.Controller(
                                 serial_number="", cam_prefix=cam_prefix,
                                 send_to_remote=send_to_remote,
                                 set_temperature=set_temperature,
                                 output_dir=output_dir)
 
                             ret = self.cam.initialize()
-                            if self.port == 5002:
+                            if self.port == sedm_cfg['rc_port']:
                                 # Spare camera SN
                                 # self.cam.serialNumber = "2803120001"
                                 self.cam.serialNumber = "04001312"
