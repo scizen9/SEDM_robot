@@ -177,7 +177,7 @@ class Controller:
                              exc_info=True)
                 return False
         else:
-            logger.info("No serial number given, using first available:",
+            logger.info("No serial number given, using first available: %s",
                         camera_list[0])
             pos = None
             self.serialNumber = camera_list[0]
