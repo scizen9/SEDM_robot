@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from astropy.io import fits
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -440,7 +441,6 @@ if __name__ == "__main__":
          'windscreen_elevation': '0', 'utsunset': '02:31', 'utsunrise': '13:00',
          'solar_ra': '10:44', 'solar_dec': '+07:58'}
     # x._obsdict_check(y)
-    import time
     s = time.time()
     print(x.set_header('/home/rsw/images/20190906/rc20190906_20_25_42.fits', y))
     print(time.time()-s)
