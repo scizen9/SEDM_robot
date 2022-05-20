@@ -79,25 +79,22 @@ class CamServer:
                                 send_to_remote = sedm_cfg['rc_send_to_remote']
                                 output_dir = sedm_cfg['cam_image_dir']
                                 set_temperature = sedm_cfg['rc_set_temperature']
+                                cam_ser_no = sedm_cfg['rc_serial_number']
                             else:
                                 cam_prefix = "ifu"
                                 send_to_remote = sedm_cfg['ifu_send_to_remote']
                                 output_dir = sedm_cfg['cam_image_dir']
                                 set_temperature = sedm_cfg[
                                     'ifu_set_temperature']
+                                cam_ser_no = sedm_cfg['ifu_serial_number']
                             self.cam = pixis.Controller(
-                                serial_number="", cam_prefix=cam_prefix,
+                                serial_number=cam_ser_no,
+                                cam_prefix=cam_prefix,
                                 send_to_remote=send_to_remote,
                                 set_temperature=set_temperature,
                                 output_dir=output_dir)
 
                             ret = self.cam.initialize()
-                            if self.port == sedm_cfg['rc_port']:
-                                # Spare camera SN
-                                # self.cam.serialNumber = "2803120001"
-                                self.cam.serialNumber = "04001312"
-                            else:
-                                self.cam.serialNumber = "05313416"
                             if ret:
                                 response = {'elaptime': time.time()-start,
                                             'data': "Camera started"}
