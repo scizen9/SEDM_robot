@@ -22,12 +22,9 @@ class transfer:
         base_name = os.path.basename(transfer_file)
         obsdate = base_name.split('_')[0][-8:]
         remote_path = os.path.join(self.remote_base_dir, obsdate, base_name)
-        print(remote_path)
         remote_path = remote_path.replace('\\', '/')
 
-        # logger.info("Copying file: %s to path: %s" % (transfer_file,
-        # remote_path))
-        print(transfer_file, remote_path, 'test')
+        print('sftp.put to:', remote_path, transfer_file)
         sftp.put(transfer_file, remote_path)
 
         sftp.close()
