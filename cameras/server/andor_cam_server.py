@@ -6,24 +6,22 @@ import time
 import socket
 import threading
 from cameras.andor import andor
-# import paramiko
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
-# with open(os.path.join(SITE_ROOT, '../../config',
-# 'logging.json')) as data_file:
-# params = json.load(data_file)
 
-with open(os.path.join('/home/wintermute/Software/AndorPullTest/config',
-                       'logging.json')) as data_file:
-    params = json.load(data_file)
+with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as cfg_file:
+    log_cfg = json.load(cfg_file)
+
+with open(os.path.join(SITE_ROOT, 'config', 'sedm.json')) as cfg_file:
+    sedm_cfg = json.load(cfg_file)
 
 logger = logging.getLogger("ifu_cameraLogger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
 formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
                               "%(module)s--%(funcName)s--%(message)s")
-
-logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
+cam_log_dir = log_cfg['cam_abspath']
+logHandler = TimedRotatingFileHandler(os.path.join(cam_log_dir,
                                                    'ifu_camera_server.log'),
                                       when='midnight', utc=True, interval=1,
                                       backupCount=360)
@@ -31,6 +29,8 @@ logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
 logger.info("Starting Logger: Logger file is %s", 'ifu_camera_server.log')
+
+exp_start_file = os.path.join(cam_log_dir, "ifu_exposure_start.txt")
 
 
 class CamServer:
@@ -74,17 +74,21 @@ class CamServer:
 
                     if data['command'].upper() == 'INITIALIZE':
                         if not self.cam:
-                            if self.port == 53:
+                            if self.port == sedm_cfg['rc_port']:
                                 cam_prefix = "rc"
-                                send_to_remote = True
-                                output_dir = 'C:/images'
+                                send_to_remote = sedm_cfg['rc_send_to_remote']
+                                output_dir = sedm_cfg['cam_image_dir']
+                                set_temperature = sedm_cfg['rc_set_temperature']
                             else:
                                 cam_prefix = "ifu"
-                                send_to_remote = True
-                                output_dir = 'C:/images'
+                                send_to_remote = sedm_cfg['ifu_send_to_remote']
+                                output_dir = sedm_cfg['cam_image_dir']
+                                set_temperature = sedm_cfg[
+                                    'ifu_set_temperature']
                             self.cam = andor.Controller(
                                 serial_number="", cam_prefix=cam_prefix,
                                 send_to_remote=send_to_remote,
+                                set_temperature=set_temperature,
                                 output_dir=output_dir)
 
                             ret = self.cam.initialize()
