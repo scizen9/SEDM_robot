@@ -296,8 +296,6 @@ class picam():
          retrieved by :py:func:`getAvailableCameras`. If camID is None, this
          functions connects pto the first available camera (default).
         """
-        if cam_id is not None:
-            pass
         # print(cam_id, type(cam_id), 'cam_id')
         if self.cam is not None:
             self.disconnect()

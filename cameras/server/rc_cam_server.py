@@ -88,14 +88,20 @@ class CamServer:
                                 set_temperature = sedm_cfg[
                                     'ifu_set_temperature']
                                 cam_ser_no = sedm_cfg['ifu_serial_number']
+                            # Trick pixis code into connecting to first camera
+                            # in list by sending an empty serial number.
+                            # This is why we start rc_cam_server first!
                             self.cam = pixis.Controller(
-                                serial_number=cam_ser_no,
+                                serial_number="",
                                 cam_prefix=cam_prefix,
                                 send_to_remote=send_to_remote,
                                 set_temperature=set_temperature,
                                 output_dir=output_dir)
 
+                            # Initialize the camera
                             ret = self.cam.initialize()
+                            # And now we can set the correct serial number
+                            self.cam.serialNumber = cam_ser_no
                             if ret:
                                 response = {'elaptime': time.time()-start,
                                             'data': "Camera started"}

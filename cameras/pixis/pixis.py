@@ -177,9 +177,10 @@ class Controller:
                              exc_info=True)
                 return False
         else:
-            logger.info("No serial number given, using demo cam")
+            logger.info("No serial number given, using first available:",
+                        camera_list[0])
             pos = None
-            self.serialNumber = 'Demo'
+            self.serialNumber = camera_list[0]
         logger.info("Connecting '%s' camera", self.serialNumber)
 
         # Connect the camera for operations
