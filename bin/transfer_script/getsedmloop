@@ -1,0 +1,8 @@
+#!/bin/sh
+while true;
+do
+	/home/sedm/transfer_script/getsedmdata
+	echo "Finished transfer"
+	date
+	sleep 60
+done

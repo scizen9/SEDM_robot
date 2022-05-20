@@ -1,0 +1,2 @@
+#!/bin/sh
+cp ~/manualfiles/$1 ~/robot/manual/$1

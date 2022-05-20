@@ -1,0 +1,37 @@
+#!/bin/csh
+#
+# do_astrom - solve SEDM RCAM images with astrometry.net
+
+echo $1
+#
+# be sure that 'fitsheader' and 'solve-field' are both in your standard path
+#
+# set variables
+set ra = `fitsheader -k TEL_RA  $1 | grep TEL_RA | awk '{print $3}' | awk -F\' '{print $2}'`
+@ nt = 0
+while ($ra == '')
+	echo "Null TEL_RA, try RA"
+	set ra = `fitsheader -k RA  $1 | grep RA | awk '{print $3}' | awk -F\' '{print $2}'`
+	@ nt = $nt + 1
+	if ($nt > 5) break
+end
+set dec = `fitsheader -k TEL_DEC $1 | grep TEL_DEC | awk '{print $3}' | awk -F\' '{print $2}'`
+@ nt = 0
+while ($dec == '')
+	echo "Null TEL_DEC, try DEC"
+	set dec = `fitsheader -k DEC $1 | grep DEC | awk '{print $3}' | awk -F\' '{print $2}'`
+	@ nt = $nt + 1
+	if ($nt > 5) break
+end
+if ($ra == '') then
+	echo "Null RA, do_astrom failed."
+	exit
+endif
+echo $ra
+if ($dec == '') then
+	echo "Null Dec, do_astrom failed."
+	exit
+endif
+echo $dec
+# call solve-field
+time solve-field  -p --ra $ra --dec $dec --radius 0.2 --new-fits $1:r:r"_astrom.fits" -W none -B none -M none -R none -S none -t 3 --nsigma 12 --overwrite --scale-units arcsecperpix  --scale-low 0.35 --scale-high 0.41 --crpix-center --cpulimit 5 --parity neg $1
