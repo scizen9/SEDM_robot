@@ -294,7 +294,7 @@ class Controller:
         except Exception as e:
             return {'error': str(e), 'camtemp': temp, 'templock': locked}
 
-    def get_status(self):
+    def get_status(self, verbose=False):
         """Simple function to return camera information that can be displayed
          on the website"""
         try:
@@ -304,7 +304,8 @@ class Controller:
                 'camspeed': self.opt.getParameter("AdcSpeed"),
                 'state': self.opt.getParameter("OutputSignal")
             }
-            logger.info(status)
+            if verbose:
+                logger.info(status)
             return status
         except Exception as e:
             logger.error("Error getting the camera status", exc_info=True)
