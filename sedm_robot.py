@@ -1322,7 +1322,7 @@ class SEDm:
                       move=True, mark_status=True, status_file=''
                       ):
 
-        start = time.time()  # Start the clock on the observation
+        start = time.time()  # Start the clock on the procedure
 
         # unused parameters
         if run_acquisition or offset_to_ifu or non_sid_targ:
@@ -1338,8 +1338,11 @@ class SEDm:
         if status_file is not None:
             pass
 
+        # get nominal rc focus based on temperature
+        focus_temp = float(
+            self.ocs.check_weather()['data']['inside_air_temp'])
+        nominal_rc_focus = rc_focus.temp_to_focus(focus_temp)
         img_list = []
-        nominal_focus = None
         # error_list = []
 
         if get_focus_coords:
@@ -1350,9 +1353,10 @@ class SEDm:
                 dec = ret['data']['dec']
                 ret = self.ocs.tel_move(name=name, ra=ra,
                                         dec=dec)
-
                 if 'data' not in ret:
-                    pass
+                    print("could not move telescope, focusing in place.")
+            else:
+                print("could not get focus coords, focusing in place.")
 
         obj_id = self.calibration_id_dict['focus'][cam.prefix()['data']]
         if get_request_id:
@@ -1364,9 +1368,9 @@ class SEDm:
 
         if move and focus_type == 'ifu_stage':
             ret = self.ocs.stow(**self.stow_profiles['calibrations'])
-
             if 'data' not in ret:
-                pass
+                print("Unable to reach cal stow, focusing in place")
+
         elif move and focus_type == 'rc_focus':
             self.ocs.tel_move(name=name, ra=ra, dec=dec, equinox=equinox,
                               ra_rate=ra_rate, dec_rate=dec_rate,
@@ -1381,9 +1385,10 @@ class SEDm:
                     dec = ret['data']['dec']
                     ret = self.ocs.tel_move(name=name, ra=ra,
                                             dec=dec)
-
                     if 'data' not in ret:
-                        pass
+                        print("could not move telescope, focusing in place.")
+                else:
+                    print("could not get focus coords, focusing in place.")
             else:
                 self.ocs.tel_move(name=name, ra=ra, dec=dec, equinox=equinox,
                                   ra_rate=ra_rate, dec_rate=dec_rate,
@@ -1403,32 +1408,29 @@ class SEDm:
                 foc_range = np.arange(.1, .8, .1)
             elif focus_type == 'rc_focus' or focus_type == 'ifu_focus':
                 # get nominal focus based on temperature
-                temp = float(
-                    self.ocs.check_weather()['data']['inside_air_temp'])
-                nominal_focus = rc_focus.temp_to_focus(temp)
-                print("nominal focus:", nominal_focus,
-                      "for temperature:", temp)
-                # nominal range should be smaller
-                foc_range = np.arange(nominal_focus-0.23,
-                                      nominal_focus+0.23, 0.05)
-                print("nominal focus range:", foc_range)
+                print("nominal rc focus:", nominal_rc_focus,
+                      "for temperature:", focus_temp)
+                # nominal range
+                foc_range = np.arange(nominal_rc_focus-0.23,
+                                      nominal_rc_focus+0.23, 0.05)
             elif focus_type == 'ifu_stage2':
                 foc_range = np.arange(2, 3.6, .2)
             else:
-                return -1 * (time.time() - start), "Unknown focus type"
+                return {"elaptime": time.time() - start,
+                        "error": "Unknown focus type: %s" % focus_type}
 
+        print(focus_type, "focus range:", foc_range)
         startN = 1
         N = 1
         for pos in foc_range:
 
-            # 5a. Set the image header keyword name
-            if N != startN:
-                start = time.time()
-                do_stages = False
-                do_lamps = False
-            else:
+            # These request stage and lamp status at the start of the sequence
+            if N == startN:
                 do_stages = True
                 do_lamps = True
+            else:
+                do_stages = False
+                do_lamps = False
 
             N += 1
             print("%s-Moving to focus position: %fmm" % (focus_type, pos))
@@ -1441,7 +1443,7 @@ class SEDm:
                 if move:
                     self.ocs.goto_focus(pos=pos)
             elif focus_type == 'ifu_stage2':
-                print("IFUSTAGE2")
+                print("IFUSTAGE 2")
                 self.ocs.move_stage(position=pos, stage_id=2)
 
             ret = self.take_image(cam, exptime=exptime,
@@ -1466,15 +1468,17 @@ class SEDm:
         logger.debug("Finished RC focus sequence")
         print("focus image list:\n", img_list)
         if solve:
-            ret = self.sky.get_focus(img_list, nominal_focus=nominal_focus)
+            ret = self.sky.get_focus(img_list, nominal_focus=nominal_rc_focus)
             print("sky.get_focus status:\n", ret)
             if 'data' in ret:
                 best_foc = round(ret['data'][0][0], 2)
                 print("Best FOCUS is:", best_foc)
             else:
-                print("Using Nominal focus:", nominal_focus)
-                best_foc = nominal_focus
+                print("Could not solve, using Nominal focus:", nominal_rc_focus)
+                best_foc = nominal_rc_focus
 
+            # TODO: this only really works for rc_focus,
+            #  add routines for other focus types.
             if best_foc:
                 if focus_type == 'ifu_stage':
                     print("IFUSTAGE 1")
@@ -1487,7 +1491,14 @@ class SEDm:
                     self.ocs.move_stage(position=best_foc, stage_id=2)
             else:
                 print("Unable to calculate focus")
-        return time.time() - start, img_list
+                return {"elaptime": time.time() - start,
+                        "error": "Unable to calculate focus"}
+        else:
+            best_foc = None
+        return {"elaptime": time.time() - start,
+                "data": {"focus_images": img_list,
+                         "focus_temp": focus_temp,
+                         "focus_pos": best_foc}}
 
     def run_guider_seq(self, cam, guide_length=0, readout=2.0,
                        shutter='normal', guide_exptime=1, email="",

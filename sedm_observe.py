@@ -53,6 +53,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
 
     if os.path.exists(focus_done_file):
         focus_done = True
+        # open file and read temperature and position
     else:
         focus_done = False
 
@@ -207,10 +208,17 @@ def run_observing_loop(do_focus=True, do_standard=True,
             ret = robot.run_focus_seq(robot.rc, 'rc_focus', name="Focus",
                                       exptime=30)
             print("run_focus_seq status:\n", ret)
-
-            with open(focus_done_file, 'w') as the_file:
-                the_file.write('Focus completed:%s' % uttime())
-            focus_done = True
+            if 'data' in ret:
+                focus_done = True
+                robot.focus_temp = ret['data']['focus_temp']
+                robot.focus_pos = ret['data']['focus_pos']
+                with open(focus_done_file, 'w') as the_file:
+                    the_file.write('Focus completed:%s' % uttime())
+                    the_file.write('Temp=%.1f' % robot.focus_temp)
+                    the_file.write('Pos=%.2f' % robot.focus_pos)
+            else:
+                focus_done = False
+                print("Unable to calculate focus")
 
         # grab a standard
         if not standard_done:
@@ -303,9 +311,18 @@ def run_observing_loop(do_focus=True, do_standard=True,
             if not os.path.exists(focus_done_file):
                 ret = robot.run_focus_seq(robot.rc, 'rc_focus', name="Focus",
                                           exptime=30)
-                print("focus ret len: ", len(ret))
-                with open(focus_done_file, 'w') as the_file:
-                    the_file.write('Focus completed:%s' % uttime())
+                print("run_focus_seq status:\n", ret)
+                if 'data' in ret:
+                    focus_done = True
+                    robot.focus_temp = ret['data']['focus_temp']
+                    robot.focus_pos = ret['data']['focus_pos']
+                    with open(focus_done_file, 'w') as the_file:
+                        the_file.write('Focus completed:%s' % uttime())
+                        the_file.write('Temp=%.1f' % robot.focus_temp)
+                        the_file.write('Pos=%.2f' % robot.focus_pos)
+                else:
+                    focus_done = False
+                    print("Unable to calculate focus")
         # No good next target at this time, so just do a standard
         else:
             print("No observable target in queue, doing standard")
