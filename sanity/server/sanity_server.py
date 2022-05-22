@@ -18,6 +18,7 @@ logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
 formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
                               "%(module)s--%(funcName)s--%(message)s")
+console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 
 logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
                                                    'sanity_server.log'),
@@ -27,7 +28,7 @@ logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
 consoleHandler = logging.StreamHandler(sys.stdout)
-consoleHandler.setFormatter(formatter)
+consoleHandler.setFormatter(console_formatter)
 logger.addHandler(consoleHandler)
 logger.info("Starting Logger: Logger file is %s", 'sanity_server.log')
 
