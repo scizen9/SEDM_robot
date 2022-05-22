@@ -773,8 +773,6 @@ class Scheduler:
                         )
                         return row.req_id, (row.obs_seq, html)
                     elif return_type == 'json':
-                        print(rej_html)
-                        print("gnot: No Rej")
                         targ = self._convert_row_to_json(row)
 
                         if save:
@@ -785,8 +783,8 @@ class Scheduler:
                                     datetime.datetime.utcnow().strftime(
                                         "%Y%m%d_%H_%M_%S"))
 
-                                with open(save_as, 'w') as outfile:
-                                    outfile.write(json.dumps(targ))
+                            with open(save_as, 'w') as outfile:
+                                outfile.write(json.dumps(targ))
 
                         return {"elaptime": time.time() - st, "data": targ}
                     else:
