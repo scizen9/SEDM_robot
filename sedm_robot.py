@@ -41,13 +41,13 @@ formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
                               "%(module)s--%(funcName)s--%(message)s")
 
 logHandler = TimedRotatingFileHandler(os.path.join(log_cfg['abspath'],
-                                                   'sedm.log'),
+                                                   'sedm_robot.log'),
                                       when='midnight', utc=True, interval=1,
                                       backupCount=360)
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
-logger.info("Starting Logger: Logger file is %s", 'sedm.log')
+logger.info("Starting Logger: Logger file is %s", 'sedm_robot.log')
 
 
 def make_alert_call(body):
@@ -85,7 +85,7 @@ class SEDm:
                  initialized=False, run_stage=True, run_arclamps=True,
                  run_ocs=True, run_telescope=True, run_sky=True,
                  run_sanity=True, configuration_file='', data_dir=None,
-                 focus_temp=None, focus_pos=None):
+                 focus_temp=None, focus_pos=None, focus_time=None):
         """
 
         :param observer:
@@ -117,6 +117,7 @@ class SEDm:
         self.data_dir = data_dir
         self.focus_temp = focus_temp
         self.focus_pos = focus_pos
+        self.focus_time = focus_time
 
         self.header = sedmHeader.addHeader()
         self.rc = None
@@ -1496,7 +1497,7 @@ class SEDm:
         else:
             best_foc = None
         return {"elaptime": time.time() - start,
-                "data": {"focus_images": img_list,
+                "data": {"focus_time": Time(datetime.datetime.utcnow()),
                          "focus_temp": focus_temp,
                          "focus_pos": best_foc}}
 

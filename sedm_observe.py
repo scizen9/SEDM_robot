@@ -212,10 +212,9 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 focus_done = True
                 robot.focus_temp = ret['data']['focus_temp']
                 robot.focus_pos = ret['data']['focus_pos']
+                robot.focus_time = ret['data']['focus_time']
                 with open(focus_done_file, 'w') as the_file:
-                    the_file.write('Focus completed:%s' % uttime())
-                    the_file.write('Temp=%.1f' % robot.focus_temp)
-                    the_file.write('Pos=%.2f' % robot.focus_pos)
+                    the_file.write(json.dumps(ret['data']))
             else:
                 focus_done = False
                 print("Unable to calculate focus")
@@ -316,10 +315,9 @@ def run_observing_loop(do_focus=True, do_standard=True,
                     focus_done = True
                     robot.focus_temp = ret['data']['focus_temp']
                     robot.focus_pos = ret['data']['focus_pos']
+                    robot.focus_time = ret['data']['focus_time']
                     with open(focus_done_file, 'w') as the_file:
-                        the_file.write('Focus completed:%s' % uttime())
-                        the_file.write('Temp=%.1f' % robot.focus_temp)
-                        the_file.write('Pos=%.2f' % robot.focus_pos)
+                        the_file.write(json.dumps(ret['data']))
                 else:
                     focus_done = False
                     print("Unable to calculate focus")
