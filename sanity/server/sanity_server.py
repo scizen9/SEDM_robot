@@ -1,6 +1,7 @@
 import os
 import logging
 import json
+import sys
 from logging.handlers import TimedRotatingFileHandler
 import time
 import socket
@@ -25,6 +26,9 @@ logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
+consoleHandler = logging.StreamHandler(sys.stdout)
+consoleHandler.setFormatter(formatter)
+logger.addHandler(consoleHandler)
 logger.info("Starting Logger: Logger file is %s", 'sanity_server.log')
 
 
@@ -49,7 +53,6 @@ class SanityServer:
 
                 if not data:
                     break
-                print("Received:", data)
                 try:
                     data = json.loads(data)
                 except Exception as e:
@@ -95,7 +98,6 @@ if __name__ == "__main__":
     server = SanityServer("localhost", 5005)
     # try:
     logger.info("Starting Sanity Server")
-    print("Starting Sanity Server")
     server.start()
     # except Exception as e:
     #    print(str(e))
