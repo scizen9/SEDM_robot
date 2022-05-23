@@ -1,4 +1,5 @@
 import os
+import sys
 import socket
 import json
 import logging
@@ -14,9 +15,9 @@ with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as data_file:
 logger = logging.getLogger("TCS Logger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
-formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
-                              "%(module)s--%(funcName)s--%(message)s")
-
+formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
+                              "%(funcName)s--%(message)s")
+console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
                                                    'tcs.log'),
                                       when='midnight', utc=True, interval=1,
@@ -24,6 +25,9 @@ logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
+consoleHandler = logging.StreamHandler(sys.stdout)
+consoleHandler.setFormatter(console_formatter)
+logger.addHandler(consoleHandler)
 logger.info("Starting Logger: Logger file is %s", 'tcs.log')
 
 
@@ -207,8 +211,9 @@ class Telescope:
                                             cmd)
                                         time.sleep(5)
                                         self.error_tracker += 1
-                                        print("Command can't be executed so "
-                                              "waiting 5s and trying again")
+                                        logger.info("Command can't be executed "
+                                                    "so waiting 5s and trying "
+                                                    "again")
                                         ret = self.send_command(
                                             cmd=origin_command,
                                             parameters=origin_params)
@@ -245,19 +250,16 @@ class Telescope:
                                     "error": "Added output to "
                                              "TCS return string:%s" % ret}
                     else:
-                        print("Unknown TCS return")
+                        logger.warning("Unknown TCS return")
                         return {"elaptime": time.time()-start,
                                 "error": "Unknown TCS return value"}
                 except Exception as e:
                     logger.error("Unbable to convert telescope return to int",
                                  exc_info=True)
-                    return {"elaptime": time.time() - start,
-                            "error": str(e)}
+                    return {"elaptime": time.time() - start, "error": str(e)}
         except Exception as e:
-            logger.error("Unkown error",
-                         exc_info=True)
-            return {"elaptime": time.time() - start,
-                    "error": str(e)}
+            logger.error("Unkown error", exc_info=True)
+            return {"elaptime": time.time() - start, "error": str(e)}
 
     def check_return(self, int_return):
         """Non-ASCII-information commands return "0" in case of success, "-1" if
@@ -765,7 +767,7 @@ class Telescope:
                 try:
                     coords.append(round(float(epoch), 5))
                 except Exception:
-                    print("tcs.coords bad epoch:", epoch)
+                    logger.warning("tcs.coords bad epoch: %s", epoch)
                     pass
 
             if name:

@@ -16,8 +16,8 @@ with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as data_file:
 logger = logging.getLogger("sanityLogger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
-formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
-                              "%(module)s--%(funcName)s--%(message)s")
+formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
+                              "%(funcName)s--%(message)s")
 console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 
 logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],

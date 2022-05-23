@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import json
 from logging.handlers import TimedRotatingFileHandler
@@ -19,9 +20,9 @@ with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as data_file:
 logger = logging.getLogger("skyLogger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
-formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
-                              "%(module)s--%(funcName)s--%(message)s")
-
+formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
+                              "%(funcName)s--%(message)s")
+console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
                                                    'sky_server.log'),
                                       when='midnight', utc=True, interval=1,
@@ -29,6 +30,9 @@ logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
+consoleHandler = logging.StreamHandler(sys.stdout)
+consoleHandler.setFormatter(console_formatter)
+logger.addHandler(consoleHandler)
 logger.info("Starting Logger: Logger file is %s", 'sky_server.log')
 
 
@@ -58,7 +62,7 @@ class SkyServer:
 
                 if not data:
                     break
-                print("Received:", data)
+                logger.info("Received:", data)
                 try:
 
                     data = json.loads(data)
@@ -126,7 +130,7 @@ class SkyServer:
                 jsonstr = json.dumps(response)
                 connection.sendall(jsonstr.encode('utf-8'))
             except Exception as e:
-                print(str(e))
+                logger.warning(str(e))
                 logger.error("Big error", exc_info=True)
                 pass
 
@@ -152,7 +156,6 @@ if __name__ == "__main__":
     server = SkyServer("localhost", 5004, do_connect=False)
     # try:
     logger.info("Starting SkyServer")
-    print("Starting SkyServer")
     server.start()
     # except Exception as e:
     #    print(str(e))

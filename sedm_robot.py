@@ -37,8 +37,8 @@ with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as cfg_file:
 logger = logging.getLogger("sedmLogger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
-formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
-                              "%(module)s--%(funcName)s--%(message)s")
+formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
+                              "%(funcName)s--%(message)s")
 
 logHandler = TimedRotatingFileHandler(os.path.join(log_cfg['abspath'],
                                                    'sedm_robot.log'),
