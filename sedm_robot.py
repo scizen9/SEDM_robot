@@ -1497,7 +1497,7 @@ class SEDm:
         else:
             best_foc = None
         return {"elaptime": time.time() - start,
-                "data": {"focus_time": Time(datetime.datetime.utcnow()),
+                "data": {"focus_time": Time(datetime.datetime.utcnow()).iso,
                          "focus_temp": focus_temp,
                          "focus_pos": best_foc}}
 
