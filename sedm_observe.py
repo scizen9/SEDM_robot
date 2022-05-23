@@ -1,5 +1,5 @@
 from sedm_robot import SEDm
-from utils import obstimes
+from utils import obstimes, rc_focus
 import datetime
 import time
 from astropy.time import Time
@@ -17,7 +17,7 @@ status_file_dir = sedm_cfg['status_dir']
 manual_dir = sedm_cfg['manual_dir']
 
 calib_done_file = os.path.join(os.path.join(status_file_dir, "calib_done.txt"))
-focus_done_file = os.path.join(os.path.join(status_file_dir, "focus_done.txt"))
+focus_done_file = os.path.join(os.path.join(status_file_dir, "focus_done.json"))
 twilights_done_file = os.path.join(os.path.join(status_file_dir,
                                                 "twilights_done.txt"))
 standard_done_file = os.path.join(os.path.join(status_file_dir,
@@ -54,8 +54,11 @@ def run_observing_loop(do_focus=True, do_standard=True,
     if os.path.exists(focus_done_file):
         focus_done = True
         # open file and read temperature and position
+        with open(focus_done_file) as data_file:
+            focus_data = json.load(data_file)
     else:
         focus_done = False
+        focus_data = None
 
     if os.path.exists(standard_done_file):
         standard_done = True
@@ -218,6 +221,15 @@ def run_observing_loop(do_focus=True, do_standard=True,
             else:
                 focus_done = False
                 print("Unable to calculate focus")
+        else:
+            if focus_data:
+                robot.focus_temp = focus_data['focus_temp']
+                robot.focus_pos = focus_data['focus_pos']
+                robot.focus_time = focus_data['focus_time']
+                print("Focus pos of %.2f at temperature of %.2f achieved at %s"
+                      % (robot.focus_pos, robot.focus_temp, robot.focus_time))
+            else:
+                print("No focus data!  Recommend re-focusing!")
 
         # grab a standard
         if not standard_done:
@@ -321,6 +333,17 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 else:
                     focus_done = False
                     print("Unable to calculate focus")
+            # Check focus status based on temperature
+            else:
+                # get nominal rc focus based on current temperature
+                current_temp = float(
+                    robot.ocs.check_weather()['data']['inside_air_temp'])
+                if abs(robot.focus_temp - current_temp) > 1.0:
+                    nominal_rc_focus = rc_focus.temp_to_focus(current_temp)
+                    print("Focus %.2f at Temp of %.2f may have changed."
+                          % (robot.focus_pos, robot.focus_temp))
+                    print("Model focus of %.2f recommended based on current"
+                          " Temp of %.2f" % (nominal_rc_focus, current_temp))
         # No good next target at this time, so just do a standard
         else:
             print("No observable target in queue, doing standard")
