@@ -262,13 +262,25 @@ class SEDm:
     def get_status_dict(self, do_lamps=True, do_stages=True):
         stat_dict = {}
 
+        # First try at position
+        good_pos = False
         ret = self.ocs.check_pos()
         if 'data' in ret:
-            stat_dict.update(ret['data'])
-        else:
+            sd = ret['data']
+            if isinstance(sd, dict):
+                stat_dict.update(sd)
+                good_pos = True
+            else:
+                print("Bad ?POS return:", sd)
+        # Second try
+        if not good_pos:
             ret = self.ocs.check_pos()
             if 'data' in ret:
-                stat_dict.update(ret['data'])
+                sd = ret['data']
+                if isinstance(sd, dict):
+                    stat_dict.update(sd)
+                else:
+                    print("Bad ?POS return:", sd)
         try:
             stat_dict.update(self.ocs.check_weather()['data'])
             stat_dict.update(self.ocs.check_status()['data'])

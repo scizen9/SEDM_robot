@@ -862,7 +862,12 @@ class Telescope:
         start = time.time()
         ret = self.send_command("?WEATHER")
         if "data" in ret:
-            self.weather = self.list_to_dict(ret['data'])
+            wthr_dict = self.list_to_dict(ret['data'])
+            if wthr_dict:
+                self.weather = self.list_to_dict(ret['data'])
+            else:
+                return {"elaptime": time.time() - start,
+                        "error": "bad ?WEATHER return"}
         else:
             return ret
 
@@ -880,7 +885,12 @@ class Telescope:
         start = time.time()
         ret = self.send_command("?STATUS")
         if "data" in ret:
-            self.status = self.list_to_dict(ret['data'])
+            stat_dict = self.list_to_dict(ret['data'])
+            if stat_dict:
+                self.status = self.list_to_dict(ret['data'])
+            else:
+                return {"elaptime": time.time() - start,
+                        "error": "bad ?STATUS return"}
         else:
             return ret
 
@@ -897,7 +907,12 @@ class Telescope:
         start = time.time()
         ret = self.send_command("?POS")
         if "data" in ret:
-            self.pos = self.list_to_dict(ret['data'])
+            pos_dict = self.list_to_dict(ret['data'])
+            if pos_dict:
+                self.pos = self.list_to_dict(ret['data'])
+            else:
+                return {"elaptime": time.time() - start,
+                        "error": "bad ?POS return"}
         else:
             return ret
         return {"elaptime": time.time() - start,
