@@ -62,7 +62,6 @@ class SkyServer:
 
                 if not data:
                     break
-                logger.info("Received:", data)
                 try:
 
                     data = json.loads(data)
