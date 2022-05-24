@@ -213,11 +213,12 @@ def run_observing_loop(do_focus=True, do_standard=True,
             print("run_focus_seq status:\n", ret)
             if 'data' in ret:
                 focus_done = True
-                robot.focus_temp = ret['data']['focus_temp']
-                robot.focus_pos = ret['data']['focus_pos']
-                robot.focus_time = ret['data']['focus_time']
+                focus_data = ret['data']
+                robot.focus_temp = focus_data['focus_temp']
+                robot.focus_pos = focus_data['focus_pos']
+                robot.focus_time = focus_data['focus_time']
                 with open(focus_done_file, 'w') as the_file:
-                    the_file.write(json.dumps(ret['data']))
+                    the_file.write(json.dumps(focus_data))
             else:
                 focus_done = False
                 print("Unable to calculate focus")
@@ -325,11 +326,12 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 print("run_focus_seq status:\n", ret)
                 if 'data' in ret:
                     focus_done = True
-                    robot.focus_temp = ret['data']['focus_temp']
-                    robot.focus_pos = ret['data']['focus_pos']
-                    robot.focus_time = ret['data']['focus_time']
+                    focus_data = ret['data']
+                    robot.focus_temp = focus_data['focus_temp']
+                    robot.focus_pos = focus_data['focus_pos']
+                    robot.focus_time = focus_data['focus_time']
                     with open(focus_done_file, 'w') as the_file:
-                        the_file.write(json.dumps(ret['data']))
+                        the_file.write(json.dumps(focus_data))
                 else:
                     focus_done = False
                     print("Unable to calculate focus")
