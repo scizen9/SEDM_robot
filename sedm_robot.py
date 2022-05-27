@@ -2539,6 +2539,14 @@ class SEDm:
             confusion
         }
         """
+
+        # Pre-process name because comet designations wreak havoc
+        if '_' in name:
+            cname = name.replace('_', '/', 1)
+            cname = cname.replace('_', ' ')
+        else:
+            cname = name
+
         driver = webdriver.Chrome('chromedriver')
 
         driver.get("https://www.projectpluto.com/ephem.htm")
@@ -2563,7 +2571,7 @@ class SEDm:
         epoch.clear()
 
         # Enter values in designated elements
-        obj_name.send_keys(name)
+        obj_name.send_keys(cname)
         datetime.send_keys(eph_time)
         numb_steps.send_keys(eph_nsteps)
         step_size.send_keys(eph_stepsize)
