@@ -2803,14 +2803,16 @@ class SEDm:
                 DEC = coords.dec.degree
                 print("Target Coords:", coords.to_string("hmsdms", sep=":"))
                 print("decimal deg:", RA, DEC)
+
                 if 'allocation_id' in obsdict:
                     alloc_id = obsdict['allocation_id']
                 else:
                     alloc_id = None
-                ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                                                     typedesig="f",
-                                                     allocation_id=alloc_id,
-                                                     ra=RA, dec=DEC)
+                # ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                #                                     typedesig="f",
+                #                                     allocation_id=alloc_id,
+                #                                     ra=RA, dec=DEC)
+                ret = {'status': 'request ids not implemented yet'}
                 print("sky.get_manual_request_id status:\n", ret)
                 if 'data' in ret:
                     req_id = ret['data']['request_id']
@@ -2908,9 +2910,10 @@ class SEDm:
             else:
                 alloc_id = None
 
-            ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                                                 allocation_id=alloc_id,
-                                                 typedesig="e")
+            # ret = self.sky.get_manual_request_id(name=obsdict['target'],
+            #                                     allocation_id=alloc_id,
+            #                                     typedesig="e")
+            ret = {'status': 'request ids not implemented yet'}
             print("sky.get_manual_request_id status:\n", ret)
             if 'data' in ret:
                 req_id = ret['data']['request_id']
