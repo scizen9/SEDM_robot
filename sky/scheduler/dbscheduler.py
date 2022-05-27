@@ -965,31 +965,66 @@ class Scheduler:
                 print("Could not add object to db")
                 return -1
             else:
+                print(message)
                 return object_id
 
-    def get_manual_request_id(self, name="", exptime=180):
+    def get_manual_request_id(self, name="", typedesig="f", ra=None, dec=None,
+                              epoch=2000., magnitude=None, exptime=180,
+                              allocation_id="", obs_seq='{1ifu}'):
         """
         :param name:
+        :param typedesig:
+        :param ra:
+        :param dec:
+        :param epoch:
+        :param magnitude:
         :param exptime:
+        :param allocation_id: (str) Allocation table id number as a string
+        :param obs_seq: (str) Observation sequence: '{1ifu}' or '{1rc}'
         :return: bool, id
         """
         start = time.time()
 
         object_id = self.ph_db.get_object_id_from_name(name)
-        for obj in object_id:
-            if obj[1].lower() == name.lower():
-                object_id = obj[0]
-                break
+        if not object_id:
+            object_id = self.add_object(name=name, typedesig=typedesig,
+                                        ra=ra, dec=dec, epoch=epoch,
+                                        magnitude=magnitude)
+            if object_id <= 0:
+                print("Could not add %s to SedmDb" % name)
+                return {'elaptime': time.time() - start,
+                        'error': 'Unable to add object to SedmDb'}
+        else:
+            for obj in object_id:
+                if obj[1].lower() == name.lower():
+                    object_id = obj[0]
+                    break
+
+        if not allocation_id:
+            allocation_id = '20211011220000019'
+            p60prid = '2021B-calib'
+            p60prnm = "SEDm calibration"
+            p60prpi = "SEDm"
+        else:
+            db_ret = self.ph_db.get_from_allocation(
+                ['designator, program_id'],
+                where_dict={'id': allocation_id})[0]
+            p60prid = db_ret[0]
+            prog_id = db_ret[1]
+            db_ret = self.ph_db.get_from_program(['name', 'PI'],
+                                                 where_dict={'id': prog_id})[0]
+            p60prnm = db_ret[0]
+            p60prpi = db_ret[1]
 
         start_date = datetime.datetime.utcnow()
         end_date = start_date + datetime.timedelta(days=1)
         request_dict = {
-            'obs_seq': '{1ifu}',
+            'obs_seq': obs_seq,
             'exptime': '{%s}' % int(exptime),
             'object_id': object_id,
             'marshal_id': '-1',
             'user_id': 2,
-            'allocation_id': '20211011220000019',
+            'allocation_id': allocation_id,
             'priority': '-1',
             'inidate': start_date.strftime("%Y-%m-%d"),
             'enddate': end_date.strftime("%Y-%m-%d"),
@@ -1005,7 +1040,8 @@ class Scheduler:
         request_id = self.ph_db.add_request(request_dict)[0]
         return {
             'elaptime': time.time() - start,
-            'data': {'object_id': object_id, 'request_id': request_id}
+            'data': {'object_id': object_id, 'request_id': request_id,
+                     'p60prid': p60prid, 'p60prnm': p60prnm, 'p60prpi': p60prpi}
         }
 
     def get_standard_request_id(self, name="", exptime=180):

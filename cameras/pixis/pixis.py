@@ -16,28 +16,13 @@ with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as data_file:
 with open(os.path.join(SITE_ROOT, 'config', 'sedm.json')) as data_file:
     sedm_cfg = json.load(data_file)
 
-logger = logging.getLogger("pixisLogger")
-logger.setLevel(logging.DEBUG)
-logging.Formatter.converter = time.gmtime
-formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
-                              "%(module)s--%(funcName)s--%(message)s")
-
-logHandler = TimedRotatingFileHandler(os.path.join(log_cfg['cam_abspath'],
-                                                   'pixis_controller.log'),
-                                      when='midnight', utc=True, interval=1,
-                                      backupCount=360)
-logHandler.setFormatter(formatter)
-logHandler.setLevel(logging.DEBUG)
-logger.addHandler(logHandler)
-logger.info("Starting Logger: Logger file is %s", 'pixis_controller.log')
-
 _remote_config = sedm_cfg["remote_config"]  # default remote config file
 
 
 class Controller:
     def __init__(self, cam_prefix="rc", serial_number="test", output_dir="",
                  force_serial=True, set_temperature=-50, send_to_remote=False,
-                 remote_config=_remote_config):
+                 remote_config=_remote_config, setup_logging=True):
         """
         Initialize the controller for the PIXIS camera and
         :param cam_prefix:
@@ -95,6 +80,24 @@ class Controller:
         self.AdcQuality_States = ["LowNoise", "HighCapacity", "HighSpeed",
                                   "ElectronMultiplied"]
         self.lastError = ""
+        if setup_logging:
+            self.logging = True
+            self.logger = logging.getLogger("pixisLogger")
+            self.logger.setLevel(logging.DEBUG)
+            logging.Formatter.converter = time.gmtime
+            formatter = logging.Formatter(
+                "%(asctime)s--%(name)s--%(levelname)s--"
+                "%(module)s--%(funcName)s--%(message)s")
+
+            log_file = '%s_pixis_controller.log' % cam_prefix
+            logHandler = TimedRotatingFileHandler(
+                os.path.join(log_cfg['cam_abspath'], log_file),
+                when='midnight', utc=True, interval=1,
+                backupCount=360)
+            logHandler.setFormatter(formatter)
+            logHandler.setLevel(logging.DEBUG)
+            self.logger.addHandler(logHandler)
+            self.logger.info("Starting Logger: Logger file is %s", log_file)
 
     def _set_output_dir(self):
         """
@@ -107,7 +110,8 @@ class Controller:
 
     def _set_shutter(self, shutter):
         # Start off by setting the shutter mode
-        logger.info("Setting shutter to state:%s", shutter)
+        if self.logging:
+            self.logger.info("Setting shutter to state:%s", shutter)
         # 1. Make sure shutter state is correct string format
         shutter = shutter.lower()
         shutter_list = []
@@ -120,8 +124,9 @@ class Controller:
             shutter_list.append(["ShutterClosingDelay", 0])
             return shutter_list
         else:
-            logger.error('%s is not a valid shutter state', shutter,
-                         exc_info=True)
+            if self.logging:
+                self.logger.error('%s is not a valid shutter state', shutter,
+                                  exc_info=True)
             self.lastError = '%s is not a valid shutter state' % shutter
             return False
 
@@ -152,53 +157,63 @@ class Controller:
         """
 
         # Initialize and load the PICAM library
-        logger.info("Loading PICAM libaray")
+        if self.logging:
+            self.logger.info("Loading PICAM libaray")
         try:
             self.opt = picam()
             self.opt.loadLibrary(path_to_lib)
         except Exception as e:
             self.lastError = str(e)
-            logger.error("Fatal error in main loop", exc_info=True)
+            if self.logging:
+                self.logger.error("Fatal error in main loop", exc_info=True)
             return False
-        logger.info("Finished loading libary")
-        logger.info("Getting available cameras")
+        if self.logging:
+            self.logger.info("Finished loading libary")
+            self.logger.info("Getting available cameras")
 
         # Get the available cameras and try to select the one desired by the
         # serial number written on the back of the cameras themselves
         camera_list = self.opt.getAvailableCameras()
         camera_list = [camera.decode('utf-8') for camera in camera_list]
-        logger.info("Available Cameras:%s", camera_list)
+        if self.logging:
+            self.logger.info("Available Cameras:%s", camera_list)
         if self.serialNumber:
             try:
                 pos = camera_list.index(self.serialNumber)
             except Exception as e:
                 self.lastError = str(e)
-                logger.error("Camera %s is not in list", self.serialNumber,
-                             exc_info=True)
+                if self.logging:
+                    self.logger.error("Camera %s is not in list",
+                                      self.serialNumber, exc_info=True)
                 return False
         else:
-            logger.info("No serial number given, using first available: %s",
-                        camera_list[0])
+            if self.logging:
+                self.logger.info(
+                    "No serial number given, using first available: %s",
+                    camera_list[0])
             pos = None
             self.serialNumber = camera_list[0]
-        logger.info("Connecting '%s' camera", self.serialNumber)
+        if self.logging:
+            self.logger.info("Connecting '%s' camera", self.serialNumber)
 
         # Connect the camera for operations
         try:
             self.opt.connect(pos)
         except Exception as e:
-            print("ERROR")
+            if self.logging:
+                self.logger.error("ERROR")
+                self.logger.info("Unable to connect to camera:%s",
+                                 self.serialNumber)
+                self.logger.error("Connection error", exc_info=True)
             self.lastError = str(e)
-
-            logger.info("Unable to connect to camera:%s", self.serialNumber)
-            logger.error("Connection error", exc_info=True)
             return False
 
         # Set the operating temperature and wait to cool the instrument
         # before continuing. We wait for this cooling to occur because
         # past expereince has shown working with the cameras during the
         # cooling cycle can cause issues.
-        logger.info("Setting temperature to: %s", self.setTemperature)
+        if self.logging:
+            self.logger.info("Setting temperature to: %s", self.setTemperature)
         self.opt.setParameter("SensorTemperatureSetPoint", self.setTemperature)
         self.opt.sendConfiguration()
 
@@ -206,7 +221,8 @@ class Controller:
             temp = self.opt.getParameter("SensorTemperatureReading")
             lock = self.opt.getParameter("SensorTemperatureStatus")
             while temp != self.setTemperature:
-                logger.debug("Dector temp at %sC", temp)
+                if self.logging:
+                    self.logger.debug("Dector temp at %sC", temp)
                 print(lock, temp)
                 time.sleep(5)
                 temp = self.opt.getParameter("SensorTemperatureReading")
@@ -214,11 +230,13 @@ class Controller:
 
             while lock != 2:
                 print(lock, temp)
-                logger.debug("Wait for temperature lock to be set")
+                if self.logging:
+                    self.logger.debug("Wait for temperature lock to be set")
                 lock = self.opt.getParameter("SensorTemperatureStatus")
                 time.sleep(10)
-            logger.info("Camera temperature locked in place. Continuing "
-                        "initialization")
+            if self.logging:
+                self.logger.info("Camera temperature locked in place. "
+                                 "Continuing initialization")
 
         # Set default parameters
         try:
@@ -231,7 +249,9 @@ class Controller:
             self.opt.sendConfiguration()
         except Exception as e:
             self.lastError = str(e)
-            logger.error("Error setting default configuration", exc_info=True)
+            if self.logging:
+                self.logger.error("Error setting default configuration",
+                                  exc_info=True)
             return False
 
         # Set default Adc values
@@ -246,15 +266,17 @@ class Controller:
             self.opt.sendConfiguration()
         except Exception as e:
             self.lastError = str(e)
-            logger.error("Error setting the Adc values", exc_info=True)
+            if self.logging:
+                self.logger.error("Error setting the Adc values", exc_info=True)
             return False
 
         # Make sure the base data directory exists:
         if self.outputDir:
             if not os.path.exists(self.outputDir):
                 self.lastError = "Image directory does not exists"
-                logger.error("Image directory %s does not exists",
-                             self.outputDir)
+                if self.logging:
+                    self.logger.error("Image directory %s does not exists",
+                                      self.outputDir)
                 return False
 
         # Set the camera properties
@@ -305,11 +327,13 @@ class Controller:
                 'camspeed': self.opt.getParameter("AdcSpeed"),
                 'state': self.opt.getParameter("OutputSignal")
             }
-            if verbose:
-                logger.info(status)
+            if verbose and self.logging:
+                self.logger.info(status)
             return status
         except Exception as e:
-            logger.error("Error getting the camera status", exc_info=True)
+            if self.logging:
+                self.logger.error("Error getting the camera status",
+                                  exc_info=True)
             return {
                 "error": str(e), "camexptime": -9999,
                 "camtemp": -9999, "camspeed": -999
@@ -338,32 +362,38 @@ class Controller:
         # 2. Convert exposure time to milliseconds (ms)
         try:
             exptime_ms = int(float(exptime) * 1000)
-            logger.info("Converting exposure time %(exptime)ss"
-                        " to %(exptime_ms)s"
-                        "milliseconds", {'exptime': exptime,
-                                         'exptime_ms': exptime_ms})
+            if self.logging:
+                self.logger.info("Converting exposure time %(exptime)s s to " 
+                                 " %(exptime_ms)s milliseconds",
+                                 {'exptime': exptime, 'exptime_ms': exptime_ms})
             parameter_list.append(['ExposureTime', exptime_ms])
         except Exception as e:
             self.lastError = str(e)
-            logger.error("Error setting exposure time", exc_info=True)
+            if self.logging:
+                self.logger.error("Error setting exposure time", exc_info=True)
 
         # 3. Set the readout speed
-        logger.info("Setting readout speed to: %s", readout)
+        if self.logging:
+            self.logger.info("Setting readout speed to: %s", readout)
         if readout not in self.AdcSpeed_States:
-            logger.error("Readout speed '%s' is not valid", readout)
+            if self.logging:
+                self.logger.error("Readout speed '%s' is not valid", readout)
             return {'elaptime': time.time()-s,
                     'error': "%s not in AdcSpeed states" % readout}
         parameter_list.append(['AdcSpeed', readout])
 
         # 4. Set parameters and get readout time
         try:
-            logger.info("Sending configuration to camera")
+            if self.logging:
+                self.logger.info("Sending configuration to camera")
             readout_time = self._set_parameters(parameter_list)
             r = int(readout_time) / 1000
-            logger.info("Expected readout time=%ss", r)
+            if self.logging:
+                self.logger.info("Expected readout time=%ss", r)
         except Exception as e:
             self.lastError = str(e)
-            logger.error("Error setting parameters", exc_info=True)
+            if self.logging:
+                self.logger.error("Error setting parameters", exc_info=True)
 
         # 5. Set the timeout return for the camera
         if not timeout:
@@ -375,26 +405,31 @@ class Controller:
         start_time = datetime.datetime.utcnow()
 
         self.lastExposed = start_time
-        logger.info("Starting %(camPrefix)s exposure",
-                    {'camPrefix': self.camPrefix})
+        if self.logging:
+            self.logger.info("Starting %(camPrefix)s exposure",
+                             {'camPrefix': self.camPrefix})
         try:
             imdata = self.opt.readNFrames(N=1, timeout=timeout)[0][0]
         except Exception as e:
             self.lastError = str(e)
-            logger.error("Unable to get camera data", exc_info=True)
+            if self.logging:
+                self.logger.error("Unable to get camera data", exc_info=True)
             return {'elaptime': -1*(time.time()-s),
                     'error': "Failed to gather data from camera",
                     'send_alert': True}
-        logger.info("Readout completed")
-        logger.debug("Took: %s", time.time() - s)
+        if self.logging:
+            self.logger.info("Readout completed")
+            self.logger.debug("Took: %s", time.time() - s)
 
         if not save_as:
             start_exp_time = start_time.strftime("%Y%m%d_%H_%M_%S")
             # Now make sure the utdate directory exists
             if not os.path.exists(os.path.join(self.outputDir,
                                                start_exp_time[:8])):
-                logger.info("Making directory: %s",
-                            os.path.join(self.outputDir, start_exp_time[:8]))
+                if self.logging:
+                    self.logger.info("Making directory: %s",
+                                     os.path.join(self.outputDir,
+                                                  start_exp_time[:8]))
 
                 os.mkdir(os.path.join(self.outputDir, start_exp_time[:8]))
 
@@ -436,7 +471,8 @@ class Controller:
             hdul.header.set("CTYPE1", self.ctype1)
             hdul.header.set("CTYPE2", self.ctype2)
             hdul.writeto(save_as, output_verify="fix", )
-            logger.info("%s created", save_as)
+            if self.logging:
+                self.logger.info("%s created", save_as)
             if self.send_to_remote:
                 ret = self.transfer.send(save_as)
                 if 'data' in ret:
@@ -444,7 +480,8 @@ class Controller:
             return {'elaptime': time.time()-s, 'data': save_as}
         except Exception as e:
             self.lastError = str(e)
-            logger.error("Error writing data to disk", exc_info=True)
+            if self.logging:
+                self.logger.error("Error writing data to disk", exc_info=True)
             return {'elaptime': time.time()-s,
                     'error': 'Error writing file to disk'}
 

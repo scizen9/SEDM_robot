@@ -2803,7 +2803,28 @@ class SEDm:
                 DEC = coords.dec.degree
                 print("Target Coords:", coords.to_string("hmsdms", sep=":"))
                 print("decimal deg:", RA, DEC)
-
+                if 'allocation_id' in obsdict:
+                    alloc_id = obsdict['allocation_id']
+                else:
+                    alloc_id = None
+                ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                     typedesig="f",
+                                                     allocation_id=alloc_id,
+                                                     ra=RA, dec=DEC)
+                print("sky.get_manual_request_id status:\n", ret)
+                if 'data' in ret:
+                    req_id = ret['data']['request_id']
+                    obj_id = ret['data']['object_id']
+                    p60prid = ret['data']['p60prid']
+                    p60prnm = ret['data']['p60prnm']
+                    p60prpi = ret['data']['p60prpi']
+                else:
+                    req_id = -999
+                    obj_id = -999
+                    p60prid = '2022A-calib'
+                    p60prnm = 'SEDm calibration'
+                    p60prpi = 'SEDm'
+                    print("Unable to obtain request data")
             else:
                 return {'elaptime': time.time() - start,
                         'error': "ifu 'target' in manual dict not found"}
@@ -2811,8 +2832,9 @@ class SEDm:
             ret = self.run_ifu_science_seq(
                 self.ifu, name=obsdict['target'], imgtype='Science',
                 exptime=obsdict['exptime'], ra=RA, dec=DEC, readout=.1,
-                p60prid='2022B-Asteroids', p60prpi='SEDm', email='',
-                p60prnm='Near-Earth Asteroid Spectra', objfilter='ifu',
+                p60prid=p60prid, p60prpi=p60prpi, email='',
+                p60prnm=p60prnm, req_id=req_id,
+                obj_id=obj_id, objfilter='ifu',
                 run_acquisition=True, objtype='Transient', non_sid_targ=False,
                 guide_readout=2.0, move_during_readout=True, abpair=False,
                 guide_shutter='normal', move=True, guide_exptime=30,
@@ -2849,7 +2871,7 @@ class SEDm:
                 obs_exptime=[obsdict['exptime']
                              for i in range(obsdict['n_exp'])],
                 obs_repeat_filter=[1 for i in range(obsdict['n_exp'])],
-                repeat=obsdict['n_exp'], non_sid_targ=True,
+                repeat=obsdict['n_exp'], non_sid_targ=False,
                 move_during_readout=True, abpair=False, move=True,
                 retry_on_failed_astrometry=False,
                 mark_status=True, status_file='')
@@ -2881,6 +2903,29 @@ class SEDm:
 
                 return {"elaptime": time.time() - start, "error": ret}
 
+            if 'allocation_id' in obsdict:
+                alloc_id = obsdict['allocation_id']
+            else:
+                alloc_id = None
+
+            ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                 allocation_id=alloc_id,
+                                                 typedesig="e")
+            print("sky.get_manual_request_id status:\n", ret)
+            if 'data' in ret:
+                req_id = ret['data']['request_id']
+                obj_id = ret['data']['object_id']
+                p60prid = ret['data']['p60prid']
+                p60prnm = ret['data']['p60prnm']
+                p60prpi = ret['data']['p60prpi']
+            else:
+                req_id = -999
+                obj_id = -999
+                p60prid = '2022A-calib'
+                p60prnm = 'SEDm calibration'
+                p60prpi = 'SEDm'
+                print("Unable to obtain request data")
+
             nonsid_dict = ret['ephemeris']['entries']['0']
             nonsid_dict['epoch'] = iso_to_epoch(nonsid_dict['ISO_time'])
 
@@ -2891,8 +2936,9 @@ class SEDm:
                 equinox=2000, epoch=nonsid_dict['epoch'],
                 ra_rate=nonsid_dict['RAvel'],
                 dec_rate=nonsid_dict['decvel'], motion_flag=1,
-                p60prid='2022B-Asteroids', p60prpi='SEDm', email='',
-                p60prnm='Near-Earth Asteroid Spectra', objfilter='ifu',
+                p60prid=p60prid, p60prpi=p60prpi, email='',
+                p60prnm=p60prnm, req_id=req_id,
+                obj_id=obj_id, objfilter='ifu',
                 run_acquisition=True, objtype='Transient', non_sid_targ=True,
                 guide_readout=2.0, move_during_readout=True, abpair=False,
                 guide=False, guide_shutter='normal', move=True,
