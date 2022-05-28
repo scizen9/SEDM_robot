@@ -15,5 +15,5 @@ if [ $count -eq 0 ]
 then
 	echo "Minar not alive!"
 else
-	rsync -aurz -e ssh --progress --chmod=D+rx,F+r,F-x /home/sedm/images/ minar.caltech.edu:/data/sedmdrp/raw/
+	rsync -aurz -e ssh --progress --chmod=D+rx,F+r,F-x /home/sedm/images/ sedmdrp@minar.caltech.edu:/data/sedmdrp/raw/
 fi
