@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import json
 from logging.handlers import TimedRotatingFileHandler
@@ -19,7 +20,7 @@ logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
 formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
                               "%(funcName)s--%(message)s")
-
+console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
                                                    'ocs_server.log'),
                                       when='midnight', utc=True, interval=1,
@@ -27,6 +28,9 @@ logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
+consoleHandler = logging.StreamHandler(sys.stdout)
+consoleHandler.setFormatter(console_formatter)
+logger.addHandler(consoleHandler)
 logger.info("Starting Logger: Logger file is %s", 'ocs_server.log')
 
 
@@ -55,7 +59,6 @@ class ocsServer:
 
                 if not data:
                     break
-                print("Received:", data)
                 try:
                     data = json.loads(data)
                 except Exception as e:
@@ -158,7 +161,7 @@ class ocsServer:
                 else:
                     response = {'elaptime': time.time()-start,
                                 'error': "Command not found"}
-                print("Response:", response)
+                logger.info("Response: %s", response)
                 jsonstr = json.dumps(response)
                 connection.sendall(jsonstr.encode('utf-8'))
             except Exception as e:
@@ -190,10 +193,8 @@ if __name__ == "__main__":
     server = ocsServer("localhost", 5003)
     # try:
     logger.info("Starting ocsServer")
-    print("Starting ocsServer")
     server.start()
     # except Exception as e:
-    #    print(str(e))
     #    logging.exception("Unexpected exception %s", str(e))
     # finally:
     #    logging.info("Shutting down IFU server")

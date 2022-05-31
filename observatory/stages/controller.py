@@ -3,6 +3,7 @@ from logging.handlers import TimedRotatingFileHandler
 import time
 import socket
 import os
+import sys
 import json
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
@@ -15,7 +16,7 @@ logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
 formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
                               "%(module)s--%(funcName)s--%(message)s")
-
+console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
                                                    'stage_controller.log'),
                                       when='midnight', utc=True, interval=1,
@@ -23,6 +24,9 @@ logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
+consoleHandler = logging.StreamHandler(sys.stdout)
+consoleHandler.setFormatter(console_formatter)
+logger.addHandler(consoleHandler)
 logger.info("Starting Logger: Logger file is %s", 'stage_controller.log')
 
 
@@ -179,9 +183,9 @@ class Stage:
         if msg.lower() in self.return_value_commands:
 
             recv = self.socket.recv(2048)
-            print(recv, len(recv), "In return value")
+            logger.info("In return value: %d - %s", len(recv), recv)
             if len(recv) == 11 or len(recv) == 12 or len(recv) == 13:
-                print("This is a value command")
+                logger.info("This is a value command")
                 return recv
         t = 300
 
@@ -208,7 +212,7 @@ class Stage:
                     return recv
             t -= 1
 
-        print(recv)
+        logger.info(recv)
         return recv
 
     def __send_command(self, cmd="", parameters=None, stage_id=1,
@@ -228,31 +232,29 @@ class Stage:
                 return {'elaptime': time.time()-start,
                         'error': "%s is not a valid command" % cmd}
 
-        print(cmd, self.parameter_commands, 3)
+        logger.info("Input command: %s", cmd)
         # Check if the command should have parameters
         if cmd in self.parameter_commands and parameters:
-            print("add parameters")
+            logger.info("add parameters")
             parameters = [str(x) for x in parameters]
             parameters = " ".join(parameters)
             cmd += parameters
-            print(cmd)
+            logger.info(cmd)
 
         # Next check if we expect a return value from command
 
         response = self.__send_serial_command(stage_id, cmd)
         response = response.decode('utf-8')
-        print("Cmd response from stage controller 1", response, cmd)
+        logger.info("Response from stage controller %d: %s", stage_id, response)
 
         message = self.__return_parse(response)
 
-        print(type(cmd), cmd, len(cmd), 'cmd values')
         if cmd not in self.return_value_commands and self.__return_parse(
                 response) == "Unknown state":
             return {'elaptime': time.time() - start, 'error': response}
 
         elif cmd in self.return_value_commands:
 
-            print(cmd.lower(), "this is the command")
             if cmd.lower() == 'tp':
                 response = response.rstrip()
                 return {'elaptime': time.time() - start, 'data': response[3:]}
@@ -262,10 +264,10 @@ class Stage:
 
         elif 'REFERENCED' in message:
             if home_when_not_ref:
-                print("NOT REF")
+                logger.info("NOT REF")
                 response = self.__send_serial_command(stage_id, 'OR')
                 response = response.decode('utf-8')
-                print("Cmd response from stage controller", response)
+                logger.info("Cmd response from stage controller: %s", response)
                 message = self.__return_parse(response)
                 return {'elaptime': time.time() - start, 'data': message}
 
@@ -276,8 +278,8 @@ class Stage:
             return {'elaptime': time.time() - start, 'data': message}
 
         # except Exception as e:
-        #     print("Error in the stage controller return")
-        #     print(str(e))
+        #     logger.error("Error in the stage controller return")
+        #     logger.error(str(e))
         #     return -1 * (time.time() - start), str(e)
 
     def __return_parse(self, message=""):
@@ -301,9 +303,9 @@ class Stage:
         # cmd = ""
         # end_code = None
 
-        print("WARNING YOU ARE ABOUT TO ENTER THE CONFIGURATION STATE.\n"
-              "PLEASE DON'T MAKE ANY CHANGES UNLESS YOU KNOW WHAT YOU ARE"
-              " DOING")
+        logger.warning("WARNING YOU ARE ABOUT TO ENTER THE CONFIGURATION "
+                       "STATE.\nPLEASE DON'T MAKE ANY CHANGES UNLESS YOU "
+                       "KNOW WHAT YOU ARE DOING")
         input("Press Enter to Continue")
 
         message = (
@@ -318,18 +320,18 @@ class Stage:
         value = int(input("Choose Configuration to Change"))
 
         if value == 6:
-            print("Exiting configuration")
+            logger.info("Exiting configuration")
             return
         custom_command = False
 
         ret = self.__send_command(cmd='PW1', stage_id=stage_id)
         # , end_code=["32", "33", "34", "35", "14"])
 
-        print(ret)
+        logger.info(ret)
         while True:
 
             if value == 0:
-                print(message)
+                logger.info(message)
                 value = int(input("Choose Configuration to Change"))
 
             if value == 1:
@@ -352,21 +354,21 @@ class Stage:
                 custom_command = True
             elif value == 6:
                 ret = self.__send_command(cmd='PW0', stage_id=stage_id)
-                print(ret)
+                logger.info(ret)
                 break
             else:
-                print("Value not recognized exiting")
+                logger.info("Value not recognized exiting")
                 ret = self.__send_command(cmd='PW0', stage_id=stage_id)
-                print(ret)
+                logger.info(ret)
                 return
 
             print(ret, value, custom_command)
 
             ret = self.__send_command(cmd=cmd, stage_id=stage_id,
                                       custom_command=custom_command)
-            print(ret)
+            logger.info(ret)
             value = 0
-            print(value)
+            logger.info(value)
             time.sleep(3)
             custom_command = False
 
@@ -424,7 +426,7 @@ class Stage:
         try:
             x = self.__send_command(cmd="tp", stage_id=stage_id)
         except Exception as e:
-            print(str(e), 'get_position error')
+            logger.error('get_position error: %s', str(e))
             x = {'elaptime': time.time()-start,
                  'error': 'Unable to send stage command'}
         return x
@@ -449,40 +451,40 @@ class Stage:
 
             ret = self.__send_command(cmd=cmd, stage_id=stage_id,
                                       custom_command=True)
-            print(ret, "End")
+            logger.info("End: %s", ret)
 
 
 if __name__ == "__main__":
     s = Stage()
-    # print(s.get_limits(stage_id=2))
-    # print(s.get_position(stage_id=1))
-    # print(s.disable_esp(1))
+    # logger.info(s.get_limits(stage_id=2))
+    # logger.info(s.get_position(stage_id=1))
+    # logger.info(s.disable_esp(1))
     # time.sleep(3)
 
     # s.run_manually(1)
     # s.enterConfigState(1)
-    # print(s.home(1))
-    # print(s.reset(1))
-    # print(s.enable_esp(1))
-    # print(s.set_encoder_value(value=.000244140625, stage_id=1))
-    # print(s.get_all(1))
+    # logger.info(s.home(1))
+    # logger.info(s.reset(1))
+    # logger.info(s.enable_esp(1))
+    # logger.info(s.set_encoder_value(value=.000244140625, stage_id=1))
+    # logger.info(s.get_all(1))
     # time.sleep(5)
-    # print(s.home(1))
+    # logger.info(s.home(1))
     # time.sleep(4)
-    # print(s.move_focus(.4, stage_id=1))
-    # print(s.move_focus(2.5, stage_id=2))
-    # print(s.home(1))
-    print(s.get_position(2))
-    print(s.get_state(1))
-    # print(s.home(2))
-    # print(s.move_focus(3.5, stage_id=2))
+    # logger.info(s.move_focus(.4, stage_id=1))
+    # logger.info(s.move_focus(2.5, stage_id=2))
+    # logger.info(s.home(1))
+    logger.info(s.get_position(2))
+    logger.info(s.get_state(1))
+    # logger.info(s.home(2))
+    # logger.info(s.move_focus(3.5, stage_id=2))
     # time.sleep(1)
-    # print(s.get_position(stage_id=2))
+    # logger.info(s.get_position(stage_id=2))
 
-    # print(s.home(1))
-    # print(s.move_focus(.52, stage_id=1))
-    # print(s.get_position(stage_id=1))
+    # logger.info(s.home(1))
+    # logger.info(s.move_focus(.52, stage_id=1))
+    # logger.info(s.get_position(stage_id=1))
 
-    # print(s.home(2))
-    # print(s.move_focus(5.0, stage_id=2))
-    # print(s.get_position(stage_id=2))
+    # logger.info(s.home(2))
+    # logger.info(s.move_focus(5.0, stage_id=2))
+    # logger.info(s.get_position(stage_id=2))

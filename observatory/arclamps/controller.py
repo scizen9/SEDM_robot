@@ -2,6 +2,7 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 import json
 import os
+import sys
 import time
 import socket
 
@@ -16,7 +17,7 @@ logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
 formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
                               "%(module)s--%(funcName)s--%(message)s")
-
+console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
                                                    'lamp_controller.log'),
                                       when='midnight', utc=True, interval=1,
@@ -24,6 +25,9 @@ logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
+consoleHandler = logging.StreamHandler(sys.stdout)
+consoleHandler.setFormatter(console_formatter)
+logger.addHandler(consoleHandler)
 logger.info("Starting Logger: Logger file is %s", 'lamp_controller.log')
 
 
@@ -45,7 +49,6 @@ class Lamp:
         self.internal_lamps = ['hg', 'cd']
         self.external_lamps = ['xe']
         self.simulated = simulated
-        print(SITE_ROOT, lamp)
         with open(os.path.join(SITE_ROOT, 'config', 'lamps.json')) as cfile:
             self.lamp_config = json.load(cfile)
 
@@ -127,8 +130,8 @@ class Lamp:
                     return {'elaptime': time.time() - start, 'data': 'UNKNOWN'}
             else:
                 data = str(ret['data'])
-            print(data, "Lamp data")
-            print(self.plug, "plig")
+            logger.info("Lamp data: %s", data)
+            logger.info("plug: %d", self.plug)
             if self.name.lower() == 'xe':
                 search = "outlet%s" % self.plug
             else:
@@ -151,12 +154,12 @@ class Lamp:
 if __name__ == '__main__':
     # x = Lamp(lamp='cd')
     lamps = connect_all()
-    print(lamps)
+    logger.info(lamps)
     xe = lamps['xe']
     hg = lamps['hg']
     cd = lamps['cd']
-    print(hg.status())
-    # print(hg.on())
-    print(xe.status())
-    # print(xe.off())
-    print(cd.status())
+    logger.info(hg.status())
+    # logger.info(hg.on())
+    logger.info(xe.status())
+    # logger.info(xe.off())
+    logger.info(cd.status())
