@@ -7,11 +7,10 @@ import os
 import glob
 import json
 import traceback
+import version
 
 
-SITE_ROOT = os.path.abspath(os.path.dirname(__file__))
-
-with open(os.path.join(SITE_ROOT, 'config', 'sedm.json')) as cfg_file:
+with open(os.path.join(version.CONFIG_DIR, 'sedm.json')) as cfg_file:
     sedm_cfg = json.load(cfg_file)
 
 status_file_dir = sedm_cfg['status_dir']
