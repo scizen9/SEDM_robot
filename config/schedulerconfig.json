@@ -1,9 +1,11 @@
 {"dbconn": {
-"host": "pharos.caltech.edu",
-"port": 5432,
-"dbname": "sedmdb",
-"user": "sedmuser",
-"password": "--password--"},
-"standard_db": "/home/sedm/SEDM_robot/sky/standards/standards.sql",
-"target_dir": "/home/sedm/robot/targets/"
+  "host": "pharos.caltech.edu",
+  "port": 5432,
+  "dbname": "sedmdb",
+  "user": "sedmuser",
+  "password": "--password--"},
+  "standard_db": "/home/sedm/SEDM_robot/sky/standards/standards.sql",
+  "scheduler_path": "/scr2/sedm/sedmpy/web/static/scheduler/scheduler.html",
+  "schedular_logdir": "/scr2/sedm/logs/scheduler",
+  "target_dir": "/home/sedm/robot/targets/"
 }

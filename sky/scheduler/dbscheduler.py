@@ -15,12 +15,11 @@ from utils import obstimes
 from utils import sedmpy_import
 import sqlite3
 from sky.growth.marshal import Interface
+import version
 
 from astropy.time import Time, TimeDelta
 from astropy.utils.iers import conf
 conf.auto_max_age = None
-
-SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 
 
 # noinspection SqlNoDataSourceInspection
@@ -30,7 +29,7 @@ class Scheduler:
                  save_as="targets.json"):
 
         self.scheduler_config_file = config
-        with open(os.path.join(SITE_ROOT, 'config', config)) as data_file:
+        with open(os.path.join(version.CONFIG_DIR, config)) as data_file:
             self.params = json.load(data_file)
         self.path = self.params["standard_db"]
         self.target_dir = self.params["target_dir"]
@@ -1152,9 +1151,11 @@ class Scheduler:
 
 
 if __name__ == "__main__":
-    scheduler_path = '/scr2/sedm/sedmpy/web/static/scheduler/scheduler.html'
+    # scheduler_path = '/scr2/sedm/sedmpy/web/static/scheduler/scheduler.html'
     s = time.time()
     sched = Scheduler()
+    scheduler_path = sched.params['scheduler_path']
+    scheduler_logdir = sched.params['scheduler_logdir']
     # print(x.get_next_observable_target(return_type='json', do_moon_sep=False))
     # time.sleep(111)
     # print(x.simulate_night())
@@ -1166,8 +1167,8 @@ if __name__ == "__main__":
     # are we observing now?
     if sched.obs_times['evening_nautical'] < now < \
             sched.obs_times['morning_astronomical']:
-        data = open("/scr2/sedm/logs/scheduler/scheduler.%s.html" %
-                    now.strftime("%Y%m%d_%H_%M_%S"), 'w')
+        data = open(os.path.join(scheduler_logdir, "scheduler.%s.html" %
+                                 now.strftime("%Y%m%d_%H_%M_%S")), 'w')
         data.write(r)
         data.close()
 
