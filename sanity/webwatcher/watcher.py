@@ -247,6 +247,9 @@ while True:
 
         put_remote_file(local_path='/home/sedm/logs/telstatus.json',
                         remote_path='/scr2/sedm/raw/telstatus/telstatus.json')
+        put_remote_file(local_path='/home/sedm/logs/telstatus.json',
+                        remote_path='/data/sedmdrp/raw/telstatus/telstatus.json',
+                        remote_computer='minar.caltech.edu')
         time.sleep(5)
     except Exception as e:
         print(str(e))
