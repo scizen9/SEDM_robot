@@ -2860,6 +2860,20 @@ class SEDm:
                 return {'elaptime': time.time() - start,
                         'error': "rc 'target' in manual dict not found"}
 
+            if 'repeat_filter' in obsdict:
+                repeat_filter = obsdict['repeat_filter']
+            else:
+                nfilt = len(obsdict['rcfilter'].split(','))
+                if nfilt == 1:
+                    repeat_filter = '1'
+                else:
+                    repeat_filter = '1,' * (nfilt - 1) + '1'
+
+            if 'n_sets' in obsdict:
+                n_sets = int(obsdict['n_sets'])
+            else:
+                n_sets = 1
+
             ret = self.run_rc_science_seq(
                 self.rc, shutter="normal", readout=.1, name=obsdict['target'],
                 test="", save_as=None, imgtype='Science', ra=RA, dec=DEC,
@@ -2867,16 +2881,12 @@ class SEDm:
                 email='', p60prnm='Near-Earth Asteroid', obj_id=-999,
                 objfilter='RC%s' % (obsdict['rcfilter']), imgset='NA',
                 is_rc=True, run_acquisition=True, req_id=-999, acq_readout=2.0,
-                objtype='Transient',
-                obs_order=['%s' % (obsdict['rcfilter']
-                                   for i in range(obsdict['n_exp']))],
-                obs_exptime=[obsdict['exptime']
-                             for i in range(obsdict['n_exp'])],
-                obs_repeat_filter=[1 for i in range(obsdict['n_exp'])],
-                repeat=obsdict['n_exp'], non_sid_targ=False,
-                move_during_readout=True, abpair=False, move=True,
-                retry_on_failed_astrometry=False,
-                mark_status=True, status_file='')
+                objtype='Transient', obs_order=obsdict['rcfilter'],
+                obs_exptime=obsdict['exptime'],
+                obs_repeat_filter=repeat_filter, repeat=n_sets,
+                non_sid_targ=False, move_during_readout=True, abpair=False,
+                move=True, retry_on_failed_astrometry=False, mark_status=True,
+                status_file='')
 
             ret_lab = "MANUAL: run_rc_science_seq status:"
 
@@ -2977,21 +2987,19 @@ class SEDm:
             nonsid_dict = ret['ephemeris']['entries']['0']
             nonsid_dict['epoch'] = iso_to_epoch(nonsid_dict['ISO_time'])
 
-            # get sequence strings
-            n_exp = obsdict['n_exp']
-            if n_exp > 1:
-                obord_str = (obsdict['rcfilter'] + ',') * (n_exp - 1) + \
-                    obsdict['rcfilter']
-                obexp_str = (str(obsdict['exptime']) + ',') * (n_exp - 1) + \
-                    str(obsdict['exptime'])
-                obrfl_str = '1,' * (n_exp - 1) + '1'
-            elif n_exp == 1:
-                obord_str = obsdict['rcfilter']
-                obexp_str = str(obsdict['exptime'])
-                obrfl_str = '1'
+            if 'repeat_filter' in obsdict:
+                repeat_filter = obsdict['repeat_filter']
             else:
-                return {"elaptime": time.time() - start,
-                        "error": 'n_exp must be >= 1'}
+                nfilt = len(obsdict['rcfilter'].split(','))
+                if nfilt == 1:
+                    repeat_filter = '1'
+                else:
+                    repeat_filter = '1,' * (nfilt - 1) + '1'
+
+            if 'n_sets' in obsdict:
+                n_sets = int(obsdict['n_sets'])
+            else:
+                n_sets = 1
 
             ret = self.run_rc_science_seq(
                 self.rc, shutter="normal", readout=.1, name=obsdict['target'],
@@ -3003,8 +3011,9 @@ class SEDm:
                 p60prnm='Near-Earth Asteroid', obj_id=-999,
                 objfilter='RC%s' % (obsdict['rcfilter']), imgset='NA',
                 is_rc=True, run_acquisition=True, req_id=-999, acq_readout=2.0,
-                objtype='Transient', obs_order=obord_str, obs_exptime=obexp_str,
-                obs_repeat_filter=obrfl_str, repeat=obsdict['n_exp'],
+                objtype='Transient', obs_order=obsdict['rcfilter'],
+                obs_exptime=obsdict['exptime'],
+                obs_repeat_filter=repeat_filter, repeat=n_sets,
                 non_sid_targ=True, move_during_readout=True, abpair=False,
                 move=True, retry_on_failed_astrometry=False, mark_status=True,
                 status_file='')
