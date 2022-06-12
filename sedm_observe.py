@@ -6,6 +6,7 @@ from astropy.time import Time
 import os
 import glob
 import json
+import traceback
 
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -432,9 +433,12 @@ if __name__ == "__main__":
             try:
                 run_observing_loop()
             except Exception as e:
-                print(datetime.datetime.utcnow(), "FATAL (restart):", str(e))
+                tb_str = traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
+                print(datetime.datetime.utcnow(), "FATAL (restart):\n", "".join(tb_str))
+                print("\nSleep for 60s and start loop again")
                 time.sleep(60)
                 pass
 
     except Exception as e:
-        print(str(e))
+        tb_str = traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
+        print("".join(tb_str))
