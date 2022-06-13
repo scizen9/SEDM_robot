@@ -45,7 +45,10 @@ def clean_up():
 def run_observing_loop(do_focus=True, do_standard=True,
                        do_calib=True, do_twilights=True,
                        clean_manual=True):
-    print("\nReSTARTING OBSERVING LOOP at ", datetime.datetime.utcnow(), "\n")
+
+    print("\nReSTARTING OBSERVING LOOP at ", datetime.datetime.utcnow())
+    print("SEDM_robot version:", version.__version__, "\n")
+
     if do_focus:
         pass
     if do_standard:
