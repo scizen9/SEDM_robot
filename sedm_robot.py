@@ -2548,8 +2548,10 @@ class SEDm:
             cname = name
 
         driver = webdriver.Chrome('chromedriver')
+        print("Webdriver successfully installed")
 
         driver.get("https://www.projectpluto.com/ephem.htm")
+        print("Website loaded successfully")
 
         # Enter element names in website source code
         obj_name = driver.find_element_by_name("obj_name")
@@ -2602,8 +2604,16 @@ class SEDm:
         driver.find_element_by_xpath(
             "//*[@type='submit'][@value=' Compute orbit and ephemerides ']").click()
 
-        ephemeris = json.loads(driver.find_element_by_xpath("/html/body").text)
-        driver.close()
+        try:
+            ephemeris = json.loads(driver.find_element_by_xpath("/html/body").text)
+        except ValueError:
+            driver.close()
+            print("No ephemeris generated")
+            ephemeris = False
+
+        if ephemeris:
+            print(ephemeris)
+            driver.close()
 
         return ephemeris
 
@@ -2893,27 +2903,48 @@ class SEDm:
         elif command.lower() == "nonsid_ifu":
             if "obsdate" in obsdict:
                 obsdate = obsdict['obsdate']
+                print('Using ephemeris at date: %s' % obsdate)
             else:
                 obsdate = "now"
+                now = Time.now()
+                print('Using ephemeris at date: %s' % now)
 
             if 'target' in obsdict:
-                ret = self.get_non_sid_ephemeris(name=obsdict['target'],
-                                                 eph_time=obsdate)
+                try:
+                    print("Try #1 loading ephemeris")
+                    ret = self.get_non_sid_ephemeris(name=obsdict['target'], eph_time=obsdate)
+                except ValueError:
+                    pass
 
-                while 'ephemeris' not in ret:
-                    ret = self.get_non_sid_ephemeris(name=obsdict['target'],
-                                                     eph_time=obsdate)
-                print("get_non_sid_ephemeris return:\n", ret)
+                if ret:
+                    pass
+                else:
+                    print("Try #1 loading ephemeris unsuccessful: Trying again")
+                    try:
+                        print("Try #2 loading ephemeris")
+                        ret = self.get_non_sid_ephemeris(name=obsdict['target'], eph_time=obsdate)
+                    except ValueError:
+                        pass
+
+                if ret:
+                    pass
+                else:
+                    print("Try #2 loading ephemeris unsuccessful: Trying again")
+                    try:
+                        print("Try #3 loading ephemeris")
+                        ret = self.get_non_sid_ephemeris(name=obsdict['target'], eph_time=obsdate)
+                    except ValueError:
+                        pass
+
+                if ret:
+                    pass
+                else:
+                    print("Try #3 loading ephemeris unsuccessful: Check object parameters")
 
             else:
-                make_alert_call("MANUAL: cannot find 'target' in file")
-
+                make_alert_call("MANUAL: cannot find 'target' in JSON file")
                 return {'elaptime': time.time() - start,
                         'error': "nonsid_ifu 'target' in manual dict not found"}
-
-            if 'ephemeris' not in ret:
-
-                return {"elaptime": time.time() - start, "error": ret}
 
             if 'allocation_id' in obsdict:
                 alloc_id = obsdict['allocation_id']
@@ -2939,6 +2970,10 @@ class SEDm:
                 p60prpi = 'SEDm'
                 print("Unable to obtain request data")
 
+            if 'ephemeris' not in ret:
+
+                return {"elaptime": time.time() - start, "error: 'ephemeris' not in return": ret}
+
             nonsid_dict = ret['ephemeris']['entries']['0']
             nonsid_dict['epoch'] = iso_to_epoch(nonsid_dict['ISO_time'])
 
@@ -2948,7 +2983,7 @@ class SEDm:
                 ra=nonsid_dict['RA'], dec=nonsid_dict['Dec'],
                 equinox=2000, epoch=nonsid_dict['epoch'],
                 ra_rate=nonsid_dict['RAvel'],
-                dec_rate=nonsid_dict['decvel'], motion_flag=1,
+                dec_rate=nonsid_dict['decvel'], motion_flag="1",
                 p60prid=p60prid, p60prpi=p60prpi, email='',
                 p60prnm=p60prnm, req_id=req_id,
                 obj_id=obj_id, objfilter='ifu',
@@ -2963,26 +2998,76 @@ class SEDm:
         elif command.lower() == "nonsid_rc":
             if "obsdate" in obsdict:
                 obsdate = obsdict['obsdate']
+                print('Using ephemeris at date: %s' % obsdate)
             else:
                 obsdate = "now"
+                now = Time.now()
+                print('Using ephemeris at date: %s' % now)
 
             if 'target' in obsdict:
-                ret = self.get_non_sid_ephemeris(name=obsdict['target'],
-                                                 eph_time=obsdate)
+                try:
+                    print("Try #1 loading ephemeris")
+                    ret = self.get_non_sid_ephemeris(name=obsdict['target'], eph_time=obsdate)
+                except ValueError:
+                    pass
 
-                while 'ephemeris' not in ret:
-                    ret = self.get_non_sid_ephemeris(name=obsdict['target'],
-                                                     eph_time=obsdate)
-                print("get_non_sid_ephemeris return:\n", ret)
+                if ret:
+                    pass
+                else:
+                    print("Try #1 loading ephemeris unsuccessful: Trying again")
+                    try:
+                        print("Try #2 loading ephemeris")
+                        ret = self.get_non_sid_ephemeris(name=obsdict['target'], eph_time=obsdate)
+                    except ValueError:
+                        pass
+
+                if ret:
+                    pass
+                else:
+                    print("Try #2 loading ephemeris unsuccessful: Trying again")
+                    try:
+                        print("Try #3 loading ephemeris")
+                        ret = self.get_non_sid_ephemeris(name=obsdict['target'], eph_time=obsdate)
+                    except ValueError:
+                        pass
+
+                if ret:
+                    pass
+                else:
+                    print("Try #3 loading ephemeris unsuccessful: Check object parameters")
 
             else:
-                make_alert_call("Manual: cannot find 'target' in file")
+                make_alert_call("Manual: cannot find 'target' in JSON file")
                 return {'elaptime': time.time() - start,
                         'error': "nonsid_rc 'target' in manual dict not found"}
 
+            if 'allocation_id' in obsdict:
+                alloc_id = obsdict['allocation_id']
+            else:
+                alloc_id = None
+
+            # ret = self.sky.get_manual_request_id(name=obsdict['target'],
+            #                                     allocation_id=alloc_id,
+            #                                     typedesig="e")
+            ret = {'status': 'request ids not implemented yet'}
+            print("sky.get_manual_request_id status:\n", ret)
+            if 'data' in ret:
+                req_id = ret['data']['request_id']
+                obj_id = ret['data']['object_id']
+                p60prid = ret['data']['p60prid']
+                p60prnm = ret['data']['p60prnm']
+                p60prpi = ret['data']['p60prpi']
+            else:
+                req_id = -999
+                obj_id = -999
+                p60prid = '2022A-calib'
+                p60prnm = 'SEDm calibration'
+                p60prpi = 'SEDm'
+                print("Unable to obtain request data")
+
             if 'ephemeris' not in ret:
 
-                return {"elaptime": time.time() - start, "error": ret}
+                return {"elaptime": time.time() - start, "error: 'ephemeris' not in return": ret}
 
             nonsid_dict = ret['ephemeris']['entries']['0']
             nonsid_dict['epoch'] = iso_to_epoch(nonsid_dict['ISO_time'])
@@ -3006,7 +3091,7 @@ class SEDm:
                 test="", save_as=None, imgtype='Science',
                 ra=nonsid_dict['RA'], dec=nonsid_dict['Dec'], equinox=2000,
                 epoch=nonsid_dict['epoch'], ra_rate=nonsid_dict['RAvel'],
-                dec_rate=nonsid_dict['decvel'], motion_flag=1,
+                dec_rate=nonsid_dict['decvel'], motion_flag="1",
                 p60prid='2022B-Asteroids', p60prpi='SEDm', email='',
                 p60prnm='Near-Earth Asteroid', obj_id=-999,
                 objfilter='RC%s' % (obsdict['rcfilter']), imgset='NA',
