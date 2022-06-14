@@ -591,6 +591,7 @@ class Andor:
         return ERROR_STRING[status]
 
     def SetTemperature(self, temperature):
+        status_msg(f'Setting Temperature to {temperature} C')
         status = check_call(self.lib.SetTemperature(c_int(temperature)))
         return ERROR_STRING[status]
 

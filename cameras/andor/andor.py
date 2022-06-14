@@ -1,7 +1,7 @@
 import time
 import datetime
 import os
-from andorLib import *
+from cameras.andor.andorLib import *
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import json
@@ -40,9 +40,9 @@ def status_msg(msg):
 
 class Controller:
     def __init__(self, cam_prefix="ifu", serial_number="test",
-                 camera_handle="", output_dir="",
+                 camera_handle=None, output_dir="",
                  force_serial=True, set_temperature=-50, send_to_remote=False,
-                 remote_config='sedmdev.config.json'):
+                 remote_config='sedm.json'):
         """
         Initialize the controller for the ANDOR camera and
         :param cam_prefix:
@@ -195,7 +195,10 @@ class Controller:
         connected_cams = self.opt.GetAvailableCameras()
         camera_list = []
         for cams in range(connected_cams):
-            camera_list.append(self.opt.GetCameraHandle(cams))
+            handles = self.opt.GetCameraHandle(cams)
+            camera_list.append(handles)
+            print(handles)
+            #camera_list.append(self.opt.GetCameraHandle(cams))
 
         logger.info("Available Cameras:%s", camera_list)
         if self.cameraHandle:
@@ -226,11 +229,11 @@ class Controller:
         # past experience has shown working with the cameras during the
         # cooling cycle can cause issues.
 
-        '''
+
         logger.info("Setting temperature to: %s", self.setTemperature)
         self.opt.SetTemperature(self.setTemperature)
+        '''
         self.opt.CoolerON()
-
         if wait_to_cool:
             temp = self.opt.GetTemperature()[1]
             lock = self.opt.GetTemperature()[0]
@@ -489,8 +492,8 @@ class Controller:
 
 
 if __name__ == "__main__":
-    x = Controller(serial_number="", output_dir='/home/wintermute/sedm/images',
-                   send_to_remote=True, camera_handle=100)
+    x = Controller(serial_number="", output_dir='/home/sedm/images',
+                   send_to_remote=False, camera_handle=100)
     if x.initialize():
         print("Camera initialized")
     else:
