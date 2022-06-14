@@ -232,7 +232,7 @@ class Controller:
 
         logger.info("Setting temperature to: %s", self.setTemperature)
         self.opt.SetTemperature(self.setTemperature)
-        '''
+
         self.opt.CoolerON()
         if wait_to_cool:
             temp = self.opt.GetTemperature()[1]
@@ -251,7 +251,7 @@ class Controller:
                 time.sleep(10)
             logger.info("Camera temperature locked in place. Continuing "
                         "initialization")
-        '''
+
         # Set default Adc values
         '''
         try:
