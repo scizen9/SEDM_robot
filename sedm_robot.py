@@ -2540,12 +2540,23 @@ class SEDm:
         }
         """
 
-        # Pre-process name because comet designations wreak havoc
+        # Pre-process name because small body designations wreak havoc
+
+        # For asteroids
         if '_' in name:
-            cname = name.replace('_', '/', 1)
-            cname = cname.replace('_', ' ')
+            cname = name.replace('_', ' ')
+            print("Using object name %s" % cname)
         else:
             cname = name
+            print("Using object name %s" % cname)
+
+        # For comets
+        if 'C ' in cname:
+            cname = cname.replace('C ', 'C/')
+            print("Using object name %s" % cname)
+        else:
+            cname = cname
+            print("Using object name %s" % cname)
 
         driver = webdriver.Chrome('chromedriver')
 
