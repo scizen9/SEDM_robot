@@ -5,6 +5,7 @@ import time
 import numpy as np
 import platform
 
+
 ERROR_CODES = {'DRV_ERROR_CODES': 20001,
                'DRV_SUCCESS': 20002,
                'DRV_VXDNOTINSTALLED': 20003,
