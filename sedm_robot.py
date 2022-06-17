@@ -2784,12 +2784,13 @@ class SEDm:
             ret = self.run_standard_seq(self.ifu)
             ret_lab = "MANUAL: run_standard_seq status:"
         elif command.lower() == "focus":
-            if 'range' in obsdict:
+            if 'range_start' in obsdict and 'range_stop' in obsdict and \
+                    'range_increment' in obsdict:
                 ret = self.run_focus_seq(self.rc, 'rc_focus', name="Focus",
                                          foc_range=np.arange(
-                                             obsdict['range'][0],
-                                             obsdict['range'][1],
-                                             obsdict['range'][2]))
+                                             obsdict['range_start'],
+                                             obsdict['range_stop'],
+                                             obsdict['range_increment']))
                 ret_lab = "MANUAL: run_focus_seq status:"
             else:
                 ret = self.run_focus_seq(self.rc, 'rc_focus', name="Focus")
