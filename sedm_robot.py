@@ -931,7 +931,7 @@ class SEDm:
             files_completed = 0
             if check_for_previous:
                 ret = self.sanity.check_for_files(camera=cube,
-                                                  keywords={'object': 'bias',
+                                                  keywords={'imgtype': 'bias',
                                                             'adcspeed': 2.0},
                                                   data_dir=data_dir)
                 if 'data' in ret:
@@ -950,7 +950,7 @@ class SEDm:
             files_completed = 0
             if check_for_previous:
                 ret = self.sanity.check_for_files(camera=cube,
-                                                  keywords={'object': 'bias',
+                                                  keywords={'imgtype': 'bias',
                                                             'adcspeed': 0.1},
                                                   data_dir=data_dir)
                 if 'data' in ret:
@@ -970,7 +970,7 @@ class SEDm:
             check_for_previous = False
             if check_for_previous:
                 ret = self.sanity.check_for_files(camera=cube,
-                                                  keywords={'object': 'dome',
+                                                  keywords={'imgtype': 'dome',
                                                             'adcspeed': 2.0},
                                                   data_dir=data_dir)
                 if 'data' in ret:
