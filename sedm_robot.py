@@ -935,7 +935,7 @@ class SEDm:
                                                             'adcspeed': 2.0},
                                                   data_dir=data_dir)
                 if 'data' in ret:
-                    files_completed = len(ret['data'])
+                    files_completed = int(ret['data'])
 
             if files_completed >= N:
                 print("Fast biases already done")
@@ -954,7 +954,7 @@ class SEDm:
                                                             'adcspeed': 0.1},
                                                   data_dir=data_dir)
                 if 'data' in ret:
-                    files_completed = len(ret['data'])
+                    files_completed = int(ret['data'])
 
             if files_completed >= N:
                 print("Slow biases already done")
@@ -974,7 +974,7 @@ class SEDm:
                                                             'adcspeed': 2.0},
                                                   data_dir=data_dir)
                 if 'data' in ret:
-                    files_completed = len(ret['data'])
+                    files_completed = int(ret['data'])
 
             if files_completed >= N:
                 pass
