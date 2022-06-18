@@ -259,7 +259,7 @@ class SEDm:
         self.initialized = True
         return {'elaptime': time.time() - start, 'data': "System initialized"}
 
-    def get_status_dict(self, do_lamps=True, do_stages=False):
+    def get_status_dict(self, do_lamps=True, do_stages=True):
         stat_dict = {}
 
         # First try at position
