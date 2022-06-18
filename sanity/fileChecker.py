@@ -56,7 +56,8 @@ class Checker:
                         else:
                             add = False
                 else:
-                    print("Header %s not found" % k.upper())
+                    print("Header %s=%s not found" % (k.upper(),
+                                                      v.lower()))
                     add = False
 
             if add:
