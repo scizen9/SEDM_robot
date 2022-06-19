@@ -132,8 +132,6 @@ class ocsServer:
                         response = self.tcs.takecontrol()
                     elif cmd.upper() == "TELHALON":
                         response = self.tcs.halogens_on()
-                    elif cmd.upper() == "TELX":
-                        response = self.tcs.x()
                     elif cmd.upper() == "TELHALOFF":
                         response = self.tcs.halogens_off()
                     elif cmd.upper() == "TELSTOW":

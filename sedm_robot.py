@@ -2298,12 +2298,14 @@ class SEDm:
                               is_rc=True, abpair=False)
         print("take_image(ACQ) status:\n", ret)
         if 'data' in ret:
+            # get offset to reference RC pixel
             ret = self.sky.solve_offset_new(ret['data'],
                                             return_before_done=True)
             print("sky.solve_offset_new status:\n", ret)
-
+            # Move to IFU position first?
             p_ra = p_dec = None
             if move and offset_to_ifu and not tcsx:
+                # Except if we have dec > 78 deg
                 if dec > 78.0:
                     p_ra = round(-94.9/1.0, 3)
                     p_dec = -118.5/1.0
@@ -2313,13 +2315,16 @@ class SEDm:
                     #    self.ocs.tel_offset(0.0, p_dec)
                     #    time.sleep(3)               
                 else:
+                    # lower dec, go ahead to IFU
                     print("ocs.tel_offset (to IFU) status:\n",
                           self.ocs.tel_offset(-94.9, -118.5))
+            # read offsets from sky solver
             ret = self.sky.listen()
             print("sky.listen(ACQ) status:\n", ret)
             if 'data' in ret:
                 ra_off = ret['data']['ra_offset']
                 dec_off = ret['data']['dec_offset']
+                # if dec > 78 deg, apply ref pix offsets in two parts (twice)?
                 if dec > 78.0:
                     p_ra = p_ra + ra_off
                     p_dec = p_dec + dec_off
@@ -2328,38 +2333,41 @@ class SEDm:
                         time.sleep(2)
                         self.ocs.tel_offset(0.0, p_dec)
                         time.sleep(2) 
-                else:                  
+                else:
+                    # otherwise apply ref pix offsets in one go
                     _ = self.ocs.tel_offset(ra_off, dec_off)
+                # X the TCS if requested and if offsets are small?
                 if tcsx and move and offset_to_ifu:
                     if abs(ra_off) < 100 and abs(dec_off) < 100:
                         print("ocs.telx(ACQ) status:\n", self.ocs.telx())
                     print("ocs.tel_offset to IFU status:\n",
                           self.ocs.tel_offset(-94.9, -118.5))
+                # Apply additional ra, dec offsets for non-sidereal targets
                 if non_sid_targ:
                     elapsed = time.time() - start
                     ra_rate_off = round(ra_rate * (elapsed / 3600), 2)
                     dec_rate_off = round(dec_rate * (elapsed / 3600), 2)
                     ret = self.ocs.tel_offset(ra_rate_off, dec_rate_off)
                     print("ocs.tel_offset(rates) status:\n", ret)
+                    # Set the non-sideral rates
                     ret = self.ocs.set_rates(ra=ra_rate, dec=dec_rate)
                     print("ocs.set_rates status:\n", ret)
                 return {'elaptime': time.time() - start,
                         'data': 'Telescope in place with calculated offsets'}
+            # no offsets can be calculated, so do thing blind
             else:
+                # Apply additional ra, dec offsets for non-sidereal target
                 if non_sid_targ:
                     elapsed = time.time() - start
                     ra_rate_off = round(ra_rate * (elapsed / 3600), 2)
                     dec_rate_off = round(dec_rate * (elapsed / 3600), 2)
                     ret = self.ocs.tel_offset(ra_rate_off, dec_rate_off)
                     print("ocs.tel_offset(rates) status:\n", ret)
+                    # Set the non-sideral rates
                     ret = self.ocs.set_rates(ra=ra_rate, dec=dec_rate)
                     print("ocs.set_rates status:\n", ret)
-                    return {'elaptime': time.time() - start,
-                            'data': 'Telescope in place with calculated offsets'
-                                    'and blind pointing'}
-                else:
-                    return {'elaptime': time.time() - start,
-                            'data': 'Telescope in place with blind pointing'}
+                return {'elaptime': time.time() - start,
+                        'data': 'Telescope in place with blind pointing'}
 
         else:
             return {'elaptime': time.time() - start,

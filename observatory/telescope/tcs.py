@@ -448,7 +448,7 @@ class Telescope:
         change to MOVING during the move.  The command fails if wetness is
         sensed.
 
-        :param ra: offset in seconds
+        :param ra: offset in seconds (seems to be arcseconds?)
         :param dec: offset in arcseconds
         :return: bool, status message
         """
