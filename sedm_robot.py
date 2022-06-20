@@ -2373,6 +2373,89 @@ class SEDm:
             return {'elaptime': time.time() - start,
                     'error': 'Error acquiring acquisition image'}
 
+    def run_telx_seq(self, ra=None, dec=None, equinox=2000, exptime=30,
+                     test=""):
+        """
+
+        :return:
+        :param test:
+        :param exptime:
+        :param ra:
+        :param dec::
+        :param equinox:
+        :return:
+        """
+
+        start = time.time()
+
+        # Start by moving to the target using the input coords
+        ret = self.ocs.tel_move(name='TelXField', ra=ra, dec=dec,
+                                equinox=equinox, ra_rate=0., dec_rate=0.,
+                                motion_flag="", epoch="")
+        print("ocs.tel_move status:\n", ret)
+        print("sedm.py: Pausing for 1s until telescope is done settling")
+        time.sleep(1)
+
+        ret = self.take_image(self.rc, shutter='normal', readout=2.0,
+                              name='TelXField', start=start, test=test,
+                              save_as=None, imgtype='Acquisition',
+                              objtype='Acquisition', exptime=exptime,
+                              object_ra=ra, object_dec=dec,
+                              email="neill@srl.caltech.edu",
+                              p60prid=DEF_PROG, p60prpi="SEDm",
+                              p60prnm="SEDm Calibration File",
+                              obj_id=-999, req_id=-999,
+                              objfilter='r', imgset='NA',
+                              is_rc=True, abpair=False)
+        print("take_image(TELX) status:\n", ret)
+        if 'data' in ret:
+            # get offset to reference RC pixel
+            ret = self.sky.solve_offset_new(ret['data'],
+                                            return_before_done=True)
+            print("sky.solve_offset_new status:\n", ret)
+            # read offsets from sky solver
+            ret = self.sky.listen()
+            print("sky.listen(TELX) status:\n", ret)
+            if 'data' in ret:
+                ra_off = ret['data']['ra_offset']
+                dec_off = ret['data']['dec_offset']
+                print("Calculated offsets:", ra_off, dec_off)
+                # Do offset, X so that no offset exceeds 100 asecs
+                while abs(ra_off) > 0. or abs(dec_off) > 0.:
+                    if abs(ra_off) >= 100:
+                        if ra_off > 0:
+                            temp_ra_off = 99.
+                            ra_off -= 99.
+                        else:
+                            temp_ra_off = -99.
+                            ra_off += 99.
+                    else:
+                        temp_ra_off = ra_off
+                        ra_off = 0.
+                    if abs(dec_off) >= 100:
+                        if dec_off > 0:
+                            temp_dec_off = 99.
+                            dec_off -= 99.
+                        else:
+                            temp_dec_off = -99.
+                            dec_off += 99.
+                    else:
+                        temp_dec_off = dec_off
+                        dec_off = 0.
+                    print("offsetting", temp_ra_off, temp_dec_off)
+                    self.ocs.tel_offset(temp_ra_off, temp_dec_off)
+                    time.sleep(1)
+                    print("ocs.telx(TELX) status:\n", self.ocs.telx())
+                return {'elaptime': time.time() - start,
+                        'data': 'Telescope X completed'}
+            # no offsets can be calculated
+            else:
+                return {'elaptime': time.time() - start,
+                        'error': 'No offsets calculated'}
+        else:
+            return {'elaptime': time.time() - start,
+                    'error': 'Error acquiring acquisition image'}
+
     def find_nearest(self, target_file, obsdate=None):
         """
         Given a target_file (an ephemeris file in this case) use the pandas
@@ -2791,6 +2874,9 @@ class SEDm:
         if command.lower() == "standard":
             ret = self.run_standard_seq(self.ifu)
             ret_lab = "MANUAL: run_standard_seq status:"
+        elif command.lower() == "telx":
+            ret = self.run_telx_seq(ra=obsdict['ra'], dec=obsdict['dec'])
+            ret_lab = "MANUAL: run_telx_seq status:"
         elif command.lower() == "focus":
             if 'range_start' in obsdict and 'range_stop' in obsdict and \
                     'range_increment' in obsdict:
