@@ -58,7 +58,7 @@
     "rc_datacube": {
         "dome": {
             "N": 5,
-            "exptime": [22,14,7,4],
+            "exptime": [18,11,6,3],
             "readout": [0.1, 2.0]
         },
         "fast_bias": {
@@ -120,7 +120,7 @@
     "rc": {
         "dome": {
             "N": 5,
-            "exptime": [22,14,7,4],
+            "exptime": [18,11,6,3],
             "readout": [0.1, 2.0]
         },
         "fast_bias": {
