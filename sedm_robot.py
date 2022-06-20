@@ -2007,7 +2007,8 @@ class SEDm:
                 print("ocs.tel_offset status:\n",
                       self.ocs.tel_offset(-99.9, -112.0))
 
-        exptime = exptime * 1.20
+        # Commenting this out after 2022-June primary resurfacing
+        # exptime = exptime * 1.20
         if abpair:
             exptime = exptime / 2
 
