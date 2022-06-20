@@ -1784,9 +1784,9 @@ class SEDm:
                                   imgset=imgset,
                                   is_rc=is_rc, abpair=abpair, name=name)
             if 'data' in ret and mark_status:
-                self.sky.update_target_request(req_id, status='COMPLETED')
-                print("sky.update_target_request status:\n", ret)
-
+                print("sky.update_target_request status:\n", 
+                      self.sky.update_target_request(req_id,
+                                                     status='COMPLETED'))
         if 'data' in ret:
             return {'elaptime': time.time() - start,
                     'data': ret['data']}
