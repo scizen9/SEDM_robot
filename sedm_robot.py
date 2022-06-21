@@ -25,14 +25,14 @@ from astropy.coordinates import SkyCoord
 import pickle
 from selenium import webdriver
 from selenium.webdriver.support.select import Select
+import SEDM_robot_version as Version
 
 DEF_PROG = '2022B-calib'
-SITE_ROOT = os.path.abspath(os.path.dirname(__file__))
 
-with open(os.path.join(SITE_ROOT, 'config', 'twilio.config.json')) as cfg_file:
+with open(os.path.join(Version.CONFIG_DIR, 'twilio.config.json')) as cfg_file:
     twi_cfg = json.load(cfg_file)
 
-with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as cfg_file:
+with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as cfg_file:
     log_cfg = json.load(cfg_file)
 
 logger = logging.getLogger("sedmLogger")
@@ -157,7 +157,7 @@ class SEDm:
         self.required_sciobs_keywords = ['ra', 'dec', 'name', 'obs_dict']
 
         if not configuration_file:
-            configuration_file = os.path.join(SITE_ROOT, 'config', 'sedm.json')
+            configuration_file = os.path.join(Version.CONFIG_DIR, 'sedm.json')
 
         with open(configuration_file) as data_file:
             self.params = json.load(data_file)
@@ -1358,7 +1358,8 @@ class SEDm:
         # get nominal rc focus based on temperature
         focus_temp = float(
             self.ocs.check_weather()['data']['inside_air_temp'])
-        nominal_rc_focus = rc_focus.temp_to_focus(focus_temp)
+        nominal_rc_focus = rc_focus.temp_to_focus(focus_temp) + \
+            self.params['rc_focus_offset']
         img_list = []
         # error_list = []
 
