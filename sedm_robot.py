@@ -44,12 +44,12 @@ logHandler = TimedRotatingFileHandler(os.path.join(log_cfg['abspath'],
                                       backupCount=360)
 
 formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
-                              "%(funcName)s--%(message)s")
+                              "%(funcName)s: %(message)s")
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
 
-console_formatter = logging.Formatter("%(asctime)s--%(message)s")
+console_formatter = logging.Formatter("%(asctime)s: %(message)s")
 consoleHandler = logging.StreamHandler(sys.stdout)
 consoleHandler.setFormatter(console_formatter)
 logger.addHandler(consoleHandler)
@@ -191,28 +191,28 @@ class SEDm:
         if self.run_rc:
             logger.info("Initializing RC camera on")
             self.rc = cam_client.Camera(self.rc_ip, self.rc_port)
-            logger.info(self.rc.initialize(), 'rc return')
-        logger.info("run_ifu = ", self.run_ifu)
+            logger.info('rc return: %s', self.rc.initialize())
+        logger.info("run_ifu = %s", self.run_ifu)
         if self.run_ifu:
             logger.info("Initializing IFU camera")
             self.ifu = cam_client.Camera(self.ifu_ip, self.ifu_port)
-            logger.info(self.ifu.initialize(), 'ifu return')
+            logger.info('ifu return: %s', self.ifu.initialize())
         logger.info("Wait 5 sec")
         time.sleep(5)
         logger.info("Check temperature status")
         rc_get_temp_status = self.rc.get_temp_status()
         ifu_get_temp_status = self.ifu.get_temp_status()
-        logger.info('rc_get_temp_status: ', rc_get_temp_status)
-        logger.info('ifu_get_temp_status: ', ifu_get_temp_status)
+        logger.info('rc_get_temp_status: %s', rc_get_temp_status)
+        logger.info('ifu_get_temp_status: %s', ifu_get_temp_status)
         if "error" in rc_get_temp_status:
-            logger.error('error: ', rc_get_temp_status['error'])
+            logger.error('error: %s', rc_get_temp_status['error'])
             rc_lock = False
             rc_temp = 0.
         else:
             rc_lock = rc_get_temp_status['templock']
             rc_temp = rc_get_temp_status['camtemp']
         if "error" in ifu_get_temp_status:
-            print('error: ', ifu_get_temp_status['error'])
+            logger.error('error: %s', ifu_get_temp_status['error'])
             ifu_lock = False
             ifu_temp = 0.
         else:
@@ -220,29 +220,28 @@ class SEDm:
             ifu_temp = ifu_get_temp_status['camtemp']
         # loop until locked
         while not rc_lock or not ifu_lock:
-            print("Waiting for temperature lock")
+            logger.info("Waiting for temperature lock")
             time.sleep(5)
             rc_get_temp_status = self.rc.get_temp_status()
             ifu_get_temp_status = self.ifu.get_temp_status()
             if "error" in rc_get_temp_status:
-                print('error: ', rc_get_temp_status['error'])
+                logger.error('error: %s', rc_get_temp_status['error'])
                 rc_lock = False
                 rc_temp = 0.
             else:
                 rc_lock = rc_get_temp_status['templock']
                 rc_temp = rc_get_temp_status['camtemp']
             if "error" in ifu_get_temp_status:
-                print('error: ', ifu_get_temp_status['error'])
+                logger.error('error: ', ifu_get_temp_status['error'])
                 ifu_lock = False
                 ifu_temp = 0.
             else:
                 ifu_lock = ifu_get_temp_status['templock']
                 ifu_temp = ifu_get_temp_status['camtemp']
-            print("RC temp, lock = %.1f, %s" % (rc_temp, rc_lock),
-                  ", IFU temp, lock = %.1f, %s" % (ifu_temp, ifu_lock))
-        print("RC and IFU temperature lock achieved")
-        print("RC temp, lock = %.1f, %s" % (rc_temp, rc_lock),
-              ", IFU temp lock = %.1f, %s" % (ifu_temp, ifu_lock))
+            logger.info("RC temp, lock = %.1f, %s", rc_temp, rc_lock)
+            logger.info("IFU temp, lock = %.1f, %s", ifu_temp, ifu_lock)
+        logger.info("RC and IFU temperature lock achieved")
+
         if self.run_sky:
             logger.info("Initializing sky server")
             self.sky = sky_client.Sky()
@@ -251,8 +250,8 @@ class SEDm:
             self.ocs = ocs_client.Observatory()
 
             if self.run_arclamps and self.run_stage and self.run_telescope:
-                print(self.ocs.initialize_ocs(), 'ocs_return')
-                print(self.ocs.take_control())
+                logger.info('ocs return: %s', self.ocs.initialize_ocs())
+                logger.info(self.ocs.take_control())
             else:
                 if self.run_arclamps:
                     self.ocs.initialize_lamps()
@@ -278,7 +277,7 @@ class SEDm:
                 stat_dict.update(sd)
                 good_pos = True
             else:
-                print("Bad ?POS return:", sd)
+                logger.warning("Bad ?POS return: %s", sd)
         # Second try
         if not good_pos:
             ret = self.ocs.check_pos()
@@ -287,12 +286,12 @@ class SEDm:
                 if isinstance(sd, dict):
                     stat_dict.update(sd)
                 else:
-                    print("Bad ?POS return:", sd)
+                    logger.warning("Bad ?POS return: %s", sd)
         try:
             stat_dict.update(self.ocs.check_weather()['data'])
             stat_dict.update(self.ocs.check_status()['data'])
         except Exception as e:
-            print(str(e))
+            logger.error(str(e))
             pass
 
         if do_lamps and self.run_arclamps:
@@ -384,19 +383,19 @@ class SEDm:
                              return_before_done=True)
 
         if not is_rc:
-            print("IFU cam.take_image status:\n", ret)
+            logger.info("IFU cam.take_image status:\n%s", ret)
 
         # 2. Get the TCS information for the conditions at the start of the
         # exposure
         obsdict.update(self.get_status_dict(do_stages=do_stages,
                                             do_lamps=do_lamps))
         if not object_ra or not object_dec:
-            print("Using TCS RA and DEC")
+            logger.info("Using TCS RA and DEC")
             object_ra = obsdict['telescope_ra']
             object_dec = obsdict['telescope_dec']
 
         if not is_rc:
-            print("updating IFU start of obs keywords")
+            logger.info("updating IFU start of obs keywords")
 
         obsdict.update(self.header.set_project_keywords(test=test,
                                                         imgtype=imgtype,
@@ -418,32 +417,32 @@ class SEDm:
             time.sleep(.01)
 
         if not is_rc:
-            print("updating IFU end of obs keywords")
+            logger.info("updating IFU end of obs keywords")
 
         end_dict = self.get_status_dict(do_lamps=False, do_stages=False)
 
         if not is_rc:
-            print("updating IFU obsdict with end_dict")
+            logger.info("updating IFU obsdict with end_dict")
         obsdict.update(self.header.prep_end_header(end_dict))
 
-        # print("Reconnecting now")
+        # logger.info("Reconnecting now")
         try:
             ret = cam.listen()
             if not is_rc:
-                print("cam.listen status:\n", ret)
+                logger.info("cam.listen status:\n%s", ret)
         except Exception as e:
             logger.error("unable to listen for new image", exc_info=True)
-            print("Error waiting for the file to write out")
-            print(str(e))
+            logger.error("Error waiting for the file to write out")
+            logger.error(str(e))
             ret = None
 
         if isinstance(ret, dict) and 'data' in ret:
             if not is_rc:
-                print("Adding the IFU header")
+                logger.info("Adding the IFU header")
             self.header.set_header(ret['data'], obsdict)
             return ret
         else:
-            print(ret, "There was no return")
+            logger.warning("There was no return: %s", ret)
 
             # This is a test to see if last image failed to write or the
             # connection timed out.
@@ -453,7 +452,7 @@ class SEDm:
                                           "%Y%m%d"))
             latest_file = max(list_of_files, key=os.path.getctime)
 
-            print(latest_file)
+            logger.info(latest_file)
             base_file = os.path.basename(latest_file)
             if 'ifu' in base_file:
                 fdate = datetime.datetime.strptime(base_file,
@@ -468,15 +467,15 @@ class SEDm:
 
             # Re-establish the camera connection just to make sure the
             # issue isn't with them
-            print(self.initialize())
+            logger.info(self.initialize())
 
             if diff < 10:
-                print("Add the header")
-                print(self.header.set_header(latest_file, obsdict))
+                logger.info("Add the header")
+                logger.info(self.header.set_header(latest_file, obsdict))
                 return {'elaptime': time.time()-start, 'data': latest_file}
             else:
                 make_alert_call("Last Image failed to write")
-                print("File not a match saving header info")
+                logger.warning("File not a match saving header info")
                 save_path = os.path.join(
                     self.obs_dir, "header_dict_" +
                                   start_time.strftime("%Y%m%d_%H_%M_%S"))
@@ -527,7 +526,7 @@ class SEDm:
                 req_id = ret['data']
 
         for img in range(startN, N + 1, 1):
-            print(img, N)
+            logger.info(img, N)
             if N != startN:
                 start = time.time()
                 do_stages = False
@@ -601,7 +600,7 @@ class SEDm:
         # 2. Move the telescope to the calibration stow position
         if move:
             ret = self.ocs.stow(ha=ha, dec=dec, domeaz=domeaz)
-            print("ocs.stow(dome) status:\n", ret)
+            logger.info("ocs.stow(dome) status:\n%s", ret)
             # 3a. Check that we made it to the calibration stow position
             # TODO: Implement return checking of OCS returns
             if not ret:
@@ -613,8 +612,8 @@ class SEDm:
             self.ocs.halogens_on()
 
         if wait:
-            print("Waiting %s seconds for dome lamps to warm up" %
-                  self.lamp_wait_time['hal'])
+            logger.info("Waiting %s seconds for dome lamps to warm up",
+                        self.lamp_wait_time['hal'])
             time.sleep(self.lamp_wait_time['hal'])
 
         if not name:
@@ -624,7 +623,7 @@ class SEDm:
         for img in range(startN, N + 1, 1):
 
             # 5a. Set the image header keyword name
-            print(img, N)
+            logger.info(img, N)
             if N != startN:
                 start = time.time()
                 do_stages = False
@@ -645,7 +644,7 @@ class SEDm:
                                   objfilter='NA', imgset='NA',
                                   do_lamps=do_lamps, do_stages=do_stages,
                                   is_rc=True, abpair=False)
-            print("take_image(dome) status:\n", ret)
+            logger.info("take_image(dome) status:\n%s", ret)
 
         if do_lamp:
             self.ocs.halogens_off()
@@ -705,7 +704,7 @@ class SEDm:
         # 2. Move the telescope to the calibration stow position
         if move:
             ret = self.ocs.stow(ha=ha, dec=dec, domeaz=domeaz)
-            print("ocs.stow(arc) status:\n", ret)
+            logger.info("ocs.stow(arc) status:\n%s", ret)
             # 3a. Check that we made it to the calibration stow position
             # TODO: Implement return checking of OCS returns
             # if not ret:
@@ -714,10 +713,10 @@ class SEDm:
         # 3. Turn on the lamps and wait for them to stabilize
         if do_lamp:
             ret = self.ocs.arclamp(lamp, command="ON")
-            print("ocs.arclamp status:\n", ret)
+            logger.info("ocs.arclamp status:\n%s", ret)
         if wait:
-            print("Waiting %s seconds for %s lamp to warm up" %
-                  (self.lamp_wait_time[lamp.lower()], lamp))
+            logger.info("Waiting %s seconds for %s lamp to warm up",
+                        (self.lamp_wait_time[lamp.lower()], lamp))
             time.sleep(self.lamp_wait_time[lamp.lower()])
 
         if not name:
@@ -726,7 +725,7 @@ class SEDm:
         # 4. Start the observations
         for img in range(startN, N + 1, 1):
 
-            print(img, N)
+            logger.info(img, N)
             # 5a. Set the image header keyword name
             if N != startN:
                 start = time.time()
@@ -742,11 +741,11 @@ class SEDm:
                                   obj_id=obj_id, req_id=req_id,
                                   objfilter='NA', imgset='NA',
                                   is_rc=False, abpair=False)
-            print("take_image(arc) status:\n", ret)
+            logger.info("take_image(arc) status:\n%s", ret)
 
         if do_lamp:
             ret = self.ocs.arclamp(lamp, command="OFF")
-            print("ocs.arclamp status:\n", ret)
+            logger.info("ocs.arclamp status:\n%s", ret)
 
         if generate_request_id:
             self.sky.update_target_request(req_id, status="COMPLETED")
@@ -821,14 +820,14 @@ class SEDm:
             if 'data' in stat:
                 ret = stat['data']['dome_shutter_status']
                 if 'closed' in ret.lower():
-                    print("Opening dome")
-                    print(self.ocs.dome("open"))
+                    logger.info("Opening dome")
+                    logger.info(self.ocs.dome("open"))
                 else:
-                    print("Dome open skipping")
+                    logger.info("Dome open skipping")
 
             if get_focus_coords:
                 ret = self.sky.get_focus_coords()
-                print(ret, 'coords')
+                logger.info('coords: %s', ret)
                 if 'data' in ret:
                     ra = ret['data']['ra']
                     dec = ret['data']['dec']
@@ -837,14 +836,14 @@ class SEDm:
                                     dec=dec)
 
             if 'data' not in ret:
-                print(ret)
+                logger.warning(ret)
 
         n = 1
         # 4. Start the observations
         while time.time() - start < max_time:
             if use_sun_angle:
                 ret = self.sky.get_twilight_exptime()
-                print("sky.get_twilight_exptime status:\n", ret)
+                logger.info("sky.get_twilight_exptime status:\n%s", ret)
 
                 if 'data' in ret:
                     exptime = ret['data']['exptime']
@@ -875,7 +874,7 @@ class SEDm:
                                       do_lamps=do_lamps,
                                       objfilter='NA', imgset='NA',
                                       is_rc=True, abpair=False)
-                print("take_image(twi) status:\n", ret)
+                logger.info("take_image(twi) status:\n%s", ret)
                 if move:
                     off = random.random()
                     if off >= .5:
@@ -919,8 +918,8 @@ class SEDm:
             cube_params = self.params
 
         cube_type = "%s_datacube" % cube
-        print("cube_params:", cube_params)
-        print("cube_type  :", cube_type)
+        logger.info("cube_type  : %s", cube_type)
+        logger.info("cube_params: %s", cube_params)
         data_dir = os.path.join(self.robot_image_dir, self._ut_dir_date())
 
         if move:
@@ -945,12 +944,11 @@ class SEDm:
                     files_completed = int(ret['data'])
 
             if files_completed >= N:
-                print("Fast biases already done")
+                logger.info("Fast biases already done")
             else:
                 N = N - files_completed
-                print("Taking %d fast biases for %s" % (N, cube))
-                self.take_bias(cam, N=N,
-                               readout=2.0)
+                logger.info("Taking %d fast biases for %s", N, cube)
+                self.take_bias(cam, N=N, readout=2.0)
 
         if 'slow_bias' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['slow_bias']['N']
@@ -964,12 +962,11 @@ class SEDm:
                     files_completed = int(ret['data'])
 
             if files_completed >= N:
-                print("Slow biases already done")
+                logger.info("Slow biases already done")
             else:
                 N = N - files_completed
-                print("Taking %d slow biases for %s" % (N, cube))
-                self.take_bias(cam, N=N,
-                               readout=0.1)
+                logger.info("Taking %d slow biases for %s", N, cube)
+                self.take_bias(cam, N=N, readout=0.1)
 
         if 'dome' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['dome']['N']
@@ -984,20 +981,21 @@ class SEDm:
                     files_completed = int(ret['data'])
 
             if files_completed >= N:
-                pass
+                logger.info("Domes already taken")
             else:
                 N = N - files_completed
-                print("Taking %d %s dome flats in each set" % (N, cube))
-                print("Turning on Halogens")
+                logger.info("Taking %d %s dome flats in each set", N, cube)
+                logger.info("Turning on Halogens")
                 self.ocs.halogens_on()
                 time.sleep(120)
                 for i in cube_params[cube_type]['dome']['readout']:
-                    print("Readout speed:", i)
+                    logger.info("Readout speed: %s", i)
                     for j in cube_params[cube_type]['dome']['exptime']:
-                        print("Taking %d images with exptime(s) %s:" % (N, j))
+                        logger.info("Taking %d images with exptime(s) %s:",
+                                    N, j)
                         self.take_dome(cam, N=N, readout=i, do_lamp=False,
                                        wait=False, exptime=j, move=False)
-                print("Turning off Halogens")
+                logger.info("Turning off Halogens")
                 self.ocs.halogens_off()
 
         for lamp in ['hg', 'xe', 'cd']:
@@ -1006,7 +1004,7 @@ class SEDm:
                 if check_for_previous:
                     pass
                 exptime = cube_params[cube_type][lamp]['exptime']
-                print("Taking %d %s arcs for %s" % (N, lamp, cube))
+                logger.info("Taking %d %s arcs for %s", N, lamp, cube)
                 self.take_arclamp(cam, lamp, N=N, readout=2.0, move=False,
                                   exptime=exptime)
         return {'elaptime': time.time() - start, 'data': '%s complete' %
@@ -1029,7 +1027,7 @@ class SEDm:
 
         if not self.run_rc and not self.run_ifu:
             make_alert_call("1 or Both cameras not active")
-            print("Both cameras have to active")
+            logger.error("Both cameras have to be active")
             return {'elaptime': time.time() - start,
                     'error': 'Efficiency cube mode can only '
                              'be run with both cameras active'}
@@ -1040,7 +1038,7 @@ class SEDm:
         else:
             cube_params = self.params
 
-        print(cube_params)
+        logger.info(cube_params)
 
         if move:
             if not ha:
@@ -1053,9 +1051,9 @@ class SEDm:
             self.ocs.stow(ha=ha, dec=dec, domeaz=domeaz)
 
         # Start by turning on the Cd lamp:
-        print("Turning on Cd Lamp")
+        logger.info("Turning on Cd Lamp")
         ret = self.ocs.arclamp('cd', command="ON")
-        print(ret, "CD ON")
+        logger.info("CD ON: %s", ret)
         ret = self.ocs.arclamp('cd', 'status', force_check=True)['data']
 
         if 'on' not in ret:
@@ -1107,15 +1105,15 @@ class SEDm:
             # Turn the lamps off
             ret = self.ocs.arclamp('cd', command="OFF")
 
-            print(ret, "CD OFF")
+            logger.info("CD OFF: %s", ret)
         else:
             _ = self.ocs.arclamp('cd', command="OFF")
             # skip_next = False
 
         # Move onto to the dome lamp
-        print("Turning on Halogens")
+        logger.info("Turning on Halogens")
         ret = self.ocs.halogens_on()
-        print(ret)
+        logger.info(ret)
         # time.sleep(120)
         if 'data' in ret:
             # Start the IFU dome lamps in the background
@@ -1134,18 +1132,18 @@ class SEDm:
             time.sleep(5)
             # N_rc = cube_params['rc']['dome']['N']
             for i in cube_params['rc']['dome']['readout']:
-                print(i)
+                logger.info(i)
                 for j in cube_params['rc']['dome']['exptime']:
-                    print(j)
+                    logger.info(j)
                     self.take_dome(self.rc, N=5, readout=i, do_lamp=False,
                                    wait=False, exptime=j, move=False)
-            print("Turning off Halogens")
+            logger.info("Turning off Halogens")
             ret = self.ocs.halogens_off()
-            print(ret)
+            logger.info(ret)
         else:
             make_alert_call("Halogens not turned on")
 
-        print("Starting other Lamps")
+        logger.info("Starting other Lamps")
         for lamp in ['hg', 'xe']:
             if lamp in cube_params['ifu']['order']:
                 N = cube_params['ifu'][lamp]['N']
@@ -1197,7 +1195,7 @@ class SEDm:
         while datetime.datetime.utcnow() < obsdatetime:
             time.sleep(1)
 
-        print("Getting next target")
+        logger.info("Getting next target")
         ret = self.sky.get_next_observable_target(
             target_list=target_list, obsdatetime=obsdatetime.isoformat(),
             airmass=airmass, moon_sep=moon_sep, altitude_min=altitude_min,
@@ -1205,7 +1203,7 @@ class SEDm:
             sort_order=sort_order, sort_columns=sort_columns, save=save,
             save_as=save_as, check_end_of_night=check_end_of_night,
             update_coords=update_coords)
-        print("sky.get_next_observable_target status:\n", ret)
+        logger.info("sky.get_next_observable_target status:\n%s", ret)
 
         if "data" in ret:
             pprint.pprint(ret['data'])
@@ -1272,14 +1270,13 @@ class SEDm:
                                     ra_rate=ra_rate, dec_rate=dec_rate,
                                     motion_flag=motion_flag, epoch=epoch)
             logger.info(ret)
-            print(ret)
 
             if "error" in ret:
                 ret = self.ocs.tel_move(name=name, ra=ra, dec=dec,
                                         equinox=equinox, ra_rate=ra_rate,
                                         dec_rate=dec_rate,
                                         motion_flag=motion_flag, epoch=epoch)
-                print(ret, "SECOND RETURN")
+                logger.info("SECOND RETURN: %s", ret)
             # Stop sidereal tracking until after the image is completed
             if non_sid_targ:
                 self.ocs.set_rates(ra=0, dec=0)
@@ -1294,15 +1291,15 @@ class SEDm:
                               obj_id=obj_id, req_id=req_id,
                               objfilter='r', imgset='NA',
                               is_rc=False, abpair=False)
-        print(ret)
+        logger.info(ret)
         ret = self.sky.solve_offset_new(ret['data'], return_before_done=False)
-        print(ret)
+        logger.info(ret)
         if 'data' in ret:
             ra = ret['data']['ra_offset']
             dec = ret['data']['dec_offset']
             ret = self.ocs.tel_offset(ra, dec)
-            print(ret)
-            print(self.ocs.tel_offset(-98.5, -111.0)) 
+            logger.info(ret)
+            logger.info(self.ocs.tel_offset(-98.5, -111.0))
 
         offsets = [{'ra': 0, 'dec': 0}, {'ra': -5, 'dec': 0},
                    {'ra': 10, 'dec': 0}, {'ra': -5, 'dec': -5},
@@ -1310,7 +1307,7 @@ class SEDm:
 
         for offset in offsets:
             ret = self.ocs.tel_offset(offset['ra'], offset['dec'])
-            print(ret)
+            logger.info(ret)
             ret = self.take_image(cam, shutter=shutter, readout=readout,
                                   name=name, start=start, test=test,
                                   save_as=save_as, imgtype='Acq_ifumap',
@@ -1321,7 +1318,7 @@ class SEDm:
                                   obj_id=obj_id, req_id=req_id,
                                   objfilter='r', imgset='NA',
                                   is_rc=False, abpair=False)
-            print(ret)
+            logger.info(ret)
         return {'elaptime': time.time() - start, 'data': offsets}
 
     def run_focus_seq(self, cam, focus_type, exptime=10, foc_range=None,
@@ -1367,16 +1364,17 @@ class SEDm:
 
         if get_focus_coords:
             ret = self.sky.get_focus_coords()
-            print("sky.get_focus_coords status:\n", ret)
+            logger.info("sky.get_focus_coords status:\n%s", ret)
             if 'data' in ret:
                 ra = ret['data']['ra']
                 dec = ret['data']['dec']
                 ret = self.ocs.tel_move(name=name, ra=ra,
                                         dec=dec)
                 if 'data' not in ret:
-                    print("could not move telescope, focusing in place.")
+                    logger.warning("could not move telescope,"
+                                   " focusing in place.")
             else:
-                print("could not get focus coords, focusing in place.")
+                logger.info("could not get focus coords, focusing in place.")
 
         obj_id = self.calibration_id_dict['focus'][cam.prefix()['data']]
         if get_request_id:
@@ -1389,7 +1387,7 @@ class SEDm:
         if move and focus_type == 'ifu_stage':
             ret = self.ocs.stow(**self.stow_profiles['calibrations'])
             if 'data' not in ret:
-                print("Unable to reach cal stow, focusing in place")
+                logger.warning("Unable to reach cal stow, focusing in place")
 
         elif move and focus_type == 'rc_focus':
             self.ocs.tel_move(name=name, ra=ra, dec=dec, equinox=equinox,
@@ -1406,9 +1404,11 @@ class SEDm:
                     ret = self.ocs.tel_move(name=name, ra=ra,
                                             dec=dec)
                     if 'data' not in ret:
-                        print("could not move telescope, focusing in place.")
+                        logger.warning("could not move telescope,"
+                                       " focusing in place.")
                 else:
-                    print("could not get focus coords, focusing in place.")
+                    logger.info("could not get focus coords,"
+                                " focusing in place.")
             else:
                 self.ocs.tel_move(name=name, ra=ra, dec=dec, equinox=equinox,
                                   ra_rate=ra_rate, dec_rate=dec_rate,
@@ -1416,11 +1416,11 @@ class SEDm:
 
         if do_lamp:
             ret = self.ocs.arclamp(lamp, command="ON")
-            print("ocs.arclamp status:\n", ret)
+            logger.info("ocs.arclamp status:\n%s", ret)
 
             if wait:
-                print("Waiting %s seconds for dome lamps to warm up" %
-                      self.lamp_wait_time[lamp.lower()])
+                logger.info("Waiting %s seconds for dome lamps to warm up",
+                            self.lamp_wait_time[lamp.lower()])
                 time.sleep(self.lamp_wait_time[lamp.lower()])
 
         if foc_range is None:
@@ -1428,8 +1428,8 @@ class SEDm:
                 foc_range = np.arange(.1, .8, .1)
             elif focus_type == 'rc_focus' or focus_type == 'ifu_focus':
                 # get nominal focus based on temperature
-                print("nominal rc focus:", nominal_rc_focus,
-                      "for temperature:", focus_temp)
+                logger.info("nominal rc focus: %.2f for temperature %.1f",
+                            nominal_rc_focus, focus_temp)
                 # nominal range
                 foc_range = np.arange(nominal_rc_focus-0.23,
                                       nominal_rc_focus+0.23, 0.05)
@@ -1439,7 +1439,7 @@ class SEDm:
                 return {"elaptime": time.time() - start,
                         "error": "Unknown focus type: %s" % focus_type}
 
-        print(focus_type, "focus range:", foc_range)
+        logger.info("focus type: %s, focus range: %s", focus_type, foc_range)
         startN = 1
         N = 1
         for pos in foc_range:
@@ -1453,17 +1453,17 @@ class SEDm:
                 do_lamps = False
 
             N += 1
-            print("%s-Moving to focus position: %fmm" % (focus_type, pos))
+            logger.info("%s-Moving to focus position: %fmm",focus_type, pos)
 
             if focus_type == 'ifu_stage':
-                print("IFUSTAGE 1")
+                logger.info("IFUSTAGE 1")
                 self.ocs.move_stage(position=pos, stage_id=1)
             elif focus_type == 'rc_focus' or focus_type == 'ifu_focus':
-                print("TELESCOPE SECONDARY")
+                logger.info("TELESCOPE SECONDARY")
                 if move:
                     self.ocs.goto_focus(pos=pos)
             elif focus_type == 'ifu_stage2':
-                print("IFUSTAGE 2")
+                logger.info("IFUSTAGE 2")
                 self.ocs.move_stage(position=pos, stage_id=2)
 
             ret = self.take_image(cam, exptime=exptime,
@@ -1483,34 +1483,35 @@ class SEDm:
 
         if do_lamp:
             ret = self.ocs.arclamp(lamp, command="OFF")
-            print("ocs.arclamp status:\n", ret)
+            logger.info("ocs.arclamp status:\n%s", ret)
 
         logger.debug("Finished RC focus sequence")
-        print("focus image list:\n", img_list)
+        logger.info("focus image list:\n%s", img_list)
         if solve:
             ret = self.sky.get_focus(img_list, nominal_focus=nominal_rc_focus)
-            print("sky.get_focus status:\n", ret)
+            logger.info("sky.get_focus status:\n%s", ret)
             if 'data' in ret:
                 best_foc = round(ret['data'][0][0], 2)
-                print("Best FOCUS is:", best_foc)
+                logger.info("Best FOCUS is: %s", best_foc)
             else:
-                print("Could not solve, using Nominal focus:", nominal_rc_focus)
+                logger.info("Could not solve, using Nominal focus: %s",
+                            nominal_rc_focus)
                 best_foc = nominal_rc_focus
 
             # TODO: this only really works for rc_focus,
             #  add routines for other focus types.
             if best_foc:
                 if focus_type == 'ifu_stage':
-                    print("IFUSTAGE 1")
+                    logger.info("IFUSTAGE 1")
                     self.ocs.move_stage(position=best_foc, stage_id=1)
                 elif focus_type == 'rc_focus' or focus_type == 'ifu_focus':
-                    print("TELESCOPE SECONDARY")
+                    logger.info("TELESCOPE SECONDARY")
                     self.ocs.goto_focus(pos=best_foc)
                 elif focus_type == 'ifu_stage2':
-                    print("IFUSTAGE2")
+                    logger.info("IFUSTAGE 2")
                     self.ocs.move_stage(position=best_foc, stage_id=2)
             else:
-                print("Unable to calculate focus")
+                logger.error("Unable to calculate focus")
                 return {"elaptime": time.time() - start,
                         "error": "Unable to calculate focus"}
         else:
@@ -1546,7 +1547,7 @@ class SEDm:
             readout_time = 47
 
         self.guider_list = []
-        print("Guider log file parameters:", save_dir, filename)
+        logger.info("Guider log file parameters: %s, %s", save_dir, filename)
         if do_corrections:
             self.sky.start_guider(start_time=None, end_time=None,
                                   exptime=guide_length,
@@ -1586,19 +1587,18 @@ class SEDm:
                                       is_rc=is_rc, abpair=False, name=name)
             except Exception as e:
                 logger.error("Error taking guider image", exc_info=True)
-                print(str(e))
+                logger.error(str(e))
 
             if 'data' in ret:
                 self.guider_list.append(ret['data'])
             else:
                 make_alert_call("Error setting up guiding")
-                print("Error setting up guiding")
+                logger.error("Error setting up guiding")
             guide_done = (datetime.datetime.utcnow() +
                           datetime.timedelta(
                               seconds=guide_exptime + readout_time))
 
-        print(datetime.datetime.utcnow(), "Guider Done in ",
-              time.time() - start, "seconds")
+        logger.info("Guider Done in %s seconds", time.time() - start)
 
         while datetime.datetime.utcnow() < end_time:
             time.sleep(.5)
@@ -1606,9 +1606,9 @@ class SEDm:
         if do_corrections:
             try:
                 ret = self.sky.listen()
-                print("sky.listen(GUIDE) status:\n", ret)
+                logger.info("sky.listen(GUIDE) status:\n%s", ret)
             except Exception as e:
-                print("sky.listen ERROR:", str(e))
+                logger.error("sky.listen ERROR: %s", str(e))
                 logger.error("Error getting guider return", exc_info=True)
 
         logger.info("Guider_list:%s" % self.guider_list)
@@ -1641,7 +1641,7 @@ class SEDm:
 
         if get_standard:
             ret = self.sky.get_standard()
-            print("sky.get_standard status:\n", ret)
+            logger.info("sky.get_standard status:\n%s", ret)
 
             if 'data' in ret:
                 name = ret['data']['name']
@@ -1657,19 +1657,19 @@ class SEDm:
             ret = self.sky.get_calib_request_id(camera=cam.prefix()['data'],
                                                 N=1, exptime=exptime,
                                                 object_id=obj_id)
-            print("sky.get_calilb_request_id status:\n", ret)
+            logger.info("sky.get_calilb_request_id status:\n%s", ret)
             if "data" in ret:
                 req_id = ret['data']
 
         if move:
             if take_rc_image:
                 ret = rc_filter_coords.offsets(ra=ra, dec=dec)
-                print("rc_filter_coords.offsets status:\n", ret)
+                logger.info("rc_filter_coords.offsets status:\n%s", ret)
                 if 'data' in ret:
                     obs_coords = ret['data']
                 else:
                     make_alert_call("No Standard Star obs_coords")
-                    print("ERROR")
+                    logger.error("ERROR")
                     obs_coords = None
 
                 if obs_coords:
@@ -1767,7 +1767,7 @@ class SEDm:
                 t.start()
             except Exception as e:
                 logger.exception("Error running the guider command")
-                print(str(e))
+                logger.error(str(e))
 
         count = 1
         ret = ""
@@ -1791,9 +1791,9 @@ class SEDm:
                                   imgset=imgset,
                                   is_rc=is_rc, abpair=abpair, name=name)
             if 'data' in ret and mark_status:
-                print("sky.update_target_request status:\n", 
-                      self.sky.update_target_request(req_id,
-                                                     status='COMPLETED'))
+                logger.info("sky.update_target_request status:\n%s",
+                            self.sky.update_target_request(req_id,
+                                                           status='COMPLETED'))
         if 'data' in ret:
             return {'elaptime': time.time() - start,
                     'data': ret['data']}
@@ -1890,7 +1890,7 @@ class SEDm:
         :return:
         """
         start = time.time()
-        print(datetime.datetime.utcnow(), "Starting observation by dictionary")
+        logger.info("Starting observation by dictionary")
 
         if isinstance(obsdict, str):
             path = obsdict
@@ -1912,7 +1912,7 @@ class SEDm:
             return {'elaptime': time.time() - start,
                     'error': 'Error prepping observing parameters'}
         kargs = ret['data']
-        print("Observation dictionary:\n", kargs)
+        logger.info("Observation dictionary:\n%s", kargs)
 
         img_dict = {}
 
@@ -1948,7 +1948,7 @@ class SEDm:
             if 'data' in ret:
                 img_dict['rc'] = ret['data']
 
-        print(datetime.datetime.utcnow(), "Observe by dictionary complete")
+        logger.info("Observe by dictionary complete")
         if 'data' in ret:
             return {'elaptime': time.time() - start, 'data': img_dict}
         else:
@@ -2002,17 +2002,17 @@ class SEDm:
                     save_as=acq_save_as,
                     offset_to_ifu=offset_to_ifu, epoch=epoch,
                     non_sid_targ=non_sid_targ)
-                print("run_acquisition_seq status:\n", ret)
+                logger.info("run_acquisition_seq status:\n%s", ret)
             else:
                 ret = self.ocs.tel_move(name=name, ra=ra, dec=dec,
                                         equinox=equinox, ra_rate=ra_rate,
                                         dec_rate=dec_rate,
                                         motion_flag=motion_flag,
                                         epoch=epoch)
-                print("ocs.tel_move status:\n", ret)
+                logger.info("ocs.tel_move status:\n%s", ret)
 
-                print("ocs.tel_offset status:\n",
-                      self.ocs.tel_offset(-99.9, -112.0))
+                logger.info("ocs.tel_offset status:\n%s",
+                            self.ocs.tel_offset(-99.9, -112.0))
 
         # Commenting this out after 2022-June primary resurfacing
         # exptime = exptime * 1.20
@@ -2046,7 +2046,7 @@ class SEDm:
                 t.start()
             except Exception as e:
                 logger.exception("Error running the guider command")
-                print(str(e))
+                logger.error(str(e))
 
         ret = self.take_image(cam, exptime=exptime,
                               shutter=shutter, readout=readout,
@@ -2058,7 +2058,7 @@ class SEDm:
                               req_id=req_id, objfilter=objfilter,
                               imgset='A', verbose=True,
                               is_rc=is_rc, abpair=abpair, name=name)
-        print("take_image(IFU) status:\n", ret)
+        logger.info("take_image(IFU) status:\n%s", ret)
 
         if abpair:
             self.ocs.tel_offset(-5, 5)
@@ -2087,7 +2087,7 @@ class SEDm:
                     })
                 except Exception as e:
                     logger.exception("Error running the guider command")
-                    print(str(e))
+                    logger.error(str(e))
 
             ret = self.take_image(cam, exptime=exptime,
                                   shutter=shutter, readout=readout,
@@ -2099,12 +2099,12 @@ class SEDm:
                                   req_id=req_id, objfilter=objfilter,
                                   imgset='B',
                                   is_rc=is_rc, abpair=abpair, name=name)
-            print("take_image(IFU:AB) status:\n", ret)
+            logger.info("take_image(IFU:AB) status:\n%s", ret)
 
         if 'data' in ret and mark_status:
             self.sky.update_target_request(req_id, status='COMPLETED',
                                            check_growth=True)
-            print("sky.update_target_request status:", ret)
+            logger.info("sky.update_target_request status: %s", ret)
         else:
             self.sky.update_target_request(req_id, status='FAILURE',
                                            check_growth=True)
@@ -2160,7 +2160,7 @@ class SEDm:
                     save_as=acq_save_as,
                     offset_to_ifu=False, epoch=epoch,
                     non_sid_targ=non_sid_targ)
-                print("run_acquisition_seq(RC) status:\n", ret)
+                logger.info("run_acquisition_seq(RC) status:\n%s", ret)
                 if 'data' not in ret:
                     if mark_status:
                         # Update stuff
@@ -2174,16 +2174,16 @@ class SEDm:
                                       motion_flag=motion_flag, epoch=epoch)
 
         ret = rc_filter_coords.offsets(ra=ra, dec=dec)
-        print("rc_filter_coords.offsets() status:\n", ret)
+        logger.info("rc_filter_coords.offsets() status:\n%s", ret)
         if 'data' in ret:
             obs_coords = ret['data']
         else:
-            print("ERROR")
+            logger.error("ERROR")
             return {'elaptime': time.time() - start,
                     'error': "Unable to calculate filter coordinates"}
 
         img_dict = {}
-        print("obs_coords:\n", obs_coords)
+        logger.info("obs_coords:\n%s", obs_coords)
 
         if isinstance(obs_order, str):
             obs_order = obs_order.split(',')
@@ -2204,7 +2204,7 @@ class SEDm:
                                             motion_flag=motion_flag,
                                             name=name,
                                             epoch=epoch)
-                    print("ocs.tel_move(RC) status:\n", ret)
+                    logger.info("ocs.tel_move(RC) status:\n%s", ret)
                     if 'data' not in ret:
                         continue
                 for k in range(int(obs_repeat_filter[j])):
@@ -2221,9 +2221,9 @@ class SEDm:
                                           req_id=req_id, objfilter=objfilter,
                                           imgset='NA', is_rc=is_rc,
                                           abpair=abpair, name=name)
-                    print("take_image(RC) status:\n", ret)
+                    logger.info("take_image(RC) status:\n%s", ret)
                     if 'data' in ret:
-                        print("filter %s\n" % objfilter, ret)
+                        logger.info("filter %s:\n%s", objfilter, ret)
                         if objfilter in img_dict:
                             img_dict[objfilter] += ', %s' % ret['data']
                         else:
@@ -2287,8 +2287,9 @@ class SEDm:
             ret = self.ocs.tel_move(name=name, ra=ra, dec=dec, equinox=equinox,
                                     ra_rate=ra_rate, dec_rate=dec_rate,
                                     motion_flag=motion_flag, epoch=epoch)
-            print("ocs.tel_move status:\n", ret)
-            print("sedm.py: Pausing for 1s until telescope is done settling")
+            logger.info("ocs.tel_move status:\n%s", ret)
+            logger.info("sedm.py: Pausing for 1s until telescope "
+                        "is done settling")
             time.sleep(1)
             # Stop sidereal tracking until after the image is completed
             if non_sid_targ:
@@ -2304,12 +2305,12 @@ class SEDm:
                               obj_id=obj_id, req_id=req_id,
                               objfilter='r', imgset='NA',
                               is_rc=True, abpair=False)
-        print("take_image(ACQ) status:\n", ret)
+        logger.info("take_image(ACQ) status:\n%s", ret)
         if 'data' in ret:
             # get offset to reference RC pixel
             ret = self.sky.solve_offset_new(ret['data'],
                                             return_before_done=True)
-            print("sky.solve_offset_new status:\n", ret)
+            logger.info("sky.solve_offset_new status:\n%s", ret)
             # Move to IFU position first?
             p_ra = p_dec = None
             if move and offset_to_ifu and not tcsx:
@@ -2324,11 +2325,11 @@ class SEDm:
                     #    time.sleep(3)               
                 else:
                     # lower dec, go ahead to IFU
-                    print("ocs.tel_offset (to IFU) status:\n",
-                          self.ocs.tel_offset(-94.9, -118.5))
+                    logger.info("ocs.tel_offset (to IFU) status:\n%s",
+                                self.ocs.tel_offset(-94.9, -118.5))
             # read offsets from sky solver
             ret = self.sky.listen()
-            print("sky.listen(ACQ) status:\n", ret)
+            logger.info("sky.listen(ACQ) status:\n%s", ret)
             if 'data' in ret:
                 ra_off = ret['data']['ra_offset']
                 dec_off = ret['data']['dec_offset']
@@ -2347,19 +2348,20 @@ class SEDm:
                 # X the TCS if requested and if offsets are small?
                 if tcsx and move and offset_to_ifu:
                     if abs(ra_off) < 100 and abs(dec_off) < 100:
-                        print("ocs.telx(ACQ) status:\n", self.ocs.telx())
-                    print("ocs.tel_offset to IFU status:\n",
-                          self.ocs.tel_offset(-94.9, -118.5))
+                        logger.info("ocs.telx(ACQ) status:\n%s",
+                                    self.ocs.telx())
+                    logger.info("ocs.tel_offset to IFU status:\n%s",
+                                self.ocs.tel_offset(-94.9, -118.5))
                 # Apply additional ra, dec offsets for non-sidereal targets
                 if non_sid_targ:
                     elapsed = time.time() - start
                     ra_rate_off = round(ra_rate * (elapsed / 3600), 2)
                     dec_rate_off = round(dec_rate * (elapsed / 3600), 2)
                     ret = self.ocs.tel_offset(ra_rate_off, dec_rate_off)
-                    print("ocs.tel_offset(rates) status:\n", ret)
+                    logger.info("ocs.tel_offset(rates) status:\n%s", ret)
                     # Set the non-sideral rates
                     ret = self.ocs.set_rates(ra=ra_rate, dec=dec_rate)
-                    print("ocs.set_rates status:\n", ret)
+                    logger.info("ocs.set_rates status:\n%s", ret)
                 return {'elaptime': time.time() - start,
                         'data': 'Telescope in place with calculated offsets'}
             # no offsets can be calculated, so do thing blind
@@ -2370,10 +2372,10 @@ class SEDm:
                     ra_rate_off = round(ra_rate * (elapsed / 3600), 2)
                     dec_rate_off = round(dec_rate * (elapsed / 3600), 2)
                     ret = self.ocs.tel_offset(ra_rate_off, dec_rate_off)
-                    print("ocs.tel_offset(rates) status:\n", ret)
+                    logger.info("ocs.tel_offset(rates) status:\n%s", ret)
                     # Set the non-sideral rates
                     ret = self.ocs.set_rates(ra=ra_rate, dec=dec_rate)
-                    print("ocs.set_rates status:\n", ret)
+                    logger.info("ocs.set_rates status:\n%s", ret)
                 return {'elaptime': time.time() - start,
                         'data': 'Telescope in place with blind pointing'}
 
@@ -2400,8 +2402,8 @@ class SEDm:
         ret = self.ocs.tel_move(name='TelXField', ra=ra, dec=dec,
                                 equinox=equinox, ra_rate=0., dec_rate=0.,
                                 motion_flag="", epoch="")
-        print("ocs.tel_move status:\n", ret)
-        print("sedm.py: Pausing for 1s until telescope is done settling")
+        logger.info("ocs.tel_move status:\n%s", ret)
+        logger.info("Pausing for 1s until telescope is done settling")
         time.sleep(1)
 
         ret = self.take_image(self.rc, shutter='normal', readout=2.0,
@@ -2415,19 +2417,19 @@ class SEDm:
                               obj_id=-999, req_id=-999,
                               objfilter='r', imgset='NA',
                               is_rc=True, abpair=False)
-        print("take_image(TELX) status:\n", ret)
+        logger.info("take_image(TELX) status:\n%s", ret)
         if 'data' in ret:
             # get offset to reference RC pixel
             ret = self.sky.solve_offset_new(ret['data'],
                                             return_before_done=True)
-            print("sky.solve_offset_new status:\n", ret)
+            logger.info("sky.solve_offset_new status:\n%s", ret)
             # read offsets from sky solver
             ret = self.sky.listen()
-            print("sky.listen(TELX) status:\n", ret)
+            logger.info("sky.listen(TELX) status:\n%s", ret)
             if 'data' in ret:
                 ra_off = ret['data']['ra_offset']
                 dec_off = ret['data']['dec_offset']
-                print("Calculated offsets:", ra_off, dec_off)
+                logger.info("Calculated offsets: %f, %f", ra_off, dec_off)
                 # Do offset, X so that no offset exceeds 100 asecs
                 while abs(ra_off) > 0. or abs(dec_off) > 0.:
                     if abs(ra_off) >= 100:
@@ -2450,10 +2452,10 @@ class SEDm:
                     else:
                         temp_dec_off = dec_off
                         dec_off = 0.
-                    print("offsetting", temp_ra_off, temp_dec_off)
+                    logger.info("offsetting %f, %f", temp_ra_off, temp_dec_off)
                     self.ocs.tel_offset(temp_ra_off, temp_dec_off)
                     time.sleep(1)
-                    print("ocs.telx(TELX) status:\n", self.ocs.telx())
+                    logger.info("ocs.telx(TELX) status:\n%s", self.ocs.telx())
                 return {'elaptime': time.time() - start,
                         'data': 'Telescope X completed'}
             # no offsets can be calculated
@@ -2513,7 +2515,7 @@ class SEDm:
 
         # Get the number of entries
         total_ephems = len(df)
-        print(total_ephems)
+        logger.info(total_ephems)
 
         # Make sure the dataframe isn't empty
         if df.empty:
@@ -2542,7 +2544,7 @@ class SEDm:
         # TCS.  This will allow the TCS to correct the offsets
         # based on the current time and the time when the ephemeris
         # values were given
-        print("idx", idx)
+        logger.info("idx %d", idx)
         uttime = df.index[idx]
         decimal_time = uttime.hour + ((uttime.minute * 60) +
                                       uttime.second) / 3600.0
@@ -2749,7 +2751,7 @@ class SEDm:
                 # parse util function
                 obsdate_date = obsdate.split()[0]
 
-            print("Checking the Nonsidereal obsdate given", obsdate)
+            logger.info("Checking the Nonsidereal obsdate given %s", obsdate)
 
             # Use the target directory given otherwise just look at the
             # defualt class path.
@@ -2758,7 +2760,8 @@ class SEDm:
             if not target_dir:
                 target_dir = self.non_sidereal_dir
 
-            print("Checking the Nonsidereal target directory", target_dir)
+            logger.info("Checking the Nonsidereal target directory %s",
+                        target_dir)
 
             # If a target name was given then we should be able to find it's
             # ephemersis by creating the path using the notation of the
@@ -2771,11 +2774,12 @@ class SEDm:
             # by looking at all targets in the directory
             if not target_file:
                 # Create the search string
-                print("Search string:", 'glob.glob %s*.%s.csv' % (target_dir,
-                                                                  obsdate_date))
+                logger.info("Search string:", 'glob.glob %s*.%s.csv',
+                            target_dir, obsdate_date)
                 available_targets = glob.glob('%s*.%s.csv' %
                                               (target_dir, obsdate_date))
-                print("Nonsidereal Available targets", available_targets)
+                logger.info("Nonsidereal Available targets %s",
+                            available_targets)
                 # If no files are found then return an error
                 if len(available_targets) == 0:
                     return {'elaptime': time.time() - start,
@@ -2799,7 +2803,7 @@ class SEDm:
 
     def conditions_cleared(self):
         faults = self.ocs.check_faults()
-        print("ocs.check_faults returns:\n", faults)
+        logger.info("ocs.check_faults returns:\n%s", faults)
         if 'data' in faults:
             if 'P200' in faults['data'] or 'WEATHER' in faults['data']:
                 return False
@@ -2808,7 +2812,7 @@ class SEDm:
             else:
                 return True
         else:
-            print("No faults found")
+            logger.info("No faults found")
             return True
 
     def check_dome_status(self, open_if_closed=True):
@@ -2819,7 +2823,7 @@ class SEDm:
             ret = stat['data']['dome_shutter_status']
             if 'closed' in ret.lower():
                 if open_if_closed:
-                    print("Opening dome")
+                    logger.info("Opening dome")
                     open_ret = self.ocs.dome("open")
                     return {'elaptime': time.time()-start,
                             'data': open_ret}
@@ -2864,7 +2868,7 @@ class SEDm:
         else:
             obsdict = manual
 
-        print("Manual command found with the following:", obsdict)
+        logger.info("Manual command found with the following: %s", obsdict)
         # 2. Check to see which command is being asked to run.  If the command
         # key is not given then the file is removed and we exit the function
         if 'command' in obsdict:
@@ -2875,7 +2879,7 @@ class SEDm:
             return {'elaptime': time.time() - start,
                     'error': 'Command not found in manual dict'}
 
-        print("Executing manual command:", command)
+        logger.info("Executing manual command: %s", command)
         # 3, Run the given command.  Right now the program can do
         # standards, focus, and rc and ifu non sidereal targets.
         # other commands can be added as needed
@@ -2904,8 +2908,9 @@ class SEDm:
                 coords = SkyCoord.from_name(obsdict['target'], parse=True)
                 RA = coords.ra.degree     # converted to ra hours elsewhere
                 DEC = coords.dec.degree
-                print("Target Coords:", coords.to_string("hmsdms", sep=":"))
-                print("decimal deg:", RA, DEC)
+                logger.info("Target Coords: %s",
+                            coords.to_string("hmsdms", sep=":"))
+                logger.info("decimal deg: %f, %f", RA, DEC)
 
                 if 'allocation_id' in obsdict:
                     alloc_id = obsdict['allocation_id']
@@ -2916,7 +2921,7 @@ class SEDm:
                 #                                     allocation_id=alloc_id,
                 #                                     ra=RA, dec=DEC)
                 ret = {'status': 'request ids not implemented yet'}
-                print("sky.get_manual_request_id status:\n", ret)
+                logger.info("sky.get_manual_request_id status:\n%s", ret)
                 if 'data' in ret:
                     req_id = ret['data']['request_id']
                     obj_id = ret['data']['object_id']
@@ -2929,8 +2934,9 @@ class SEDm:
                     p60prid = '2022A-calib'
                     p60prnm = 'SEDm calibration'
                     p60prpi = 'SEDm'
-                    print("Unable to obtain request data")
+                    logger.warning("Unable to obtain request data")
             else:
+                logger.error("target not found")
                 return {'elaptime': time.time() - start,
                         'error': "ifu 'target' in manual dict not found"}
 
@@ -2956,8 +2962,9 @@ class SEDm:
                 coords = SkyCoord.from_name(obsdict['target'], parse=True)
                 RA = coords.ra.degree      # .to_string('hour', sep=":")
                 DEC = coords.dec.degree    # .to_string('deg', sep=":")
-                print("Target Coords:", coords.to_string("hmsdms", sep=":"))
-                print("decimal deg:", RA, DEC)
+                logger.info("Target Coords: %s",
+                            coords.to_string("hmsdms", sep=":"))
+                logger.info("decimal deg: %f, %f", RA, DEC)
 
             else:
                 return {'elaptime': time.time() - start,
@@ -3006,7 +3013,7 @@ class SEDm:
                 while 'ephemeris' not in ret:
                     ret = self.get_non_sid_ephemeris(name=obsdict['target'],
                                                      eph_time=obsdate)
-                print("get_non_sid_ephemeris return:\n", ret)
+                logger.info("get_non_sid_ephemeris return:\n%s", ret)
 
             else:
                 make_alert_call("MANUAL: cannot find 'target' in file")
@@ -3027,7 +3034,7 @@ class SEDm:
             #                                     allocation_id=alloc_id,
             #                                     typedesig="e")
             ret = {'status': 'request ids not implemented yet'}
-            print("sky.get_manual_request_id status:\n", ret)
+            logger.info("sky.get_manual_request_id status:\n%s", ret)
             if 'data' in ret:
                 req_id = ret['data']['request_id']
                 obj_id = ret['data']['object_id']
@@ -3040,7 +3047,7 @@ class SEDm:
                 p60prid = '2022A-calib'
                 p60prnm = 'SEDm calibration'
                 p60prpi = 'SEDm'
-                print("Unable to obtain request data")
+                logger.warning("Unable to obtain request data")
 
             nonsid_dict = ret['ephemeris']['entries']['0']
             nonsid_dict['epoch'] = iso_to_epoch(nonsid_dict['ISO_time'])
@@ -3076,7 +3083,7 @@ class SEDm:
                 while 'ephemeris' not in ret:
                     ret = self.get_non_sid_ephemeris(name=obsdict['target'],
                                                      eph_time=obsdate)
-                print("get_non_sid_ephemeris return:\n", ret)
+                logger.info("get_non_sid_ephemeris return:\n%s", ret)
 
             else:
                 make_alert_call("Manual: cannot find 'target' in file")
@@ -3134,13 +3141,13 @@ class SEDm:
             ob_dir = self.obs_dir
             if not os.path.exists(ob_dir):
                 make_alert_call("Cannot gzip images; ob_dir does not exist")
-                print("Error: ob_dir %s does not exist!" % ob_dir)
+                logger.error("Error: ob_dir %s does not exist!", ob_dir)
                 return
 
         flist = glob.glob(os.path.join(ob_dir, "*.fits"))
         for fl in flist:
             subprocess.run(["gzip", fl])
-        print("%d images gzipped in %s" % (len(flist), ob_dir))
+        logger.info("%d images gzipped in %s", len(flist), ob_dir)
 
 
 if __name__ == "__main__":
