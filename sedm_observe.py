@@ -7,10 +7,9 @@ import os
 import glob
 import json
 import traceback
-import version
+import SEDM_robot_version as Version
 
-
-with open(os.path.join(version.CONFIG_DIR, 'sedm.json')) as cfg_file:
+with open(os.path.join(Version.CONFIG_DIR, 'sedm.json')) as cfg_file:
     sedm_cfg = json.load(cfg_file)
 
 status_file_dir = sedm_cfg['status_dir']
@@ -47,7 +46,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
                        clean_manual=True):
 
     print("\nReSTARTING OBSERVING LOOP at ", datetime.datetime.utcnow())
-    print("SEDM_robot version:", version.__version__, "\n")
+    print("SEDM_robot version:", Version.__version__, "\n")
 
     if do_focus:
         pass

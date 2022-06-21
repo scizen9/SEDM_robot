@@ -11,28 +11,30 @@ from sky.scheduler import dbscheduler
 from sky.sextractor import run
 from sky.guider import rcguider
 from sky.growth import marshal
+import SEDM_robot_version as Version
 
-SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
-
-with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as data_file:
+with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as data_file:
     params = json.load(data_file)
 
 logger = logging.getLogger("skyLogger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
-formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
-                              "%(funcName)s--%(message)s")
-console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
                                                    'sky_server.log'),
                                       when='midnight', utc=True, interval=1,
                                       backupCount=360)
+
+formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
+                              "%(funcName)s--%(message)s")
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
+
+console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 consoleHandler = logging.StreamHandler(sys.stdout)
 consoleHandler.setFormatter(console_formatter)
 logger.addHandler(consoleHandler)
+
 logger.info("Starting Logger: Logger file is %s", 'sky_server.log')
 
 

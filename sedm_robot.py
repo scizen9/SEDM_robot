@@ -4,6 +4,7 @@ from sky.server import sky_client
 from sanity.server import sanity_client
 from utils import sedmHeader, rc_filter_coords, rc_focus
 import os
+import sys
 import json
 import datetime
 import logging
@@ -37,16 +38,22 @@ with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as cfg_file:
 logger = logging.getLogger("sedmLogger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
-formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
-                              "%(funcName)s--%(message)s")
-
 logHandler = TimedRotatingFileHandler(os.path.join(log_cfg['abspath'],
                                                    'sedm_robot.log'),
                                       when='midnight', utc=True, interval=1,
                                       backupCount=360)
+
+formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
+                              "%(funcName)s--%(message)s")
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
+
+console_formatter = logging.Formatter("%(asctime)s--%(message)s")
+consoleHandler = logging.StreamHandler(sys.stdout)
+consoleHandler.setFormatter(console_formatter)
+logger.addHandler(consoleHandler)
+
 logger.info("Starting Logger: Logger file is %s", 'sedm_robot.log')
 
 
@@ -60,7 +67,7 @@ def make_alert_call(body):
 
     message = client.messages.create(to=to_number, from_=from_number, body=body)
 
-    print(message.sid)
+    logger.info(message.sid)
 
 
 def iso_to_epoch(iso_time, epoch_year=False):
@@ -184,21 +191,21 @@ class SEDm:
         if self.run_rc:
             logger.info("Initializing RC camera on")
             self.rc = cam_client.Camera(self.rc_ip, self.rc_port)
-            print(self.rc.initialize(), 'rc return')
-        print("run_ifu = ", self.run_ifu)
+            logger.info(self.rc.initialize(), 'rc return')
+        logger.info("run_ifu = ", self.run_ifu)
         if self.run_ifu:
             logger.info("Initializing IFU camera")
             self.ifu = cam_client.Camera(self.ifu_ip, self.ifu_port)
-            print(self.ifu.initialize(), 'ifu return')
-        print("Wait 5 sec")
+            logger.info(self.ifu.initialize(), 'ifu return')
+        logger.info("Wait 5 sec")
         time.sleep(5)
-        print("Check temperature status")
+        logger.info("Check temperature status")
         rc_get_temp_status = self.rc.get_temp_status()
         ifu_get_temp_status = self.ifu.get_temp_status()
-        print('rc_get_temp_status: ', rc_get_temp_status)
-        print('ifu_get_temp_status: ', ifu_get_temp_status)
+        logger.info('rc_get_temp_status: ', rc_get_temp_status)
+        logger.info('ifu_get_temp_status: ', ifu_get_temp_status)
         if "error" in rc_get_temp_status:
-            print('error: ', rc_get_temp_status['error'])
+            logger.error('error: ', rc_get_temp_status['error'])
             rc_lock = False
             rc_temp = 0.
         else:
