@@ -526,7 +526,7 @@ class SEDm:
                 req_id = ret['data']
 
         for img in range(startN, N + 1, 1):
-            logger.info(img, N)
+            logger.info("%d, %d", img, N)
             if N != startN:
                 start = time.time()
                 do_stages = False
@@ -623,7 +623,7 @@ class SEDm:
         for img in range(startN, N + 1, 1):
 
             # 5a. Set the image header keyword name
-            logger.info(img, N)
+            logger.info("%d, %d", img, N)
             if N != startN:
                 start = time.time()
                 do_stages = False
@@ -725,7 +725,7 @@ class SEDm:
         # 4. Start the observations
         for img in range(startN, N + 1, 1):
 
-            logger.info(img, N)
+            logger.info("%d, %d", img, N)
             # 5a. Set the image header keyword name
             if N != startN:
                 start = time.time()
@@ -1454,7 +1454,7 @@ class SEDm:
                 do_lamps = False
 
             N += 1
-            logger.info("%s-Moving to focus position: %fmm",focus_type, pos)
+            logger.info("%s-Moving to focus position: %fmm", focus_type, pos)
 
             if focus_type == 'ifu_stage':
                 logger.info("IFUSTAGE 1")
@@ -2392,7 +2392,7 @@ class SEDm:
         :param test:
         :param exptime:
         :param ra:
-        :param dec::
+        :param dec:
         :param equinox:
         :return:
         """
