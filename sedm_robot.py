@@ -2650,10 +2650,10 @@ class SEDm:
             cname = name
 
         driver = webdriver.Chrome('chromedriver')
-        print("Webdriver successfully installed")
+        logger.info("Webdriver successfully installed")
 
         driver.get("https://www.projectpluto.com/ephem.htm")
-        print("Website loaded successfully")
+        logger.info("Website loaded successfully")
 
         # Enter element names in website source code
         obj_name = driver.find_element_by_name("obj_name")
@@ -2710,11 +2710,11 @@ class SEDm:
             ephemeris = json.loads(driver.find_element_by_xpath("/html/body").text)
         except ValueError:
             driver.close()
-            print("No ephemeris generated")
+            logger.error("No ephemeris generated")
             ephemeris = False
 
         if ephemeris:
-            print(ephemeris)
+            logger.info(ephemeris)
             driver.close()
 
         return ephemeris
@@ -3014,43 +3014,52 @@ class SEDm:
         elif command.lower() == "nonsid_ifu":
             if "obsdate" in obsdict:
                 obsdate = obsdict['obsdate']
-                print('Using ephemeris at date: %s' % obsdate)
+                logger.info('Using ephemeris at date: %s', obsdate)
             else:
                 obsdate = "now"
                 now = Time.now()
-                print('Using ephemeris at date: %s' % now)
+                logger.info('Using ephemeris at date: %s', now)
 
             if 'target' in obsdict:
                 try:
-                    print("Try #1 loading ephemeris")
-                    ret = self.get_non_sid_ephemeris(name=obsdict['target'], eph_time=obsdate)
+                    logger.info("Try #1 loading ephemeris")
+                    ret = self.get_non_sid_ephemeris(name=obsdict['target'],
+                                                     eph_time=obsdate)
                 except ValueError:
+                    logger.warning("ValueError exception")
                     pass
 
                 if ret:
                     pass
                 else:
-                    print("Try #1 loading ephemeris unsuccessful: Trying again")
+                    logger.info("Try #1 loading ephemeris unsuccessful: "
+                                "Trying again")
                     try:
-                        print("Try #2 loading ephemeris")
-                        ret = self.get_non_sid_ephemeris(name=obsdict['target'], eph_time=obsdate)
+                        logger.info("Try #2 loading ephemeris")
+                        ret = self.get_non_sid_ephemeris(name=obsdict['target'],
+                                                         eph_time=obsdate)
                     except ValueError:
+                        logger.warning("ValueError exception")
                         pass
 
                 if ret:
                     pass
                 else:
-                    print("Try #2 loading ephemeris unsuccessful: Trying again")
+                    logger.info("Try #2 loading ephemeris unsuccessful: "
+                                "Trying again")
                     try:
-                        print("Try #3 loading ephemeris")
-                        ret = self.get_non_sid_ephemeris(name=obsdict['target'], eph_time=obsdate)
+                        logger.info("Try #3 loading ephemeris")
+                        ret = self.get_non_sid_ephemeris(name=obsdict['target'],
+                                                         eph_time=obsdate)
                     except ValueError:
+                        logger.warning("ValueError exception")
                         pass
 
                 if ret:
                     pass
                 else:
-                    print("Try #3 loading ephemeris unsuccessful: Check object parameters")
+                    logger.error("Try #3 loading ephemeris unsuccessful: "
+                                 "Check object parameters")
 
             else:
                 make_alert_call("MANUAL: cannot find 'target' in JSON file")
@@ -3083,7 +3092,8 @@ class SEDm:
 
             if 'ephemeris' not in ret:
 
-                return {"elaptime": time.time() - start, "error: 'ephemeris' not in return": ret}
+                return {"elaptime": time.time() - start,
+                        "error: 'ephemeris' not in return": ret}
 
             nonsid_dict = ret['ephemeris']['entries']['0']
             nonsid_dict['epoch'] = iso_to_epoch(nonsid_dict['ISO_time'])
@@ -3109,45 +3119,53 @@ class SEDm:
         elif command.lower() == "nonsid_rc":
             if "obsdate" in obsdict:
                 obsdate = obsdict['obsdate']
-                print('Using ephemeris at date: %s' % obsdate)
+                logger.info('Using ephemeris at date: %s', obsdate)
             else:
                 obsdate = "now"
                 now = Time.now()
-                print('Using ephemeris at date: %s' % now)
+                logger.info('Using ephemeris at date: %s', now)
 
             if 'target' in obsdict:
                 try:
-                    print("Try #1 loading ephemeris")
-                    ret = self.get_non_sid_ephemeris(name=obsdict['target'], eph_time=obsdate)
-                except ValueError:
-                    pass
-
-                if ret:
-                    pass
-                else:
-                    print("Try #1 loading ephemeris unsuccessful: Trying again")
-                    try:
-                        print("Try #2 loading ephemeris")
-                        ret = self.get_non_sid_ephemeris(name=obsdict['target'], eph_time=obsdate)
-                    except ValueError:
-                        pass
-
-                if ret:
-                    pass
-                else:
-                    print("Try #2 loading ephemeris unsuccessful: Trying again")
-                    try:
-                        print("Try #3 loading ephemeris")
-                        ret = self.get_non_sid_ephemeris(name=obsdict['target'], eph_time=obsdate)
-                    except ValueError:
-                        pass
-
-                if ret:
-                    pass
-                else:
-                    print("Try #3 loading ephemeris unsuccessful: Check object parameters")
+                    logger.info("Try #1 loading ephemeris")
                     ret = self.get_non_sid_ephemeris(name=obsdict['target'],
                                                      eph_time=obsdate)
+                except ValueError:
+                    logger.warning("ValueError exception")
+                    pass
+
+                if ret:
+                    pass
+                else:
+                    logger.info("Try #1 loading ephemeris unsuccessful: "
+                                "Trying again")
+                    try:
+                        logger.info("Try #2 loading ephemeris")
+                        ret = self.get_non_sid_ephemeris(name=obsdict['target'],
+                                                         eph_time=obsdate)
+                    except ValueError:
+                        logger.warning("ValueError exception")
+                        pass
+
+                if ret:
+                    pass
+                else:
+                    logger.info("Try #2 loading ephemeris unsuccessful: "
+                                "Trying again")
+                    try:
+                        logger.info("Try #3 loading ephemeris")
+                        ret = self.get_non_sid_ephemeris(name=obsdict['target'],
+                                                         eph_time=obsdate)
+                    except ValueError:
+                        logger.warning("ValueError exception")
+                        pass
+
+                if ret:
+                    pass
+                else:
+                    logger.error("Try #3 loading ephemeris unsuccessful: "
+                                 "Check object parameters")
+
                 logger.info("get_non_sid_ephemeris return:\n%s", ret)
 
             else:
@@ -3164,7 +3182,7 @@ class SEDm:
             #                                     allocation_id=alloc_id,
             #                                     typedesig="e")
             ret = {'status': 'request ids not implemented yet'}
-            print("sky.get_manual_request_id status:\n", ret)
+            logger.info("sky.get_manual_request_id status:\n%s", ret)
             if 'data' in ret:
                 req_id = ret['data']['request_id']
                 obj_id = ret['data']['object_id']
@@ -3177,7 +3195,7 @@ class SEDm:
                 p60prid = '2022A-calib'
                 p60prnm = 'SEDm calibration'
                 p60prpi = 'SEDm'
-                print("Unable to obtain request data")
+                logger.warning("Unable to obtain request data")
 
             if 'ephemeris' not in ret:
 
