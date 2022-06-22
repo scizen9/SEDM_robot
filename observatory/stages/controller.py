@@ -5,28 +5,30 @@ import socket
 import os
 import sys
 import json
+import SEDM_robot_version as Version
 
-SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
-
-with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as data_file:
+with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as data_file:
     params = json.load(data_file)
 
 logger = logging.getLogger("stageControllerLogger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
-formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
-                              "%(module)s--%(funcName)s--%(message)s")
-console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
                                                    'stage_controller.log'),
                                       when='midnight', utc=True, interval=1,
                                       backupCount=360)
+
+formatter = logging.Formatter("%(asctime)s--%(name)s--%(levelname)s--"
+                              "%(module)s--%(funcName)s--%(message)s")
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
+
+console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 consoleHandler = logging.StreamHandler(sys.stdout)
 consoleHandler.setFormatter(console_formatter)
 logger.addHandler(consoleHandler)
+
 logger.info("Starting Logger: Logger file is %s", 'stage_controller.log')
 
 
@@ -92,7 +94,7 @@ class Stage:
         :param port: port socket number
         """
 
-        with open(os.path.join(SITE_ROOT, 'config', 'stages.json')) as df:
+        with open(os.path.join(Version.CONFIG_DIR, 'stages.json')) as df:
             self.stage_config = json.load(df)
 
         if not host:
@@ -362,7 +364,7 @@ class Stage:
                 logger.info(ret)
                 return
 
-            print(ret, value, custom_command)
+            logger.info(ret, value, custom_command)
 
             ret = self.__send_command(cmd=cmd, stage_id=stage_id,
                                       custom_command=custom_command)

@@ -15,6 +15,7 @@
     "rc_send_to_remote": true,
     "rc_set_temperature": -50,
     "remote_config": "nemea.config.json",
+    "rc_focus_offset": 0.1,
     "ifu_datacube": {
         "cd": {
             "N": 5,
@@ -58,7 +59,7 @@
     "rc_datacube": {
         "dome": {
             "N": 5,
-            "exptime": [22,14,7,4],
+            "exptime": [18,11,6,3],
             "readout": [0.1, 2.0]
         },
         "fast_bias": {
@@ -120,7 +121,7 @@
     "rc": {
         "dome": {
             "N": 5,
-            "exptime": [22,14,7,4],
+            "exptime": [18,11,6,3],
             "readout": [0.1, 2.0]
         },
         "fast_bias": {
