@@ -197,7 +197,6 @@ class Controller:
         for cams in range(connected_cams):
             handles = self.opt.GetCameraHandle(cams)
             camera_list.append(handles)
-            print(handles)
             #camera_list.append(self.opt.GetCameraHandle(cams))
 
         logger.info("Available Cameras:%s", camera_list)
@@ -237,16 +236,19 @@ class Controller:
         if wait_to_cool:
             temp = self.opt.GetTemperature()[1]
             lock = self.opt.GetTemperature()[0]
+            '''
             while temp != self.setTemperature:
                 logger.debug("Detector temp at %sC", temp)
                 print(lock, temp)
                 time.sleep(5)
                 temp = self.opt.GetTemperature()[1]
                 lock = self.opt.GetTemperature()[0]
+            '''
 
             while lock != 'DRV_TEMP_STABILIZED':
                 print(lock, temp)
                 logger.debug("Wait for temperature lock to be set")
+                temp = self.opt.GetTemperature()[1]
                 lock = self.opt.GetTemperature()[0]
                 time.sleep(10)
             logger.info("Camera temperature locked in place. Continuing "
