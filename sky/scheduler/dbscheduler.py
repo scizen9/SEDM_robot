@@ -15,7 +15,7 @@ from utils import obstimes
 from utils import sedmpy_import
 import sqlite3
 from sky.growth.marshal import Interface
-import version
+import SEDM_robot_version as Version
 
 from astropy.time import Time, TimeDelta
 from astropy.utils.iers import conf
@@ -29,7 +29,7 @@ class Scheduler:
                  save_as="targets.json"):
 
         self.scheduler_config_file = config
-        with open(os.path.join(version.CONFIG_DIR, config)) as data_file:
+        with open(os.path.join(Version.CONFIG_DIR, config)) as data_file:
             self.params = json.load(data_file)
         self.path = self.params["standard_db"]
         self.target_dir = self.params["target_dir"]

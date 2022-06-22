@@ -9,28 +9,30 @@ from observatory.stages import controller as stages
 from observatory.telescope import tcs
 import socket
 import threading
+import SEDM_robot_version as Version
 
-SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
-
-with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as data_file:
+with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as data_file:
     params = json.load(data_file)
 
 logger = logging.getLogger("ocsLogger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
-formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
-                              "%(funcName)s--%(message)s")
-console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
                                                    'ocs_server.log'),
                                       when='midnight', utc=True, interval=1,
                                       backupCount=360)
+
+formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
+                              "%(funcName)s--%(message)s")
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
+
+console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 consoleHandler = logging.StreamHandler(sys.stdout)
 consoleHandler.setFormatter(console_formatter)
 logger.addHandler(consoleHandler)
+
 logger.info("Starting Logger: Logger file is %s", 'ocs_server.log')
 
 
@@ -132,8 +134,6 @@ class ocsServer:
                         response = self.tcs.takecontrol()
                     elif cmd.upper() == "TELHALON":
                         response = self.tcs.halogens_on()
-                    elif cmd.upper() == "TELX":
-                        response = self.tcs.x()
                     elif cmd.upper() == "TELHALOFF":
                         response = self.tcs.halogens_off()
                     elif cmd.upper() == "TELSTOW":

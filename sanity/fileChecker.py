@@ -40,6 +40,7 @@ class Checker:
             return {'elaptime': time.time()-start,
                     'error': "keywords are not in dict form"}
 
+        nfiles = 0
         for f in files:
             add = False
             header = fits.getheader(f)
@@ -56,13 +57,13 @@ class Checker:
                         else:
                             add = False
                 else:
-                    print("Header %s not found" % k.upper())
                     add = False
 
             if add:
                 img_list.append(f)
+                nfiles += 1
 
-        return {'elaptime': time.time()-start, 'data': img_list}
+        return {'elaptime': time.time()-start, 'data': nfiles}
 
 
 if __name__ == "__main__":

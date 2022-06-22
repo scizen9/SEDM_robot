@@ -5,29 +5,30 @@ import json
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import time
+import SEDM_robot_version as Version
 
-
-SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
-
-with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as data_file:
+with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as data_file:
     params = json.load(data_file)
 
 logger = logging.getLogger("TCS Logger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
-formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
-                              "%(funcName)s--%(message)s")
-console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
                                                    'tcs.log'),
                                       when='midnight', utc=True, interval=1,
                                       backupCount=360)
+
+formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
+                              "%(funcName)s--%(message)s")
 logHandler.setFormatter(formatter)
 logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
+
+console_formatter = logging.Formatter("%(asctime)s--%(message)s")
 consoleHandler = logging.StreamHandler(sys.stdout)
 consoleHandler.setFormatter(console_formatter)
 logger.addHandler(consoleHandler)
+
 logger.info("Starting Logger: Logger file is %s", 'tcs.log')
 
 
@@ -49,7 +50,7 @@ class Telescope:
         self.socket = None
         self.error_str = None
         self.error_tracker = 0
-        with open(os.path.join(SITE_ROOT, 'config', 'tcs.json')) as cfile:
+        with open(os.path.join(Version.CONFIG_DIR, 'tcs.json')) as cfile:
             self.tcs_config = json.load(cfile)
 
         if not gxnaddress:
@@ -448,7 +449,7 @@ class Telescope:
         change to MOVING during the move.  The command fails if wetness is
         sensed.
 
-        :param ra: offset in seconds
+        :param ra: offset in seconds (seems to be arcseconds?)
         :param dec: offset in arcseconds
         :return: bool, status message
         """
