@@ -85,11 +85,13 @@ class CamServer:
                                 output_dir = sedm_cfg['cam_image_dir']
                                 set_temperature = sedm_cfg[
                                     'ifu_set_temperature']
+                                camera_handle = sedm_cfg['ifu_handle']
                             self.cam = andor.Controller(
                                 serial_number="", cam_prefix=cam_prefix,
                                 send_to_remote=send_to_remote,
                                 set_temperature=set_temperature,
-                                output_dir=output_dir)
+                                camera_handle=camera_handle,
+                                output_dir=output_dir,)
 
                             ret = self.cam.initialize()
                             if self.port == 6942:
@@ -149,8 +151,9 @@ class CamServer:
                         response = self.cam.opt.disconnect()
                         print(response)
                     elif data['command'].upper() == "SHUTDOWN":
-                        _ = self.cam.opt.disconnect()
-                        _ = self.cam.opt.unloadLibrary()
+                        #_ = self.cam.opt.disconnect()
+                        #_ = self.cam.opt.unloadLibrary()
+                        _ = self.cam.opt.ShutDown()
                         self.cam = None
                         response = {'elaptime': time.time()-start,
                                     'data': "Camera shutdown"}
@@ -186,7 +189,7 @@ class CamServer:
 
 
 if __name__ == "__main__":
-    server = CamServer("127.0.0.1", 6942)
+    server = CamServer("127.0.0.1", 5001)
     # try:
     logger.info("Starting IFU Server")
     # server.cam = pixis.Controller(serial_number="", cam_prefix="ifu",

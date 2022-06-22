@@ -5,6 +5,7 @@ import time
 import numpy as np
 import platform
 
+
 ERROR_CODES = {'DRV_ERROR_CODES': 20001,
                'DRV_SUCCESS': 20002,
                'DRV_VXDNOTINSTALLED': 20003,
@@ -591,6 +592,7 @@ class Andor:
         return ERROR_STRING[status]
 
     def SetTemperature(self, temperature):
+        status_msg(f'Setting Temperature to {temperature} C')
         status = check_call(self.lib.SetTemperature(c_int(temperature)))
         return ERROR_STRING[status]
 
