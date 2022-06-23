@@ -1478,6 +1478,7 @@ class SEDm:
                                   imgset=imgset, do_lamps=do_lamps,
                                   do_stages=do_stages,
                                   is_rc=is_rc, abpair=abpair, name=name)
+            logger.info("tabe_image(FOC) status:\n%s", ret)
 
             if 'data' in ret:
                 img_list.append(ret['data'])
