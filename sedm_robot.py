@@ -2660,7 +2660,7 @@ class SEDm:
 
         # Enter element names in website source code
         obj_name = driver.find_element_by_name("obj_name")
-        datetime = driver.find_element_by_name("year")
+        date_time = driver.find_element_by_name("year")
         numb_steps = driver.find_element_by_name("n_steps")
         step_size = driver.find_element_by_name("stepsize")
         mpc_code = driver.find_element_by_name("mpc_code")
@@ -2670,7 +2670,7 @@ class SEDm:
 
         # Once page loads, clear pre-loaded entries
         obj_name.clear()
-        datetime.clear()
+        date_time.clear()
         numb_steps.clear()
         step_size.clear()
         mpc_code.clear()
@@ -2679,7 +2679,7 @@ class SEDm:
 
         # Enter values in designated elements
         obj_name.send_keys(cname)
-        datetime.send_keys(eph_time)
+        date_time.send_keys(eph_time)
         numb_steps.send_keys(eph_nsteps)
         step_size.send_keys(eph_stepsize)
         mpc_code.send_keys(eph_mpc)
