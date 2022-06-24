@@ -2655,6 +2655,10 @@ class SEDm:
         driver = webdriver.Chrome('chromedriver')
         logger.info("Webdriver successfully installed")
 
+        # Wait 10 seconds to load webpage
+        driver.implicitly_wait(10)
+        logger.info("Waiting 10 seconds for webpage to load")
+
         driver.get("https://www.projectpluto.com/ephem.htm")
         logger.info("Website loaded successfully")
 
