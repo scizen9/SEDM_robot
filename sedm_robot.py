@@ -2677,6 +2677,15 @@ class SEDm:
         faint_limit.clear()
         epoch.clear()
 
+        # Reload element names after clearing fields
+        obj_name = driver.find_element_by_name("obj_name")
+        date_time = driver.find_element_by_name("year")
+        numb_steps = driver.find_element_by_name("n_steps")
+        step_size = driver.find_element_by_name("stepsize")
+        mpc_code = driver.find_element_by_name("mpc_code")
+        faint_limit = driver.find_element_by_name("faint_limit")
+        epoch = driver.find_element_by_name("epoch")
+
         # Enter values in designated elements
         obj_name.send_keys(cname)
         date_time.send_keys(eph_time)
