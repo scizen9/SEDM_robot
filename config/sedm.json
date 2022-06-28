@@ -15,6 +15,7 @@
     "rc_send_to_remote": true,
     "rc_set_temperature": -50,
     "remote_config": "nemea.config.json",
+    "dbhost_config": "pharos.config.json",
     "rc_focus_offset": 0.1,
     "ifu_datacube": {
         "cd": {

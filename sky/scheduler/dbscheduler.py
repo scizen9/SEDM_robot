@@ -924,7 +924,7 @@ class Scheduler:
 
     def add_object(self, name=None, typedesig="f", ra=0.0, dec=0.0,
                    epoch=2000., magnitude=None, iauname=""):
-        """Add object to database on pharos
+        """Add object to database on db host computer
         :param name: (str) object name (required)
         :param typedesig: (str) type of object (required, default=f)
                     'f' (fixed), 'v' (periodic fixed),
@@ -1138,7 +1138,7 @@ class Scheduler:
 
         print(ret)
         if check_growth:
-            ret = self.growth.get_marshal_id_from_pharos(request_id)
+            ret = self.growth.get_marshal_id_from_dbhost(request_id)
             print(ret)
             if 'data' in ret:
                 ret = self.growth.update_growth_status(growth_id=ret['data'],

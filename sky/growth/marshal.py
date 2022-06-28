@@ -10,26 +10,26 @@ with open(os.path.join(SITE_ROOT, 'config', 'growth.config.json')) as data_file:
 
 
 class Interface:
-    def __init__(self, pharos_get_url=params['get_id_url'],
+    def __init__(self, dbhost_get_url=params['get_id_url'],
                  growth_url=params['growth_url'], instrument_id=65,
                  user=params['growth_user'],
                  passwd=params['growth_pwd']):
         """
 
-        :param pharos_get_url:
+        :param dbhost_get_url:
         :param growth_url:
         :param instrument_id:
         :param user:
         :param passwd:
         """
 
-        self.pharos_url = pharos_get_url
+        self.dbhost_url = dbhost_get_url
         self.growth_url = growth_url
         self.instrument_id = instrument_id
         self.user = user
         self.passwd = passwd
 
-    def get_marshal_id_from_pharos(self, request_id):
+    def get_marshal_id_from_dbhost(self, request_id):
         """
 
         :param request_id:
@@ -39,7 +39,7 @@ class Interface:
         payload = {'request_id': request_id}
         headers = {'content-type': 'application/json'}
         json_data = json.dumps(payload)
-        response = requests.post(self.pharos_url, data=json_data,
+        response = requests.post(self.dbhost_url, data=json_data,
                                  headers=headers)
         ret = json.loads(response.text)
         if 'error' in ret:
@@ -64,7 +64,7 @@ class Interface:
                     "error": "No growth id or request id given"}
 
         if not growth_id and request_id:
-            ret = self.get_marshal_id_from_pharos(request_id)
+            ret = self.get_marshal_id_from_dbhost(request_id)
             if 'error' in ret:
                 return ret
             else:

@@ -119,7 +119,7 @@ class SkyServer:
                         response = self.scheduler.update_request(
                             **data['parameters'])
                     elif data['command'].upper() == "GETGROWTHID":
-                        response = self.growth.get_marshal_id_from_pharos(
+                        response = self.growth.get_marshal_id_from_dbhost(
                             **data['parameters'])
                     elif data['command'].upper() == 'GETTWILIGHTEXPTIME':
                         response = self.scheduler.get_twilight_exptime(

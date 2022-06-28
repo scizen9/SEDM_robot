@@ -4,12 +4,17 @@ from observatory.telescope import tcs
 import paramiko
 import time
 import json
+import SEDM_robot_version as Version
 
 telescope = tcs.Telescope(gxnaddress=('198.202.125.194', 49300))
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 
-with open(os.path.join(SITE_ROOT, 'config', 'pharos.config.json')) as data_file:
+with open(os.path.join(Version.CONFIG_DIR, 'sedm.json')) as data_file:
+    sedm_cfg = json.load(data_file)
+
+with open(os.path.join(Version.CONFIG_DIR,
+                       sedm_cfg['dbhost_config'])) as data_file:
     params = json.load(data_file)
 
 
@@ -42,7 +47,7 @@ def sftp_connection(remote_computer=params['remote_computer'],
 
 
 def put_remote_file(remote_path=None, local_path='telstatus.json',
-                    remote_computer='pharos.caltech.edu',
+                    remote_computer=params['remote_computer'],
                     replace_path_str="s:"):
     """
     Using the paramiko script transfer a local file to a remote destination
