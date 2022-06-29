@@ -2599,7 +2599,9 @@ class SEDm:
         else:
             cname = name
 
-        url_string = base_url + 'obj_name=' + cname + \
+        safe_name = quote_plus(cname)
+
+        url_string = base_url + 'obj_name=' + safe_name + \
             '&year=' + eph_time + '&n_steps=' + eph_nsteps + \
             '&stepsize=' + eph_stepsize + '&mpc_code=' + eph_mpc + \
             '&faint_limit=' + eph_faint + '&ephem_type=' + eph_type + \
@@ -2607,9 +2609,7 @@ class SEDm:
             '&epoch=' + eph_epoch + '&resids=' + eph_resid + \
             '&language=e&file_no=3'
 
-        safe_string = quote_plus(url_string)
-
-        response = urlopen(safe_string)
+        response = urlopen(url_string)
 
         data_json = json.loads(response.read())
 
