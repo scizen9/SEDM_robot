@@ -2613,7 +2613,11 @@ class SEDm:
 
         response = urlopen(url_string)
 
-        data_json = json.loads(response.read())
+        try:
+            data_json = json.loads(response.read())
+        except json.decoder.JSONDecodeError as e:
+            logger.error(str(e))
+            return False
 
         if 'ephemeris' in data_json:
             return data_json
