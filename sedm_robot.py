@@ -25,6 +25,8 @@ from astropy.coordinates import SkyCoord
 import pickle
 from selenium import webdriver
 from selenium.webdriver.support.select import Select
+from urllib.request import urlopen
+from urllib.parse import quote_plus
 import SEDM_robot_version as Version
 
 DEF_PROG = '2022B-calib'
@@ -2565,6 +2567,56 @@ class SEDm:
         }
 
         return {"elaptime": time.time() - start, "data": return_dict}
+
+    def get_non_sid_ephemeris_url(self, name, eph_time="now", eph_nsteps="1",
+                                  eph_stepsize="0.00001", eph_mpc="I41",
+                                  eph_faint="99", eph_type=0, eph_motion=2,
+                                  eph_center=-2, eph_epoch="default",
+                                  eph_resid=0):
+        """
+        Use simple url to retrieve ephemeris from pluto website
+
+        :param name:
+        :param eph_time:
+        :param eph_nsteps:
+        :param eph_stepsize:
+        :param eph_mpc:
+        :param eph_faint:
+        :param eph_type:
+        :param eph_motion:
+        :param eph_center:
+        :param eph_epoch:
+        :param eph_resid:
+        :return:
+        """
+
+        base_url = 'https://www.projectpluto.com/cgi-bin/go/fo_serve.cgi?'
+
+        # Pre-process name because comet designations wreak havoc
+        if '_' in name:
+            cname = name.replace('_', '/', 1)
+            cname = cname.replace('_', ' ')
+        else:
+            cname = name
+
+        url_string = base_url + 'obj_name=' + cname + \
+            '&year=' + eph_time + '&n_steps=' + eph_nsteps + \
+            '&stepsize=' + eph_stepsize + '&mpc_code=' + eph_mpc + \
+            '&faint_limit=' + eph_faint + '&ephem_type=' + eph_type + \
+            '&motion=' + eph_motion + '&element_center=' + eph_center + \
+            '&epoch=' + eph_epoch + '&resids=' + eph_resid + \
+            '&language=e&file_no=3'
+
+        safe_string = quote_plus(url_string)
+
+        response = urlopen(safe_string)
+
+        data_json = json.loads(response.read())
+
+        if 'ephemeris' in data_json:
+            return data_json['ephemeris']
+        else:
+            return False
 
     def get_non_sid_ephemeris(self, name, eph_time="now", eph_nsteps="1",
                               eph_stepsize="0.00001", eph_mpc="I41",
