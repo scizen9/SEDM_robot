@@ -2558,12 +2558,12 @@ class SEDm:
         # Create observing dict
         return_dict = {
             'name': df['objname'][idx],
-            'ra': df['ra(degrees)'][idx],
-            'dec': df['dec(degrees)'][idx],
-            'ra_rate': df['ra_rate(arcsec/hr)'][idx],
-            'dec_rate': df['dec_rate(arcsec/hr)'][idx],
+            'RA': df['ra(degrees)'][idx],
+            'Dec': df['dec(degrees)'][idx],
+            'RAvel': df['ra_rate(arcsec/hr)'][idx],
+            'decvel': df['dec_rate(arcsec/hr)'][idx],
             'mag': df['V'][idx],
-            'uttime': decimal_time
+            'epoch': decimal_time
         }
 
         return {"elaptime": time.time() - start, "data": return_dict}
