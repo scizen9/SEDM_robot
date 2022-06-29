@@ -2570,9 +2570,9 @@ class SEDm:
 
     def get_non_sid_ephemeris_url(self, name, eph_time="now", eph_nsteps="1",
                                   eph_stepsize="0.00001", eph_mpc="I41",
-                                  eph_faint="99", eph_type=0, eph_motion=2,
-                                  eph_center=-2, eph_epoch="default",
-                                  eph_resid=0):
+                                  eph_faint="99", eph_type="0", eph_motion="2",
+                                  eph_center="-2", eph_epoch="default",
+                                  eph_resid="0"):
         """
         Use simple url to retrieve ephemeris from pluto website
 
