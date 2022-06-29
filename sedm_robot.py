@@ -3090,8 +3090,8 @@ class SEDm:
             if 'target' in obsdict:
                 try:
                     logger.info("Try #1 loading ephemeris")
-                    ephret = self.get_non_sid_ephemeris(name=obsdict['target'],
-                                                        eph_time=obsdate)
+                    ephret = self.get_non_sid_ephemeris_url(
+                        name=obsdict['target'], eph_time=obsdate)
                 except ValueError:
                     logger.warning("ValueError exception")
                     pass
@@ -3103,7 +3103,7 @@ class SEDm:
                                 "Trying again")
                     try:
                         logger.info("Try #2 loading ephemeris")
-                        ephret = self.get_non_sid_ephemeris(
+                        ephret = self.get_non_sid_ephemeris_url(
                             name=obsdict['target'], eph_time=obsdate)
                     except ValueError:
                         logger.warning("ValueError exception")
@@ -3116,7 +3116,7 @@ class SEDm:
                                 "Trying again")
                     try:
                         logger.info("Try #3 loading ephemeris")
-                        ephret = self.get_non_sid_ephemeris(
+                        ephret = self.get_non_sid_ephemeris_url(
                             name=obsdict['target'], eph_time=obsdate)
                     except ValueError:
                         logger.warning("ValueError exception")
@@ -3197,8 +3197,8 @@ class SEDm:
             if 'target' in obsdict:
                 try:
                     logger.info("Try #1 loading ephemeris")
-                    ephret = self.get_non_sid_ephemeris(name=obsdict['target'],
-                                                        eph_time=obsdate)
+                    ephret = self.get_non_sid_ephemeris_url(
+                        name=obsdict['target'], eph_time=obsdate)
                 except ValueError:
                     logger.warning("ValueError exception")
                     pass
@@ -3210,7 +3210,7 @@ class SEDm:
                                 "Trying again")
                     try:
                         logger.info("Try #2 loading ephemeris")
-                        ephret = self.get_non_sid_ephemeris(
+                        ephret = self.get_non_sid_ephemeris_url(
                             name=obsdict['target'], eph_time=obsdate)
                     except ValueError:
                         logger.warning("ValueError exception")
@@ -3223,7 +3223,7 @@ class SEDm:
                                 "Trying again")
                     try:
                         logger.info("Try #3 loading ephemeris")
-                        ephret = self.get_non_sid_ephemeris(
+                        ephret = self.get_non_sid_ephemeris_url(
                             name=obsdict['target'], eph_time=obsdate)
                     except ValueError:
                         logger.warning("ValueError exception")
