@@ -2590,7 +2590,7 @@ class SEDm:
         :return:
         """
 
-        base_url = 'https://www.projectpluto.com/cgi-bin/go/fo_serve.cgi?'
+        base_url = 'https://www.projectpluto.com/cgi-bin/fo/fo_serve.cgi?'
 
         # Pre-process name because comet designations wreak havoc
         if '_' in name:
@@ -2609,12 +2609,14 @@ class SEDm:
             '&epoch=' + eph_epoch + '&resids=' + eph_resid + \
             '&language=e&file_no=3'
 
+        logger.info(url_string)
+
         response = urlopen(url_string)
 
         data_json = json.loads(response.read())
 
         if 'ephemeris' in data_json:
-            return data_json['ephemeris']
+            return data_json
         else:
             return False
 
@@ -2928,6 +2930,7 @@ class SEDm:
         start = time.time()
         ret = None
         ret_lab = None
+        ephret = None
 
         # 1. Check if we have a path to json file or if a dict is already given
         if isinstance(manual, str):
@@ -3087,43 +3090,45 @@ class SEDm:
             if 'target' in obsdict:
                 try:
                     logger.info("Try #1 loading ephemeris")
-                    ret = self.get_non_sid_ephemeris(name=obsdict['target'],
-                                                     eph_time=obsdate)
+                    ephret = self.get_non_sid_ephemeris(name=obsdict['target'],
+                                                        eph_time=obsdate)
                 except ValueError:
                     logger.warning("ValueError exception")
                     pass
 
-                if ret:
+                if ephret:
                     pass
                 else:
                     logger.info("Try #1 loading ephemeris unsuccessful: "
                                 "Trying again")
                     try:
                         logger.info("Try #2 loading ephemeris")
-                        ret = self.get_non_sid_ephemeris(name=obsdict['target'],
-                                                         eph_time=obsdate)
+                        ephret = self.get_non_sid_ephemeris(
+                            name=obsdict['target'], eph_time=obsdate)
                     except ValueError:
                         logger.warning("ValueError exception")
                         pass
 
-                if ret:
+                if ephret:
                     pass
                 else:
                     logger.info("Try #2 loading ephemeris unsuccessful: "
                                 "Trying again")
                     try:
                         logger.info("Try #3 loading ephemeris")
-                        ret = self.get_non_sid_ephemeris(name=obsdict['target'],
-                                                         eph_time=obsdate)
+                        ephret = self.get_non_sid_ephemeris(
+                            name=obsdict['target'], eph_time=obsdate)
                     except ValueError:
                         logger.warning("ValueError exception")
                         pass
 
-                if ret:
+                if ephret:
                     pass
                 else:
                     logger.error("Try #3 loading ephemeris unsuccessful: "
                                  "Check object parameters")
+
+                logger.info("get_non_sid_ephemeris return:\n%s", ephret)
 
             else:
                 make_alert_call("MANUAL: cannot find 'target' in JSON file")
@@ -3149,17 +3154,17 @@ class SEDm:
             else:
                 req_id = -999
                 obj_id = -999
-                p60prid = '2022A-calib'
-                p60prnm = 'SEDm calibration'
+                p60prid = '2022B-Asteroids'
+                p60prnm = 'Near-Earth Asteroid'
                 p60prpi = 'SEDm'
                 logger.warning("Unable to obtain request data")
 
-            if 'ephemeris' not in ret:
+            if 'ephemeris' not in ephret:
 
                 return {"elaptime": time.time() - start,
-                        "error: 'ephemeris' not in return": ret}
+                        "error: 'ephemeris' not in return": ephret}
 
-            nonsid_dict = ret['ephemeris']['entries']['0']
+            nonsid_dict = ephret['ephemeris']['entries']['0']
             nonsid_dict['epoch'] = iso_to_epoch(nonsid_dict['ISO_time'])
 
             ret = self.run_ifu_science_seq(
@@ -3192,45 +3197,45 @@ class SEDm:
             if 'target' in obsdict:
                 try:
                     logger.info("Try #1 loading ephemeris")
-                    ret = self.get_non_sid_ephemeris(name=obsdict['target'],
-                                                     eph_time=obsdate)
+                    ephret = self.get_non_sid_ephemeris(name=obsdict['target'],
+                                                        eph_time=obsdate)
                 except ValueError:
                     logger.warning("ValueError exception")
                     pass
 
-                if ret:
+                if ephret:
                     pass
                 else:
                     logger.info("Try #1 loading ephemeris unsuccessful: "
                                 "Trying again")
                     try:
                         logger.info("Try #2 loading ephemeris")
-                        ret = self.get_non_sid_ephemeris(name=obsdict['target'],
-                                                         eph_time=obsdate)
+                        ephret = self.get_non_sid_ephemeris(
+                            name=obsdict['target'], eph_time=obsdate)
                     except ValueError:
                         logger.warning("ValueError exception")
                         pass
 
-                if ret:
+                if ephret:
                     pass
                 else:
                     logger.info("Try #2 loading ephemeris unsuccessful: "
                                 "Trying again")
                     try:
                         logger.info("Try #3 loading ephemeris")
-                        ret = self.get_non_sid_ephemeris(name=obsdict['target'],
-                                                         eph_time=obsdate)
+                        ephret = self.get_non_sid_ephemeris(
+                            name=obsdict['target'], eph_time=obsdate)
                     except ValueError:
                         logger.warning("ValueError exception")
                         pass
 
-                if ret:
+                if ephret:
                     pass
                 else:
                     logger.error("Try #3 loading ephemeris unsuccessful: "
                                  "Check object parameters")
 
-                logger.info("get_non_sid_ephemeris return:\n%s", ret)
+                logger.info("get_non_sid_ephemeris return:\n%s", ephret)
 
             else:
                 make_alert_call("Manual: cannot find 'target' in JSON file")
@@ -3256,16 +3261,17 @@ class SEDm:
             else:
                 req_id = -999
                 obj_id = -999
-                p60prid = '2022A-calib'
-                p60prnm = 'SEDm calibration'
+                p60prid = '2022B-Asteroids'
+                p60prnm = 'Near-Earth Asteroid'
                 p60prpi = 'SEDm'
                 logger.warning("Unable to obtain request data")
 
-            if 'ephemeris' not in ret:
+            if 'ephemeris' not in ephret:
 
-                return {"elaptime": time.time() - start, "error: 'ephemeris' not in return": ret}
+                return {"elaptime": time.time() - start,
+                        "error: 'ephemeris' not in return": ephret}
 
-            nonsid_dict = ret['ephemeris']['entries']['0']
+            nonsid_dict = ephret['ephemeris']['entries']['0']
             nonsid_dict['epoch'] = iso_to_epoch(nonsid_dict['ISO_time'])
 
             if 'repeat_filter' in obsdict:
@@ -3288,11 +3294,11 @@ class SEDm:
                 ra=nonsid_dict['RA'], dec=nonsid_dict['Dec'], equinox=2000,
                 epoch=nonsid_dict['epoch'], ra_rate=nonsid_dict['RAvel'],
                 dec_rate=nonsid_dict['decvel'], motion_flag="1",
-                p60prid='2022B-Asteroids', p60prpi='SEDm', email='',
-                p60prnm='Near-Earth Asteroid', obj_id=-999,
-                objfilter='RC%s' % (obsdict['rcfilter']), imgset='NA',
-                is_rc=True, run_acquisition=True, req_id=-999, acq_readout=2.0,
-                objtype='Transient', obs_order=obsdict['rcfilter'],
+                p60prid=p60prid, p60prpi=p60prpi, email='', p60prnm=p60prnm,
+                obj_id=obj_id, objfilter='RC%s' % (obsdict['rcfilter']),
+                imgset='NA', is_rc=True, run_acquisition=True, req_id=req_id,
+                acq_readout=2.0, objtype='Transient',
+                obs_order=obsdict['rcfilter'],
                 obs_exptime=obsdict['exptime'],
                 obs_repeat_filter=repeat_filter, repeat=n_sets,
                 non_sid_targ=True, move_during_readout=True, abpair=False,
