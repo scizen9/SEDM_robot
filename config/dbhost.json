@@ -1,0 +1,7 @@
+{"dbconn": {
+  "host": "localhost",
+  "port": 5432,
+  "dbname": "sedmdb",
+  "user": "sedmuser",
+  "password": "--password--"}
+}

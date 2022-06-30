@@ -1,0 +1,11 @@
+{
+    "cam_image_dir": "C:/images",
+    "ifu_serial_number": "05313416",
+    "rc_serial_number": "04001312",
+    "ifu_send_to_remote": true,
+    "ifu_set_temperature": -50,
+    "rc_send_to_remote": true,
+    "rc_set_temperature": -50,
+    "remote_config": "nemea.config.json",
+    "cam_abspath": "C:/Users/sedm/robot/logs/"
+}
