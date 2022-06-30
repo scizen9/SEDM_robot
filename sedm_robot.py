@@ -1,3 +1,5 @@
+import urllib.error
+
 from cameras.server import cam_client
 from observatory.server import ocs_client
 from sky.server import sky_client
@@ -1616,7 +1618,7 @@ class SEDm:
                 logger.error("sky.listen ERROR: %s", str(e))
                 logger.error("Error getting guider return", exc_info=True)
 
-        logger.info("Guider_list:%s" % self.guider_list)
+        logger.info("Number of guider images: %d", len(self.guider_list))
         logger.debug("Finished guider sequence for %s" % name)
 
     def run_standard_seq(self, cam, shutter="normal",
@@ -2611,7 +2613,11 @@ class SEDm:
 
         logger.info(url_string)
 
-        response = urlopen(url_string)
+        try:
+            response = urlopen(url_string)
+        except urllib.error.URLError as e:
+            logger.error(str(e))
+            return False
 
         try:
             data_json = json.loads(response.read())
