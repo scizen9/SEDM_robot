@@ -721,7 +721,7 @@ class SEDm:
             logger.info("ocs.arclamp status:\n%s", ret)
         if wait:
             logger.info("Waiting %s seconds for %s lamp to warm up",
-                        (self.lamp_wait_time[lamp.lower()], lamp))
+                        self.lamp_wait_time[lamp.lower()], lamp)
             time.sleep(self.lamp_wait_time[lamp.lower()])
 
         if not name:

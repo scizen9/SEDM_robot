@@ -268,7 +268,7 @@ while True:
 
         try:
             put_remote_file(local_path='/home/sedm/logs/telstatus.json',
-                            remote_path='/scr2/sedm/raw/telstatus/telstatus.json')
+                            remote_path='/data/sedmdrp/raw/telstatus/telstatus.json')
         except ConnectionResetError as err:
             print(str(err))
             pass

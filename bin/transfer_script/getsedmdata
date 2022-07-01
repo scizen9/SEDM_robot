@@ -1,14 +1,5 @@
 #!/bin/sh
 
-count=$( ping -c 1 pharos.caltech.edu | grep "0% packet loss" | wc -l )
-
-if [ $count -eq 0 ]
-then
-	echo "Pharos not alive!"
-else
-	rsync -aurz -e ssh --progress --chmod=D+rx,F+r,F-x /home/sedm/images/ pharos.caltech.edu:/scr2/sedm/raw/
-fi
-
 count=$( ping -c 1 minar.caltech.edu | grep "0% packet loss" | wc -l )
 
 if [ $count -eq 0 ]
