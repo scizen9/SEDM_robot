@@ -3317,6 +3317,51 @@ class SEDm:
 
             ret_lab = "MANUAL(nonsid): run_rc_science_seq status:\n"
 
+        elif command.lower() == "RWnonsid_ifu":
+            if "obsdate" in obsdict:
+                obsdate = obsdict['obsdate']
+            else:
+                obsdate = ""
+
+            if 'target' in obsdict:
+                ret = self.get_nonsideral_target(target=obsdict['target'], obsdate=obsdate)
+            else:
+                ret = self.get_nonsideral_target(obsdate=obsdate)
+
+            if 'data' not in ret:
+                return {"elaptime": time.time() - start, "error": ret}
+
+            nonsid_dict = ret['data']
+
+            ret = self.run_ifu_science_seq(self.ifu, name=nonsid_dict['name'],
+                                           imgtype='Science',
+                                           exptime=1200, ra=nonsid_dict['RA'],
+                                           dec=nonsid_dict['Dec'],
+                                           equinox=2000,
+                                           epoch=nonsid_dict['epoch'],
+                                           ra_rate=nonsid_dict['RAvel'],
+                                           dec_rate=nonsid_dict['decvel'],
+                                           motion_flag="1",
+                                           p60prid='2022A-calib',
+                                           p60prpi='SEDm',
+                                           email='',
+                                           p60prnm='Near-Earth Asteroid Spectra',
+                                           objfilter='ifu',
+                                           run_acquisition=True,
+                                           objtype='Transient',
+                                           non_sid_targ=True,
+                                           guide_readout=2.0,
+                                           move_during_readout=True,
+                                           abpair=False,
+                                           guide=False,
+                                           guide_shutter='normal',
+                                           move=True,
+                                           guide_exptime=30,
+                                           retry_on_failed_astrometry=False,
+                                           mark_status=True, status_file='')
+
+            ret_lab = "MANUAL(nonsid): run_ifu_science_seq status:"
+
         return {"elaptime": time.time() - start, "label": ret_lab,
                 "success": ret}
 
