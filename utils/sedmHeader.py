@@ -4,6 +4,9 @@ import time
 from astropy.io import fits
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+import SEDM_robot_version as Version
+
+hdrcfg_file = os.path.join(Version.CONFIG_DIR, 'header.json')
 
 
 def ra_to_deg(ra):
@@ -38,7 +41,7 @@ def set_object_coord(coord=-999, coord_type='ra'):
 class addHeader():
     def __init__(self):
 
-        with open("/home/sedm/SEDMv5/utils/header.json") as data_file:
+        with open(hdrcfg_file) as data_file:
             self.header_params = json.load(data_file)
         
         self.tcs_keys = self.header_params['tcs_list']
