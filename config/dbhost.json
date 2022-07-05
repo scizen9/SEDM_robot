@@ -3,5 +3,6 @@
   "port": 5432,
   "dbname": "sedmdb",
   "user": "sedmuser",
-  "password": "--password--"}
+  "password": "--password--"},
+  "remote_host": "minar.caltech.edu"
 }
