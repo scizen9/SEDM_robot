@@ -39,6 +39,9 @@ with open(os.path.join(Version.CONFIG_DIR, 'twilio.config.json')) as cfg_file:
 with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as cfg_file:
     log_cfg = json.load(cfg_file)
 
+with open(os.path.join(Version.CONFIG_DIR, 'sedm_robot.json')) as cfg_file:
+    sedm_robot_cfg = json.load(cfg_file)
+
 logger = logging.getLogger("sedmLogger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
@@ -1745,7 +1748,9 @@ class SEDm:
                 if 'data' in ret:
                     pass
 
-                ret = self.ocs.tel_offset(-94.9, -118.5)
+                ifu_ra_offset = sedm_robot_cfg['ifu']['offset']['ra']
+                ifu_dec_offset = sedm_robot_cfg['ifu']['offset']['dec']
+                ret = self.ocs.tel_offset(ifu_ra_offset, ifu_dec_offset)
                 if 'data' in ret:
                     pass
 
@@ -2322,10 +2327,12 @@ class SEDm:
             # Move to IFU position first?
             p_ra = p_dec = None
             if move and offset_to_ifu and not tcsx:
+                ifu_ra_offset = sedm_robot_cfg['ifu']['offset']['ra']
+                ifu_dec_offset = sedm_robot_cfg['ifu']['offset']['dec']
                 # Except if we have dec > 78 deg
                 if dec > 78.0:
-                    p_ra = round(-94.9/1.0, 3)
-                    p_dec = -118.5/1.0
+                    p_ra = round(ifu_ra_offset/1.0, 3)
+                    p_dec = ifu_dec_offset/1.0
                     # for i in range(1):
                     #    self.ocs.tel_offset(p_ra, 0.0)
                     #    time.sleep(3)
@@ -2334,7 +2341,8 @@ class SEDm:
                 else:
                     # lower dec, go ahead to IFU
                     logger.info("ocs.tel_offset (to IFU) status:\n%s",
-                                self.ocs.tel_offset(-94.9, -118.5))
+                                self.ocs.tel_offset(ifu_ra_offset,
+                                                    ifu_dec_offset))
             # read offsets from sky solver
             ret = self.sky.listen()
             logger.info("sky.listen(ACQ) status:\n%s", ret)
@@ -2355,11 +2363,14 @@ class SEDm:
                     _ = self.ocs.tel_offset(ra_off, dec_off)
                 # X the TCS if requested and if offsets are small?
                 if tcsx and move and offset_to_ifu:
+                    ifu_ra_offset = sedm_robot_cfg['ifu']['offset']['ra']
+                    ifu_dec_offset = sedm_robot_cfg['ifu']['offset']['dec']
                     if abs(ra_off) < 100 and abs(dec_off) < 100:
                         logger.info("ocs.telx(ACQ) status:\n%s",
                                     self.ocs.telx())
                     logger.info("ocs.tel_offset to IFU status:\n%s",
-                                self.ocs.tel_offset(-94.9, -118.5))
+                                self.ocs.tel_offset(ifu_ra_offset,
+                                                    ifu_dec_offset))
                 # Apply additional ra, dec offsets for non-sidereal targets
                 if non_sid_targ:
                     elapsed = time.time() - start

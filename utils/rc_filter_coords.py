@@ -1,8 +1,13 @@
 from astropy.coordinates import SkyCoord, Angle
 import astropy.units as u
 import numpy as np
+import os
 import time
 import json
+import SEDM_robot_version as Version
+
+with open(os.path.join(Version.CONFIG_DIR, 'sedm_robot.json')) as data_file:
+    sedm_robot_cfg = json.load(data_file)
 
 
 def offsets(ra, dec, offset_dict=None):
@@ -17,9 +22,7 @@ def offsets(ra, dec, offset_dict=None):
     offset_pos = {}
     try:
         if not offset_dict:
-            # TODO: put this in config file instead of hard coding it
-            with open("/home/sedm/SEDMv5/utils/offsets.json") as data_file:
-                offset_dict = json.load(data_file)
+            offset_dict = sedm_robot_cfg['rc']['offsets']
 
         obj = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg))
         for flt, v in offset_dict['offset_filter'].items():
