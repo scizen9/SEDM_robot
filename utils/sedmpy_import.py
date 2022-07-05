@@ -18,8 +18,8 @@ print(params)
 
 def dbconnect():
     return SedmDB(dbname=params['dbname'], host=params['host'],
-                  port=params['port'])
-    # , supply_pass=True, passwd=params['password'])
+                  port=params['port'],
+                  supply_pass=True, passwd=params['password'])
 
 
 if __name__ == "__main__":
