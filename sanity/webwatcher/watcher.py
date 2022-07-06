@@ -10,11 +10,7 @@ telescope = tcs.Telescope(gxnaddress=('198.202.125.194', 49300))
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 
-with open(os.path.join(Version.CONFIG_DIR, 'sedm.json')) as data_file:
-    sedm_cfg = json.load(data_file)
-
-with open(os.path.join(Version.CONFIG_DIR,
-                       sedm_cfg['dbhost_config'])) as data_file:
+with open(os.path.join(Version.CONFIG_DIR, 'watcher.json')) as data_file:
     params = json.load(data_file)
 
 
