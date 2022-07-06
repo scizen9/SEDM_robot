@@ -164,7 +164,8 @@ class SEDm:
         self.required_sciobs_keywords = ['ra', 'dec', 'name', 'obs_dict']
 
         if not configuration_file:
-            configuration_file = os.path.join(Version.CONFIG_DIR, 'sedm.json')
+            configuration_file = os.path.join(Version.CONFIG_DIR,
+                                              'sedm_robot.json')
 
         with open(configuration_file) as data_file:
             self.params = json.load(data_file)

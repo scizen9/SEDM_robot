@@ -9,11 +9,11 @@ import json
 import traceback
 import SEDM_robot_version as Version
 
-with open(os.path.join(Version.CONFIG_DIR, 'sedm.json')) as cfg_file:
-    sedm_cfg = json.load(cfg_file)
+with open(os.path.join(Version.CONFIG_DIR, 'sedm_observe.json')) as cfg_file:
+    sedm_observe_cfg = json.load(cfg_file)
 
-status_file_dir = sedm_cfg['status_dir']
-manual_dir = sedm_cfg['manual_dir']
+status_file_dir = sedm_observe_cfg['status_dir']
+manual_dir = sedm_observe_cfg['manual_dir']
 
 calib_done_file = os.path.join(os.path.join(status_file_dir, "calib_done.txt"))
 focus_done_file = os.path.join(os.path.join(status_file_dir, "focus_done.json"))
