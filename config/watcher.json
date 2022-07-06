@@ -2,5 +2,9 @@
   "remote_computer": "minar.caltech.edu",
   "remote_port": 22,
   "remote_user": "sedmdrp",
-  "remote_pwd": "---password---"
+  "remote_pwd": "---password---",
+  "local_path": "/home/sedm/logs/telstatus.json",
+  "remote_path": "/data/sedmdrp/raw/telstatus/telstatus.json",
+  "gxn_ip": "198.202.125.194",
+  "gxn_port": 49300
 }

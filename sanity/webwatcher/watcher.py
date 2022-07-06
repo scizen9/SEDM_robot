@@ -6,12 +6,13 @@ import time
 import json
 import SEDM_robot_version as Version
 
-telescope = tcs.Telescope(gxnaddress=('198.202.125.194', 49300))
-
-SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
-
 with open(os.path.join(Version.CONFIG_DIR, 'watcher.json')) as data_file:
     params = json.load(data_file)
+
+telescope = tcs.Telescope(gxnaddress=(params['gxn_ip'], params['gxn_port']))
+
+with open(os.path.join(Version.CONFIG_DIR, 'sedm_robot.json')) as data_file:
+    sedm_cfg = json.load(data_file)
 
 
 def sftp_connection(remote_computer=params['remote_computer'],
@@ -78,12 +79,12 @@ def put_remote_file(remote_path=None, local_path='telstatus.json',
 def connect(connect_ifu=True, connect_rc=True):
     if connect_ifu:
         cifu = socket.socket()
-        cifu.connect(('10.200.155.4', 5001))
+        cifu.connect((sedm_cfg['ifu_ip'], sedm_cfg['ifu_port']))
     else:
         return None
     if connect_rc:
         crc = socket.socket()
-        crc.connect(('10.200.155.4', 5002))
+        crc.connect((sedm_cfg['rc_ip'], sedm_cfg['rc_port']))
     else:
         return None
 
@@ -242,15 +243,13 @@ while True:
 
         jsonstr = json.dumps(status_dict)
         print(jsonstr)
-        f = open("/home/sedm/logs/telstatus.json", "w")
+        f = open(params['local_path'], "w")
         f.write(jsonstr)
         f.close()
 
-        put_remote_file(local_path='/home/sedm/logs/telstatus.json',
-                        remote_path='/scr2/sedm/raw/telstatus/telstatus.json')
-        put_remote_file(local_path='/home/sedm/logs/telstatus.json',
-                        remote_path='/data/sedmdrp/raw/telstatus/telstatus.json',
-                        remote_computer='minar.caltech.edu')
+        put_remote_file(local_path=params['local_path'],
+                        remote_path=params['remote_path'],
+                        remote_computer=params['remote_computer'])
         time.sleep(5)
     except Exception as e:
         print(str(e))
@@ -258,13 +257,14 @@ while True:
             ifu, rc = connect()
 
         jsonstr = json.dumps(status_dict)
-        f = open("/home/sedm/logs/telstatus.json", "w")
+        f = open(params['local_path'], "w")
         f.write(jsonstr)
         f.close()
 
         try:
-            put_remote_file(local_path='/home/sedm/logs/telstatus.json',
-                            remote_path='/data/sedmdrp/raw/telstatus/telstatus.json')
+            put_remote_file(local_path=params['local_path'],
+                            remote_path=params['remote_path'],
+                            remote_computer=params['remote_computer'])
         except ConnectionResetError as err:
             print(str(err))
             pass
