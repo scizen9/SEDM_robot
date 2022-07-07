@@ -926,7 +926,7 @@ class SEDm:
         else:
             cube_params = self.params
 
-        cube_type = "%s_datacube" % cube
+        cube_type = "%s" % cube
         logger.info("cube_type  : %s", cube_type)
         logger.info("cube_params: %s", cube_params)
         data_dir = os.path.join(self.robot_image_dir, self._ut_dir_date())
