@@ -2619,7 +2619,7 @@ class SEDm:
             '&year=' + eph_time + '&n_steps=' + eph_nsteps + \
             '&stepsize=' + eph_stepsize + '&mpc_code=' + eph_mpc + \
             '&faint_limit=' + eph_faint + '&ephem_type=' + eph_type + \
-            '&motion=' + eph_motion + '&element_center=' + eph_center + \
+            '&separate_motions=' + eph_motion + '&element_center=' + eph_center + \
             '&epoch=' + eph_epoch + '&resids=' + eph_resid + \
             '&language=e&file_no=3'
 
