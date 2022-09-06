@@ -267,6 +267,7 @@ class SEDm:
                     self.ocs.initialize_stages()
                 if self.run_telescope:
                     self.ocs.initialize_tcs()
+                    self.ocs.halogens_off()
         if self.run_sanity:
             logger.info("Initializing sanity server")
             self.sanity = sanity_client.Sanity()
