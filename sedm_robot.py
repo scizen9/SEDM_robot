@@ -1993,6 +1993,8 @@ class SEDm:
             pass
         if status_file is not None:
             pass
+        if abpair:
+            pass
 
         if mark_status:
             self.sky.update_target_request(req_id, status="ACTIVE",
@@ -2018,6 +2020,7 @@ class SEDm:
                     non_sid_targ=non_sid_targ)
                 logger.info("run_acquisition_seq status:\n%s", ret)
             else:
+                logger.warning("Doing a blind offset to IFU!")
                 ret = self.ocs.tel_move(name=name, ra=ra, dec=dec,
                                         equinox=equinox, ra_rate=ra_rate,
                                         dec_rate=dec_rate,
@@ -2027,11 +2030,12 @@ class SEDm:
 
                 logger.info("ocs.tel_offset status:\n%s",
                             self.ocs.tel_offset(-99.9, -112.0))
+            # Short exposures are more vulnerable to settling issues
+            if exptime < 30.:
+                time.sleep(3)   # give some time for the telescope to settle
 
         # Commenting this out after 2022-June primary resurfacing
         # exptime = exptime * 1.20
-        if abpair:
-            exptime = exptime / 2
 
         if guide:
             logger.debug("Beginning guider sequence")
@@ -2073,47 +2077,6 @@ class SEDm:
                               imgset='A', verbose=True,
                               is_rc=is_rc, abpair=abpair, name=name)
         logger.info("take_image(IFU) status:\n%s", ret)
-
-        if abpair:
-            self.ocs.tel_offset(-5, 5)
-            if guide:
-                logger.debug("Beginning guider sequence")
-                try:
-                    _ = Thread(target=self.run_guider_seq, kwargs={
-                        'cam': self.rc,
-                        'guide_length': exptime,
-                        'guide_exptime': guide_exptime,
-                        'readout': guide_readout,
-                        'shutter': guide_shutter,
-                        'name': name,
-                        'email': email,
-                        'objfilter': objfilter,
-                        'req_id': req_id,
-                        'obj_id': obj_id,
-                        'test': '',
-                        'imgset': imgset,
-                        'is_rc': True,
-                        'object_ra': ra,
-                        'object_dec': dec,
-                        'p60prid': p60prid,
-                        'p60prpi': p60prpi,
-                        'p60prnm': p60prnm
-                    })
-                except Exception as e:
-                    logger.exception("Error running the guider command")
-                    logger.error(str(e))
-
-            ret = self.take_image(cam, exptime=exptime,
-                                  shutter=shutter, readout=readout,
-                                  start=start, save_as=save_as, test=test,
-                                  imgtype=imgtype, objtype=objtype,
-                                  object_ra=ra, object_dec=dec,
-                                  email=email, p60prid=p60prid, p60prpi=p60prpi,
-                                  p60prnm=p60prnm, obj_id=obj_id,
-                                  req_id=req_id, objfilter=objfilter,
-                                  imgset='B',
-                                  is_rc=is_rc, abpair=abpair, name=name)
-            logger.info("take_image(IFU:AB) status:\n%s", ret)
 
         if 'data' in ret and mark_status:
             self.sky.update_target_request(req_id, status='COMPLETED',
