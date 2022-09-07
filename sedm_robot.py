@@ -200,11 +200,11 @@ class SEDm:
             logger.info("Initializing RC camera on")
             try:
                 self.rc = cam_client.Camera(self.rc_ip, self.rc_port)
+                logger.info('rc return: %s', self.rc.initialize())
             except Exception as e:
                 make_alert_call("RC client not set up. Check on Pylos if client is running")
                 logger.error("Error setting up RC client")
                 logger.error(str(e))
-            logger.info('rc return: %s', self.rc.initialize())
         logger.info("run_ifu = %s", self.run_ifu)
         if self.run_ifu:
             logger.info("Initializing IFU camera")
