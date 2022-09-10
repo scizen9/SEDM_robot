@@ -198,13 +198,23 @@ class SEDm:
         start = time.time()
         if self.run_rc:
             logger.info("Initializing RC camera on")
-            self.rc = cam_client.Camera(self.rc_ip, self.rc_port)
-            logger.info('rc return: %s', self.rc.initialize())
+            try:
+                self.rc = cam_client.Camera(self.rc_ip, self.rc_port)
+                logger.info('rc return: %s', self.rc.initialize())
+            except Exception as e:
+                make_alert_call("RC client not set up. Check on Pylos if client is running")
+                logger.error("Error setting up RC client")
+                logger.error(str(e))
         logger.info("run_ifu = %s", self.run_ifu)
         if self.run_ifu:
             logger.info("Initializing IFU camera")
-            self.ifu = cam_client.Camera(self.ifu_ip, self.ifu_port)
-            logger.info('ifu return: %s', self.ifu.initialize())
+            try:
+                self.ifu = cam_client.Camera(self.ifu_ip, self.ifu_port)
+                logger.info('ifu return: %s', self.ifu.initialize())
+            except Exception as e:
+                make_alert_call("IFU client not set up. Check on Pylos to see if client is running")
+                logger.error("Error setting up IFU client")
+                logger.error(str(e))
         logger.info("Wait 5 sec")
         time.sleep(5)
         logger.info("Check temperature status")
