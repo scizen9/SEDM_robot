@@ -188,10 +188,11 @@ class SEDm:
         # logger.info("Setting directory date to: %s", dir_date)
         return dir_date
 
-    def initialize(self):
+    def initialize(self, lamps_off=False):
         """
         Initialize the system based on the initial conditions set from
         calling SEDm class
+        :param lamps_off: bool - set to turn off all cal lamps when initializing
         :return:
         """
 
@@ -273,11 +274,16 @@ class SEDm:
             else:
                 if self.run_arclamps:
                     self.ocs.initialize_lamps()
+                    if lamps_off:
+                        for lamp in ['xe', 'cd', 'hg']:
+                            ret = self.ocs.arclamp(lamp, command="OFF")
+                            time.sleep(1)
                 if self.run_stage:
                     self.ocs.initialize_stages()
                 if self.run_telescope:
                     self.ocs.initialize_tcs()
-                    self.ocs.halogens_off()
+                    if lamps_off:
+                        self.ocs.halogens_off()
         if self.run_sanity:
             logger.info("Initializing sanity server")
             self.sanity = sanity_client.Sanity()
