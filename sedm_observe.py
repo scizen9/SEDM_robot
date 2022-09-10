@@ -43,7 +43,7 @@ def clean_up():
 
 def run_observing_loop(do_focus=True, do_standard=True,
                        do_calib=True, do_twilights=True,
-                       clean_manual=True):
+                       lamps_off=False, clean_manual=True):
 
     print("\nReSTARTING OBSERVING LOOP at ", datetime.datetime.utcnow())
     print("SEDM_robot version:", Version.__version__, "\n")
@@ -93,7 +93,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
     std_count = 0
 
     robot = SEDm()
-    robot.initialize()
+    robot.initialize(lamps_off=lamps_off)
     ntimes = obstimes.ScheduleNight()
     night_obs_times = ntimes.get_observing_times_by_date()
 
@@ -429,14 +429,18 @@ def run_observing_loop(do_focus=True, do_standard=True,
 
 
 if __name__ == "__main__":
+    lampsoff = False
     try:
         while True:
             try:
-                run_observing_loop()
+                run_observing_loop(lamps_off=lampsoff)
+                lampsoff = False
             except Exception as e:
                 tb_str = traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
                 print(datetime.datetime.utcnow(), "FATAL (restart):\n", "".join(tb_str))
                 print("\nSleep for 60s and start loop again")
+                # Something went wrong, let's restart with all cal lamps off
+                lampsoff = True
                 time.sleep(60)
                 pass
 
