@@ -433,6 +433,10 @@ if __name__ == "__main__":
     try:
         while True:
             try:
+                if lampsoff:
+                    print("Turning all lamps off")
+                else:
+                    print("Keeping lamps in current status")
                 run_observing_loop(lamps_off=lampsoff)
                 lampsoff = False
             except Exception as e:
