@@ -416,8 +416,12 @@ class SEDm:
                                             do_lamps=do_lamps))
         if not object_ra or not object_dec:
             logger.info("Using TCS RA and DEC")
-            object_ra = obsdict['telescope_ra']
-            object_dec = obsdict['telescope_dec']
+            try:
+                object_ra = obsdict['telescope_ra']
+                object_dec = obsdict['telescope_dec']
+            except KeyError:
+                object_ra = 0.0
+                object_dec = 0.0
 
         if not is_rc:
             logger.info("updating IFU start of obs keywords")
