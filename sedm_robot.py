@@ -420,6 +420,8 @@ class SEDm:
                 object_ra = obsdict['telescope_ra']
                 object_dec = obsdict['telescope_dec']
             except KeyError:
+                logger.warning("No TCS object coords in status!")
+                print("No TCS object coords in status!")
                 object_ra = 0.0
                 object_dec = 0.0
 
