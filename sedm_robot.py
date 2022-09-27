@@ -197,6 +197,8 @@ class SEDm:
         """
 
         start = time.time()
+
+        logger.info("run_rc = %s", self.run_rc)
         if self.run_rc:
             logger.info("Initializing RC camera on")
             try:
@@ -206,6 +208,7 @@ class SEDm:
                 make_alert_call("RC client not set up. Check on Pylos if client is running")
                 logger.error("Error setting up RC client")
                 logger.error(str(e))
+
         logger.info("run_ifu = %s", self.run_ifu)
         if self.run_ifu:
             logger.info("Initializing IFU camera")
@@ -216,33 +219,14 @@ class SEDm:
                 make_alert_call("IFU client not set up. Check on Pylos to see if client is running")
                 logger.error("Error setting up IFU client")
                 logger.error(str(e))
+
         logger.info("Wait 5 sec")
         time.sleep(5)
         logger.info("Check temperature status")
-        rc_get_temp_status = self.rc.get_temp_status()
-        ifu_get_temp_status = self.ifu.get_temp_status()
-        logger.info('rc_get_temp_status: %s', rc_get_temp_status)
-        logger.info('ifu_get_temp_status: %s', ifu_get_temp_status)
-        if "error" in rc_get_temp_status:
-            logger.error('error: %s', rc_get_temp_status['error'])
-            rc_lock = False
-            rc_temp = 0.
-        else:
-            rc_lock = rc_get_temp_status['templock']
-            rc_temp = rc_get_temp_status['camtemp']
-        if "error" in ifu_get_temp_status:
-            logger.error('error: %s', ifu_get_temp_status['error'])
-            ifu_lock = False
-            ifu_temp = 0.
-        else:
-            ifu_lock = ifu_get_temp_status['templock']
-            ifu_temp = ifu_get_temp_status['camtemp']
-        # loop until locked
-        while not rc_lock or not ifu_lock:
-            logger.info("Waiting for temperature lock")
-            time.sleep(5)
+
+        if self.run_rc:
             rc_get_temp_status = self.rc.get_temp_status()
-            ifu_get_temp_status = self.ifu.get_temp_status()
+            logger.info('rc_get_temp_status: %s', rc_get_temp_status)
             if "error" in rc_get_temp_status:
                 logger.error('error: %s', rc_get_temp_status['error'])
                 rc_lock = False
@@ -250,20 +234,56 @@ class SEDm:
             else:
                 rc_lock = rc_get_temp_status['templock']
                 rc_temp = rc_get_temp_status['camtemp']
+        else:
+            rc_lock = True
+
+        if self.run_ifu:
+            ifu_get_temp_status = self.ifu.get_temp_status()
+            logger.info('ifu_get_temp_status: %s', ifu_get_temp_status)
             if "error" in ifu_get_temp_status:
-                logger.error('error: ', ifu_get_temp_status['error'])
+                logger.error('error: %s', ifu_get_temp_status['error'])
                 ifu_lock = False
                 ifu_temp = 0.
             else:
                 ifu_lock = ifu_get_temp_status['templock']
                 ifu_temp = ifu_get_temp_status['camtemp']
-            logger.info("RC temp, lock = %.1f, %s", rc_temp, rc_lock)
-            logger.info("IFU temp, lock = %.1f, %s", ifu_temp, ifu_lock)
+        else:
+            ifu_lock = True
+
+        # loop until locked
+        while not rc_lock or not ifu_lock:
+
+            logger.info("Waiting for temperature lock")
+            time.sleep(5)
+
+            if self.run_rc:
+                rc_get_temp_status = self.rc.get_temp_status()
+                if "error" in rc_get_temp_status:
+                    logger.error('error: %s', rc_get_temp_status['error'])
+                    rc_lock = False
+                    rc_temp = 0.
+                else:
+                    rc_lock = rc_get_temp_status['templock']
+                    rc_temp = rc_get_temp_status['camtemp']
+                logger.info("RC temp, lock = %.1f, %s", rc_temp, rc_lock)
+
+            if self.run_ifu:
+                ifu_get_temp_status = self.ifu.get_temp_status()
+                if "error" in ifu_get_temp_status:
+                    logger.error('error: ', ifu_get_temp_status['error'])
+                    ifu_lock = False
+                    ifu_temp = 0.
+                else:
+                    ifu_lock = ifu_get_temp_status['templock']
+                    ifu_temp = ifu_get_temp_status['camtemp']
+                logger.info("IFU temp, lock = %.1f, %s", ifu_temp, ifu_lock)
+
         logger.info("RC and IFU temperature lock achieved")
 
         if self.run_sky:
             logger.info("Initializing sky server")
             self.sky = sky_client.Sky()
+
         if self.run_ocs:
             logger.info("Initializing observatory components")
             self.ocs = ocs_client.Observatory()
@@ -284,9 +304,11 @@ class SEDm:
                     self.ocs.initialize_tcs()
                     if lamps_off:
                         self.ocs.halogens_off()
+
         if self.run_sanity:
             logger.info("Initializing sanity server")
             self.sanity = sanity_client.Sanity()
+
         self.initialized = True
         return {'elaptime': time.time() - start, 'data': "System initialized"}
 

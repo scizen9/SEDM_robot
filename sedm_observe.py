@@ -7,6 +7,7 @@ import os
 import glob
 import json
 import traceback
+import argparse
 import SEDM_robot_version as Version
 
 with open(os.path.join(Version.CONFIG_DIR, 'sedm_observe.json')) as cfg_file:
@@ -429,25 +430,64 @@ def run_observing_loop(do_focus=True, do_standard=True,
 
 
 if __name__ == "__main__":
-    lampsoff = False
-    try:
-        while True:
-            try:
-                if lampsoff:
-                    print("Turning all lamps off")
-                else:
-                    print("Keeping lamps in current status")
-                run_observing_loop(lamps_off=lampsoff)
-                lampsoff = False
-            except Exception as e:
-                tb_str = traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
-                print(datetime.datetime.utcnow(), "FATAL (restart):\n", "".join(tb_str))
-                print("\nSleep for 60s and start loop again")
-                # Something went wrong, let's restart with all cal lamps off
-                lampsoff = True
-                time.sleep(60)
-                pass
 
-    except Exception as e:
-        tb_str = traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
-        print("".join(tb_str))
+    parser = argparse.ArgumentParser(
+        description="""Start SEDM observations""",
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+
+    parser.add_argument('-r', '--reset', action="store_true", default=False,
+                        help='Reset calibration lamps')
+    parser.add_argument('-c', '--close', action="store_true", default=False,
+                        help='Close dome')
+    parser.add_argument('-o', '--open', action="store_true", default=False,
+                        help='Open dome')
+    args = parser.parse_args()
+
+    if args.reset:      # reset dome, arc lamps
+        robot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
+                     run_sanity=False)
+        robot.initialize(lamps_off=True)
+
+    elif args.close:    # close dome
+        robot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
+                     run_sanity=False)
+        robot.initialize()
+        # close dome
+        ret = robot.ocs.dome('close')
+        print('ocs.dome status:', ret)
+
+    elif args.open:     # open dome
+        robot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
+                     run_sanity=False)
+        robot.initialize()
+        # open dome
+        ret = robot.ocs.dome('open')
+        print('ocs.dome status:', ret)
+
+    else:               # start observations
+        lampsoff = False
+        try:
+            while True:
+                try:
+                    if lampsoff:
+                        print("Turning all lamps off")
+                    else:
+                        print("Keeping lamps in current status")
+                    run_observing_loop(lamps_off=lampsoff)
+                    lampsoff = False
+                except Exception as e:
+                    tb_str = traceback.format_exception(etype=type(e), value=e,
+                                                        tb=e.__traceback__)
+                    print(datetime.datetime.utcnow(),
+                          "FATAL (restart):\n", "".join(tb_str))
+                    print("\nSleep for 60s and start loop again")
+                    # Something went wrong, let's restart with all cal lamps off
+                    lampsoff = True
+                    time.sleep(60)
+                    pass
+
+        except Exception as e:
+            tb_str = traceback.format_exception(etype=type(e), value=e,
+                                                tb=e.__traceback__)
+            print("".join(tb_str))
