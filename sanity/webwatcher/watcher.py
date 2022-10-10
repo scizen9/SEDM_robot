@@ -43,7 +43,7 @@ def sftp_connection(remote_computer=params['remote_computer'],
     return sftp, transport
 
 
-def put_remote_file(remote_path=None, local_path='telstatus.json',
+def put_remote_file(remote_path=None, local_path=params['local_path'],
                     remote_computer=params['remote_computer'],
                     replace_path_str="s:"):
     """
