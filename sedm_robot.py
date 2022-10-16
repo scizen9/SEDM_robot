@@ -291,18 +291,29 @@ class SEDm:
             if self.run_arclamps and self.run_stage and self.run_telescope:
                 logger.info('ocs return: %s', self.ocs.initialize_ocs())
                 logger.info(self.ocs.take_control())
+                if lamps_off:
+                    logger.info("Turning arc lamps off")
+                    for lamp in ['xe', 'cd', 'hg']:
+                        ret = self.ocs.arclamp(lamp, command="OFF")
+                        logger.info(lamp)
+                        time.sleep(1)
+                    logger.info("Turning halogen lamp off")
+                    self.ocs.halogens_off()
             else:
                 if self.run_arclamps:
                     self.ocs.initialize_lamps()
                     if lamps_off:
+                        logger.info("Turning arc lamps off")
                         for lamp in ['xe', 'cd', 'hg']:
                             ret = self.ocs.arclamp(lamp, command="OFF")
+                            logger.info(lamp)
                             time.sleep(1)
                 if self.run_stage:
                     self.ocs.initialize_stages()
                 if self.run_telescope:
                     self.ocs.initialize_tcs()
                     if lamps_off:
+                        logger.info("Turning halogen lamp off")
                         self.ocs.halogens_off()
 
         if self.run_sanity:
