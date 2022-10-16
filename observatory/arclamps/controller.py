@@ -81,7 +81,7 @@ class Lamp:
 
             cmd = cmd.encode('utf-8')
             self.socket.send(b"%s\r" % cmd)
-            logger.info("Command set")
+            logger.info("Command sent")
             time.sleep(.1)
             self.socket.send(b"logout\r")
             data = self.socket.recv(2048)
@@ -89,7 +89,7 @@ class Lamp:
             self.socket.close()
             logger.info("Socket closed")
             return {'elaptime': time.time()-start,
-                    'data': data}
+                    'data': str(data)}
         except Exception as e:
             logger.error("Error sending command", exc_info=True)
             return {'elaptime': time.time() - start,
