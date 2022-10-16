@@ -5,6 +5,7 @@ from astropy.io import fits
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 import SEDM_robot_version as Version
+import math
 
 hdrcfg_file = os.path.join(Version.CONFIG_DIR, 'header.json')
 
@@ -316,12 +317,18 @@ class addHeader():
         prihdr.set("OUT_AIR", obsdict["outside_air_temp"], "Outside Air Temp")
         prihdr.set("OUT_HUM", obsdict["outside_rel_hum"],
                    "Outside Relative Humidity")
-        prihdr.set("OUT_DEW", obsdict["outside_dewpt"], "Outside Dew Point(C)")
+        if math.isnan(obsdict["outside_dewpt"]):
+            prihdr.set("OUT_DEW", "NaN", "Outside Dew Point(C)")
+        else:
+            prihdr.set("OUT_DEW", obsdict["outside_dewpt"], "Outside Dew Point(C)")
         prihdr.set("IN_AIR", obsdict["inside_air_temp"],
                    "Inside Air Temperature(C)")
         prihdr.set("IN_HUM", obsdict["inside_rel_hum"],
                    "Inside Relative Humidity")
-        prihdr.set("IN_DEW", obsdict["inside_dewpt"], "Inside Dew Point")
+        if math.isnan(obsdict["inside_dewpt"]):
+            prihdr.set("IN_DEW", "NaN", "Inside Dew Point")
+        else:
+            prihdr.set("IN_DEW", obsdict["inside_dewpt"], "Inside Dew Point")
         prihdr.set("MIR_TEMP", obsdict["mirror_temp"], "Primary Temp")
         prihdr.set("TOP_AIR", obsdict["top_air_temp"], "Top Air Temp")
         prihdr.set("PRI_TEMP", obsdict["primary_cell_temp"],
