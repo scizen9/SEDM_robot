@@ -1422,7 +1422,7 @@ class SEDm:
 
         # get nominal rc focus based on temperature
         weather_dict = self.ocs.check_weather()
-        if math.isnan(weather_dict['data']['inside_dewpt']):
+        if 'nan' in weather_dict['data']['inside_dewpt']:
             focus_temp = 13.0   # A guess 10-16-2022
             focus_guess = True
         else:
