@@ -119,8 +119,8 @@ def run_observing_loop(do_focus=True, do_standard=True,
         if not os.path.exists(calib_done_file):
             # ret = robot.take_datacube_eff()
             print("Doing IFU cals")
-            ret = robot.take_datacube(robot.ifu, cube='ifu', move=True)
-            print("take_datacube - IFU status:\n", ret)
+            ret0 = robot.take_datacube(robot.ifu, cube='ifu', move=True)
+            print("take_datacube - IFU status:\n", ret0)
             print("Doing RC cals")
             ret1 = robot.take_datacube(robot.rc, cube='rc', move=True)
             print("take_datacube - RC status:\n", ret1)
