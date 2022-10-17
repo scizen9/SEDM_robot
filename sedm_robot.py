@@ -1503,10 +1503,10 @@ class SEDm:
                 logger.info("nominal rc focus: %.2f for temperature %.1f",
                             nominal_rc_focus, focus_temp)
                 # nominal range
-                if focus_guess:
+                if focus_guess:     # bigger range if we are guessing
                     foc_range = np.arange(nominal_rc_focus-0.5,
                                           nominal_rc_focus+0.5, 0.05)
-                else:
+                else:               # otherwise, smaller range
                     foc_range = np.arange(nominal_rc_focus-0.23,
                                           nominal_rc_focus+0.23, 0.05)
             elif focus_type == 'ifu_stage2':
