@@ -1421,8 +1421,14 @@ class SEDm:
             pass
 
         # get nominal rc focus based on temperature
-        focus_temp = float(
-            self.ocs.check_weather()['data']['inside_air_temp'])
+        weather_dict = self.ocs.check_weather()
+        if math.isnan(weather_dict['data']['inside_dwpt']):
+            focus_temp = 13.0   # A guess 10-16-2022
+            focus_guess = True
+        else:
+            focus_temp = float(
+                weather_dict['data']['inside_air_temp'])
+            focus_guess = False
         nominal_rc_focus = rc_focus.temp_to_focus(focus_temp) + \
             self.params['rc_focus_offset']
         img_list = []
@@ -1497,8 +1503,12 @@ class SEDm:
                 logger.info("nominal rc focus: %.2f for temperature %.1f",
                             nominal_rc_focus, focus_temp)
                 # nominal range
-                foc_range = np.arange(nominal_rc_focus-0.23,
-                                      nominal_rc_focus+0.23, 0.05)
+                if focus_guess:
+                    foc_range = np.arange(nominal_rc_focus-0.5,
+                                          nominal_rc_focus+0.5, 0.05)
+                else:
+                    foc_range = np.arange(nominal_rc_focus-0.23,
+                                          nominal_rc_focus+0.23, 0.05)
             elif focus_type == 'ifu_stage2':
                 foc_range = np.arange(2, 3.6, .2)
             else:
