@@ -44,7 +44,8 @@ def clean_up():
 
 def run_observing_loop(do_focus=True, do_standard=True,
                        do_calib=True, do_twilights=True,
-                       lamps_off=False, clean_manual=True):
+                       lamps_off=False, clean_manual=True,
+                       temperature=None):
 
     print("\nReSTARTING OBSERVING LOOP at ", datetime.datetime.utcnow())
     print("SEDM_robot version:", Version.__version__, "\n")
@@ -62,6 +63,13 @@ def run_observing_loop(do_focus=True, do_standard=True,
     else:
         focus_done = False
         focus_data = None
+
+    if temperature:
+        focus_temp = temperature
+        focus_guess = True
+    else:
+        focus_temp = None
+        focus_guess = False
 
     if os.path.exists(standard_done_file):
         standard_done = True
@@ -93,7 +101,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
     sci_count = 0
     std_count = 0
 
-    robot = SEDm()
+    robot = SEDm(focus_temp=focus_temp, focus_guess=focus_guess)
     robot.initialize(lamps_off=lamps_off)
     ntimes = obstimes.ScheduleNight()
     night_obs_times = ntimes.get_observing_times_by_date()
@@ -442,28 +450,30 @@ if __name__ == "__main__":
                         help='Close dome')
     parser.add_argument('-o', '--open', action="store_true", default=False,
                         help='Open dome')
+    parser.add_argument('-t', '--temperature', type=float, default=None,
+                        help='Temperature estimate (for focus)')
     args = parser.parse_args()
 
     if args.reset:      # reset dome, arc lamps
-        robot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
-                     run_sanity=False)
-        robot.initialize(lamps_off=True)
+        trobot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
+                      run_sanity=False)
+        trobot.initialize(lamps_off=True)
 
     elif args.close:    # close dome
-        robot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
-                     run_sanity=False)
-        robot.initialize()
+        trobot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
+                      run_sanity=False)
+        trobot.initialize()
         # close dome
-        ret = robot.ocs.dome('close')
-        print('ocs.dome status:', ret)
+        tret = trobot.ocs.dome('close')
+        print('ocs.dome status:', tret)
 
     elif args.open:     # open dome
-        robot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
-                     run_sanity=False)
-        robot.initialize()
+        trobot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
+                      run_sanity=False)
+        trobot.initialize()
         # open dome
-        ret = robot.ocs.dome('open')
-        print('ocs.dome status:', ret)
+        tret = trobot.ocs.dome('open')
+        print('ocs.dome status:', tret)
 
     else:               # start observations
         lampsoff = False
@@ -474,7 +484,8 @@ if __name__ == "__main__":
                         print("Turning all lamps off")
                     else:
                         print("Keeping lamps in current status")
-                    run_observing_loop(lamps_off=lampsoff)
+                    run_observing_loop(lamps_off=lampsoff,
+                                       temperature=args.temperture)
                     lampsoff = False
                 except Exception as e:
                     tb_str = traceback.format_exception(etype=type(e), value=e,
