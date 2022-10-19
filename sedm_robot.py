@@ -99,7 +99,8 @@ class SEDm:
                  initialized=False, run_stage=True, run_arclamps=True,
                  run_ocs=True, run_telescope=True, run_sky=True,
                  run_sanity=True, configuration_file='', data_dir=None,
-                 focus_temp=None, focus_pos=None, focus_time=None):
+                 focus_temp=None, focus_pos=None, focus_time=None,
+                 focus_guess=False):
         """
 
         :param observer:
@@ -116,6 +117,7 @@ class SEDm:
         :param data_dir:
         :param focus_temp:
         :param focus_pos:
+        :param focus_guess
         """
         logger.info("Robotic system initializing")
         self.observer = observer
@@ -132,6 +134,7 @@ class SEDm:
         self.focus_temp = focus_temp
         self.focus_pos = focus_pos
         self.focus_time = focus_time
+        self.focus_guess = focus_guess
 
         self.header = sedmHeader.addHeader()
         self.rc = None
@@ -1422,13 +1425,11 @@ class SEDm:
 
         # get nominal rc focus based on temperature
         weather_dict = self.ocs.check_weather()
-        if '-' in weather_dict['data']['inside_dewpt']:
-            focus_temp = 16.0   # A guess 10-18-2022
-            focus_guess = True
+        if self.focus_guess:
+            focus_temp = self.focus_temp
         else:
             focus_temp = float(
                 weather_dict['data']['inside_air_temp'])
-            focus_guess = False
         nominal_rc_focus = rc_focus.temp_to_focus(focus_temp) + \
             self.params['rc_focus_offset']
         img_list = []
@@ -1503,10 +1504,12 @@ class SEDm:
                 logger.info("nominal rc focus: %.2f for temperature %.1f",
                             nominal_rc_focus, focus_temp)
                 # nominal range
-                if focus_guess:     # bigger range if we are guessing
+                if self.focus_guess:     # bigger range if we are guessing
+                    logger.info("Focus based on temperature estimate")
                     foc_range = np.arange(nominal_rc_focus-0.5,
                                           nominal_rc_focus+0.5, 0.05)
                 else:               # otherwise, smaller range
+                    logger.info("Focus based on temperature measure")
                     foc_range = np.arange(nominal_rc_focus-0.23,
                                           nominal_rc_focus+0.23, 0.05)
             elif focus_type == 'ifu_stage2':
