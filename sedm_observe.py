@@ -65,9 +65,12 @@ def run_observing_loop(do_focus=True, do_standard=True,
         focus_data = None
 
     if temperature:
+        print("Using estimated temperature of %.2f C for initial focus"
+              % temperature)
         focus_temp = temperature
         focus_guess = True
     else:
+        print("Using weather station temperature for initial focus")
         focus_temp = None
         focus_guess = False
 
