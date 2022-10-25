@@ -1,6 +1,8 @@
 import socket
 import os
+import sys
 from observatory.telescope import tcs
+from observatory.telescope import winter
 import paramiko
 import time
 import json
@@ -167,6 +169,13 @@ def get_camera_info(conn, cam_string='ifu'):
     return info_dict
 
 
+if len(sys.argv) > 1:
+    use_winter = True
+    win = winter.Winter()
+else:
+    use_winter = False
+    win = None
+
 try:
     ifu, rc = connect()
 except Exception as e:
@@ -183,6 +192,10 @@ while True:
         status = telescope.get_status()
         weather = telescope.get_weather()
         faults = telescope.get_faults()
+        if use_winter:
+            wret = win.get_weather()
+        else:
+            wret = None
 
         print(faults)
         print(type(pos))
@@ -203,6 +216,13 @@ while True:
             else:
                 fdict = {'faults': 'None'}
             status_dict.update(fdict)
+        if use_winter and 'data' in wret:
+            win_dict = wret['data']
+            status_dict['windspeed_average'] = win_dict[
+                'Average_Wind_Speed']
+            status_dict['outside_air_temp'] = win_dict['Outside_Temp']
+            status_dict['outside_rel_hum'] = win_dict['Outside_RH']
+            status_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
 
         print(type(status_dict), 'status_dict')
 
