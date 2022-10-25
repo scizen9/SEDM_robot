@@ -56,11 +56,6 @@ class Winter:
                             self.wnt_config['winter_port'])
         else:
             self.address = wntaddress
-            
-        # These command should have an instanteous return
-        self.fast_commands = ['status?']
-
-        self.info_commands = ['status?']
 
     def __connect(self):
         logger.info("Connecting to address:%s", self.address)
@@ -96,17 +91,9 @@ class Winter:
         # Make sure all commands are upper case
         # cmd = cmd.upper()
 
-        # 1.Check to see if it is a fast command
-        if cmd in self.fast_commands:
-            self.socket.settimeout(60)
-            if cmd in self.info_commands:
-                info = True
-            logger.info("Sending fast command with 60s timeout")
-        else:
-            logger.error("Command '%s' is not a valid WINTER command", cmd,
-                         exc_info=True)
-            return {"elaptime": time.time() - start,
-                    "error": "Error with input commamd:%s" % cmd}
+        # 1.It is a fast command
+        self.socket.settimeout(60)
+        logger.info("Sending fast command with 60s timeout")
 
         # 3. At this point we have the full command for the WINTER interface
         try:
@@ -120,8 +107,7 @@ class Winter:
         # 4. Get the return response
         try:
             # Slight delay added for the info command to print out
-            if info:
-                time.sleep(.05)
+            time.sleep(.05)
 
             ret = self.socket.recv(2048)
 
@@ -140,36 +126,20 @@ class Winter:
 
             # Return the info product or return code
             logger.info("Received: %s", ret)
-            if info:
-                ret = ret.rstrip('\0').rstrip('\n')
+            ret = ret.rstrip('\0').rstrip('\n')
 
-                if isinstance(ret, str):
-                    ret.replace('ON', '"ON"')
-                    ret.replace('OFF', '"OFF"')
-                    return {"elaptime": time.time() - start,
-                            "data": ret}
-                else:
-                    logger.warning("bad return, command collision")
-                    return {"elaptime": time.time() - start,
-                            "error": "bad return, command collision"}
+            if isinstance(ret, str):
+                ret.replace('ON', '"ON"')
+                ret.replace('OFF', '"OFF"')
+                return {"elaptime": time.time() - start,
+                        "data": ret}
+            else:
+                logger.warning("bad return, command collision")
+                return {"elaptime": time.time() - start,
+                        "error": "bad return, command collision"}
         except Exception as e:
             logger.error("Unkown error", exc_info=True)
             return {"elaptime": time.time() - start, "error": str(e)}
-
-    # INFORMATION COMMANDS
-    def list_to_dict(self, list_str):
-        """
-        Given a list convert it to a dictionary based on a delimiter
-
-        :return: dictionary
-        """
-
-        list_str = os.linesep.join([s.lower() for s in list_str.splitlines()
-                                    if s and "=" in s])
-
-        if len(list_str) <= 1:
-            return False
-        return dict(item.split(self.delimiter) for item in list_str.split("\n"))
 
     def get_weather(self):
         """
