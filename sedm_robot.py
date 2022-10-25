@@ -2,6 +2,7 @@ import urllib.error
 
 from cameras.server import cam_client
 from observatory.server import ocs_client
+from observatory.telescope import winter
 from sky.server import sky_client
 from sanity.server import sanity_client
 from utils import sedmHeader, rc_filter_coords, rc_focus
@@ -100,7 +101,7 @@ class SEDm:
                  run_ocs=True, run_telescope=True, run_sky=True,
                  run_sanity=True, configuration_file='', data_dir=None,
                  focus_temp=None, focus_pos=None, focus_time=None,
-                 focus_guess=False):
+                 focus_guess=False, use_winter=False):
         """
 
         :param observer:
@@ -129,6 +130,7 @@ class SEDm:
         self.run_sanity = run_sanity
         self.run_arclamps = run_arclamps
         self.run_telescope = run_telescope
+        self.use_winter = use_winter
         self.initialized = initialized
         self.data_dir = data_dir
         self.focus_temp = focus_temp
@@ -142,6 +144,7 @@ class SEDm:
         self.ocs = None
         self.sky = None
         self.sanity = None
+        self.winter = None
         self.lamp_dict_status = {'cd': 'off', 'hg': 'off', 'xe': 'off'}
         self.stage_dict = {'ifufocus': -999, 'ifufoc2': -999}
         self.get_tcs_info = True
@@ -323,6 +326,10 @@ class SEDm:
             logger.info("Initializing sanity server")
             self.sanity = sanity_client.Sanity()
 
+        if self.use_winter:
+            logger.info("Setting up connection to WINTER for weather info")
+            self.winter = winter.Winter()
+
         self.initialized = True
         return {'elaptime': time.time() - start, 'data': "System initialized"}
 
@@ -349,7 +356,19 @@ class SEDm:
                 else:
                     logger.warning("Bad ?POS return: %s", sd)
         try:
-            stat_dict.update(self.ocs.check_weather()['data'])
+            if self.use_winter:
+                wret = self.winter.get_weather()
+                if 'data' in wret:
+                    win_dict = wret['data']
+                    # stat_dict['weather_status'] = win_dict['Weather_Status']
+                    stat_dict['windspeed_average'] = win_dict[
+                        'Average_Wind_Speed']
+                    stat_dict['outside_air_temp'] = win_dict['Outside_Temp']
+                    stat_dict['outside_rel_hum'] = win_dict['Outside_RH']
+                    stat_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
+
+            else:
+                stat_dict.update(self.ocs.check_weather()['data'])
             stat_dict.update(self.ocs.check_status()['data'])
         except Exception as e:
             logger.error(str(e))
@@ -1428,8 +1447,16 @@ class SEDm:
         if self.focus_guess:
             focus_temp = self.focus_temp
         else:
-            focus_temp = float(
-                weather_dict['data']['inside_air_temp'])
+            if self.use_winter:
+                wret = self.winter.get_weather()
+                if 'data' in wret:
+                    focus_temp = wret['data']['Outside_Temp']
+                else:
+                    focus_temp = 5.0
+                    self.focus_guess = True
+            else:
+                focus_temp = float(
+                    weather_dict['data']['inside_air_temp'])
         nominal_rc_focus = rc_focus.temp_to_focus(focus_temp) + \
             self.params['rc_focus_offset']
         img_list = []

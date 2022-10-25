@@ -45,7 +45,7 @@ def clean_up():
 def run_observing_loop(do_focus=True, do_standard=True,
                        do_calib=True, do_twilights=True,
                        lamps_off=False, clean_manual=True,
-                       temperature=None):
+                       temperature=None, use_winter=False):
 
     print("\nReSTARTING OBSERVING LOOP at ", datetime.datetime.utcnow())
     print("SEDM_robot version:", Version.__version__, "\n")
@@ -104,7 +104,8 @@ def run_observing_loop(do_focus=True, do_standard=True,
     sci_count = 0
     std_count = 0
 
-    robot = SEDm(focus_temp=focus_temp, focus_guess=focus_guess)
+    robot = SEDm(focus_temp=focus_temp, focus_guess=focus_guess,
+                 use_winter=use_winter)
     robot.initialize(lamps_off=lamps_off)
     ntimes = obstimes.ScheduleNight()
     night_obs_times = ntimes.get_observing_times_by_date()
@@ -455,6 +456,8 @@ if __name__ == "__main__":
                         help='Open dome')
     parser.add_argument('-t', '--temperature', type=float, default=None,
                         help='Temperature estimate (for focus)')
+    parser.add_argument('-w', '--winter', action="store_true", default=False,
+                        help='Use WINTER for weather data')
     args = parser.parse_args()
 
     if args.reset:      # reset dome, arc lamps
@@ -488,7 +491,8 @@ if __name__ == "__main__":
                     else:
                         print("Keeping lamps in current status")
                     run_observing_loop(lamps_off=lampsoff,
-                                       temperature=args.temperature)
+                                       temperature=args.temperature,
+                                       use_winter=args.use_winter)
                     lampsoff = False
                 except Exception as e:
                     tb_str = traceback.format_exception(etype=type(e), value=e,
