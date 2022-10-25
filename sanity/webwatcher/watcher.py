@@ -218,11 +218,12 @@ while True:
             status_dict.update(fdict)
         if use_winter and 'data' in wret:
             win_dict = wret['data']
-            status_dict['windspeed_average'] = win_dict[
-                'Average_Wind_Speed']
-            status_dict['outside_air_temp'] = win_dict['Outside_Temp']
-            status_dict['outside_rel_hum'] = win_dict['Outside_RH']
-            status_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
+            status_dict[
+                'windspeed_average'] = str(win_dict['Average_Wind_Speed'])
+            status_dict['wind_dir_current'] = str(win_dict['Wind_Direction'])
+            status_dict['outside_air_temp'] = str(win_dict['Outside_Temp'])
+            status_dict['outside_rel_hum'] = str(win_dict['Outside_RH'])
+            status_dict['outside_dewpt'] = str(win_dict['Outside_Dewpoint'])
 
         print(type(status_dict), 'status_dict')
 
