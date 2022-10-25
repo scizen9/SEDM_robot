@@ -129,8 +129,8 @@ class Winter:
             ret = ret.rstrip('\0').rstrip('\n')
 
             if isinstance(ret, str):
-                ret.replace('ON', '"ON"')
-                ret.replace('OFF', '"OFF"')
+                ret = ret.replace('ON', '"ON"')
+                ret = ret.replace('OFF', '"OFF"')
                 return {"elaptime": time.time() - start,
                         "data": ret}
             else:
