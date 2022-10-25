@@ -363,6 +363,7 @@ class SEDm:
                     # stat_dict['weather_status'] = win_dict['Weather_Status']
                     stat_dict['windspeed_average'] = win_dict[
                         'Average_Wind_Speed']
+                    stat_dict['wind_dir_current'] = win_dict['Wind_Direction']
                     stat_dict['outside_air_temp'] = win_dict['Outside_Temp']
                     stat_dict['outside_rel_hum'] = win_dict['Outside_RH']
                     stat_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
