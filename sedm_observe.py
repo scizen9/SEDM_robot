@@ -492,7 +492,7 @@ if __name__ == "__main__":
                         print("Keeping lamps in current status")
                     run_observing_loop(lamps_off=lampsoff,
                                        temperature=args.temperature,
-                                       use_winter=args.use_winter)
+                                       use_winter=args.winter)
                     lampsoff = False
                 except Exception as e:
                     tb_str = traceback.format_exception(etype=type(e), value=e,
