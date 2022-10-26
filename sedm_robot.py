@@ -372,6 +372,7 @@ class SEDm:
                     stat_dict['outside_rel_hum'] = win_dict['Outside_RH']
                     stat_dict['inside_rel_hum'] = win_dict['Outside_RH']
                     stat_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
+                    stat_dict['inside_dewpt'] = win_dict['Outside_Dewpoint']
             stat_dict.update(self.ocs.check_status()['data'])
         except Exception as e:
             logger.error(str(e))
