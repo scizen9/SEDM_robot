@@ -356,6 +356,7 @@ class SEDm:
                 else:
                     logger.warning("Bad ?POS return: %s", sd)
         try:
+            stat_dict.update(self.ocs.check_weather()['data'])
             if self.use_winter:
                 wret = self.winter.get_weather()
                 if 'data' in wret:
@@ -367,9 +368,6 @@ class SEDm:
                     stat_dict['outside_air_temp'] = win_dict['Outside_Temp']
                     stat_dict['outside_rel_hum'] = win_dict['Outside_RH']
                     stat_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
-
-            else:
-                stat_dict.update(self.ocs.check_weather()['data'])
             stat_dict.update(self.ocs.check_status()['data'])
         except Exception as e:
             logger.error(str(e))
