@@ -211,7 +211,8 @@ class SEDm:
                 self.rc = cam_client.Camera(self.rc_ip, self.rc_port)
                 logger.info('rc return: %s', self.rc.initialize())
             except Exception as e:
-                make_alert_call("RC client not set up. Check on Pylos if client is running")
+                make_alert_call("RC client not set up. "
+                                "Check on Pylos if client is running")
                 logger.error("Error setting up RC client")
                 logger.error(str(e))
 
@@ -222,7 +223,8 @@ class SEDm:
                 self.ifu = cam_client.Camera(self.ifu_ip, self.ifu_port)
                 logger.info('ifu return: %s', self.ifu.initialize())
             except Exception as e:
-                make_alert_call("IFU client not set up. Check on Pylos to see if client is running")
+                make_alert_call("IFU client not set up. "
+                                "Check on Pylos to see if client is running")
                 logger.error("Error setting up IFU client")
                 logger.error(str(e))
 
@@ -365,7 +367,9 @@ class SEDm:
                         'Average_Wind_Speed']
                     stat_dict['wind_dir_current'] = win_dict['Wind_Direction']
                     stat_dict['outside_air_temp'] = win_dict['Outside_Temp']
+                    stat_dict['inside_air_temp'] = win_dict['Outside_Temp']
                     stat_dict['outside_rel_hum'] = win_dict['Outside_RH']
+                    stat_dict['inside_rel_hum'] = win_dict['Outside_RH']
                     stat_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
 
             else:
