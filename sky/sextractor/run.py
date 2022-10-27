@@ -295,6 +295,7 @@ class sextractor:
                 fits.getheader(obs_list[-1])[header_field_temp])
             mod_foc = rc_focus.temp_to_focus(current_temp)
         else:
+            current_temp = -999.0
             mod_foc = nominal_focus
 
         n = len(catalog)
@@ -327,8 +328,9 @@ class sextractor:
             plt.axvline(x=mod_foc, c='g')
             plt.xlabel(header_field)
             plt.ylabel(catalog_field)
-            plt.title("Best Fit RC Focus: %.2f \n Thermal Model Focus: %.2f"
-                      % (best, mod_foc))
+            plt.title("Best Fit RC Focus: %.2f \n"
+                      "Thermal Model Focus: %.2f at %.2f deg"
+                      % (best, mod_foc, current_temp))
             plt.savefig(pltfile)
             plt.clf()
 
