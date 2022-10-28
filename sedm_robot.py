@@ -3072,11 +3072,15 @@ class SEDm:
         elif command.lower() == "ifu":
 
             if 'target' in obsdict:
-                coords = SkyCoord.from_name(obsdict['target'], parse=True)
-                RA = coords.ra.degree     # converted to ra hours elsewhere
-                DEC = coords.dec.degree
-                logger.info("Target Coords: %s",
-                            coords.to_string("hmsdms", sep=":"))
+                if 'ra' in obsdict and 'dec' in obsdict:
+                    RA = obsdict['ra']
+                    DEC = obsdict['dec']
+                else:
+                    coords = SkyCoord.from_name(obsdict['target'], parse=True)
+                    RA = coords.ra.degree     # converted to ra hours elsewhere
+                    DEC = coords.dec.degree
+                    logger.info("Target Coords: %s",
+                                coords.to_string("hmsdms", sep=":"))
                 logger.info("decimal deg: %f, %f", RA, DEC)
 
                 if 'allocation_id' in obsdict:
@@ -3123,14 +3127,16 @@ class SEDm:
 
         elif command.lower() == "rc":
 
-            # NOTE! When adding this code back make sure to add "self." to the
-            # functions below
             if 'target' in obsdict:
-                coords = SkyCoord.from_name(obsdict['target'], parse=True)
-                RA = coords.ra.degree      # .to_string('hour', sep=":")
-                DEC = coords.dec.degree    # .to_string('deg', sep=":")
-                logger.info("Target Coords: %s",
-                            coords.to_string("hmsdms", sep=":"))
+                if 'ra' in obsdict and 'dec' in obsdict:
+                    RA = obsdict['ra']
+                    DEC = obsdict['dec']
+                else:
+                    coords = SkyCoord.from_name(obsdict['target'], parse=True)
+                    RA = coords.ra.degree      # .to_string('hour', sep=":")
+                    DEC = coords.dec.degree    # .to_string('deg', sep=":")
+                    logger.info("Target Coords: %s",
+                                coords.to_string("hmsdms", sep=":"))
                 logger.info("decimal deg: %f, %f", RA, DEC)
 
             else:
