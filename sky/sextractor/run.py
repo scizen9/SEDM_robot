@@ -290,12 +290,10 @@ class sextractor:
         header = np.array(header_field_list)
         std_catalog = np.array(error_list)
 
+        current_temp = float(fits.getheader(obs_list[-1])[header_field_temp])
         if nominal_focus is None:
-            current_temp = float(
-                fits.getheader(obs_list[-1])[header_field_temp])
             mod_foc = rc_focus.temp_to_focus(current_temp)
         else:
-            current_temp = -999.0
             mod_foc = nominal_focus
 
         n = len(catalog)
