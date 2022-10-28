@@ -2670,9 +2670,11 @@ class SEDm:
         base_url = 'https://www.projectpluto.com/cgi-bin/fo/fo_serve.cgi?'
 
         # Pre-process name because comet designations wreak havoc
-        if '_' in name:
+        if name.count('_') >= 2:
             cname = name.replace('_', '/', 1)
             cname = cname.replace('_', ' ')
+        elif name.count('_') == 1:
+            cname = name.replace('_', ' ')
         else:
             cname = name
 
