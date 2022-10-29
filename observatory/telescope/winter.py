@@ -125,7 +125,7 @@ class Winter:
                         "error": "No response from WINTER"}
 
             # Return the info product or return code
-            logger.info("Received: %s", ret)
+            # logger.info("Received: %s", ret)
             ret = ret.rstrip('\0').rstrip('\n')
 
             if isinstance(ret, str):
