@@ -2227,7 +2227,7 @@ class SEDm:
                     acq_save_as = None
                 ret = self.run_acquisition_seq(
                     self.rc, ra=ra, dec=dec, equinox=equinox, ra_rate=ra_rate,
-                    dec_rate=dec_rate, motion_flag=motion_flag, exptime=1,
+                    dec_rate=dec_rate, motion_flag=motion_flag, exptime=30,
                     readout=acq_readout, shutter=shutter, move=move, name=name,
                     obj_id=obj_id, req_id=req_id,
                     retry_on_failed_astrometry=retry_on_failed_astrometry,
