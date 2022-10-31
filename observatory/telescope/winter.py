@@ -93,11 +93,11 @@ class Winter:
 
         # 1.It is a fast command
         self.socket.settimeout(60)
-        logger.info("Sending fast command with 60s timeout")
+        # logger.info("Sending fast command with 60s timeout")
 
         # 3. At this point we have the full command for the WINTER interface
         try:
-            logger.info("Sending:%s", cmd)
+            # logger.info("Sending:%s", cmd)
             self.socket.send(b"%s \n" % cmd.encode('utf-8'))
         except Exception as e:
             logger.error("Error sending command: %s", str(e), exc_info=True)
@@ -125,7 +125,7 @@ class Winter:
                         "error": "No response from WINTER"}
 
             # Return the info product or return code
-            logger.info("Received: %s", ret)
+            # logger.info("Received: %s", ret)
             ret = ret.rstrip('\0').rstrip('\n')
 
             if isinstance(ret, str):

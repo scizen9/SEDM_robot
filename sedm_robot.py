@@ -2226,7 +2226,7 @@ class SEDm:
                     acq_save_as = None
                 ret = self.run_acquisition_seq(
                     self.rc, ra=ra, dec=dec, equinox=equinox, ra_rate=ra_rate,
-                    dec_rate=dec_rate, motion_flag=motion_flag, exptime=1,
+                    dec_rate=dec_rate, motion_flag=motion_flag, exptime=30,
                     readout=acq_readout, shutter=shutter, move=move, name=name,
                     obj_id=obj_id, req_id=req_id,
                     retry_on_failed_astrometry=retry_on_failed_astrometry,
@@ -2669,9 +2669,11 @@ class SEDm:
         base_url = 'https://www.projectpluto.com/cgi-bin/fo/fo_serve.cgi?'
 
         # Pre-process name because comet designations wreak havoc
-        if '_' in name:
+        if name.count('_') >= 2:
             cname = name.replace('_', '/', 1)
             cname = cname.replace('_', ' ')
+        elif name.count('_') == 1:
+            cname = name.replace('_', ' ')
         else:
             cname = name
 
@@ -3193,11 +3195,12 @@ class SEDm:
                 else:
                     if "obsdate" in obsdict:
                         obsdate = obsdict['obsdate']
+                        logger.info('Using ephemeris website at date: %s',
+                                    obsdate)
                     else:
                         obsdate = "now"
                         now = Time.now()
-                        logger.info('Using ephemeris website at date: %s',
-                                    now)
+                        logger.info('Using ephemeris website at date: %s', now)
                     try:
                         ephret = self.get_non_sid_ephemeris_url(
                             name=obsdict['target'], eph_time=obsdate)
@@ -3272,54 +3275,34 @@ class SEDm:
             ret_lab = "MANUAL(nonsid): run_ifu_science_seq status:"
 
         elif command.lower() == "nonsid_rc":
-            if "obsdate" in obsdict:
-                obsdate = obsdict['obsdate']
-                logger.info('Using ephemeris at date: %s', obsdate)
-            else:
-                obsdate = "now"
-                now = Time.now()
-                logger.info('Using ephemeris at date: %s', now)
 
             if 'target' in obsdict:
-                try:
-                    logger.info("Try #1 loading ephemeris")
-                    ephret = self.get_non_sid_ephemeris_url(
-                        name=obsdict['target'], eph_time=obsdate)
-                except ValueError:
-                    logger.warning("ValueError exception")
-                    pass
 
-                if ephret:
-                    pass
+                if "ephem_file" in obsdict:
+                    if "obsdate" in obsdict:
+                        obsdate = obsdict['obsdate']
+                    else:
+                        obsdate = datetime.datetime.utcnow()
+                    logger.info('Using ephemeris file %s at date: %s',
+                                obsdict['ephem_file'], obsdate)
+                    ephret = self.find_nearest(obsdict['ephem_file'],
+                                               obsdate=obsdate)
                 else:
-                    logger.info("Try #1 loading ephemeris unsuccessful: "
-                                "Trying again")
+                    if "obsdate" in obsdict:
+                        obsdate = obsdict['obsdate']
+                        logger.info('Using ephemeris website at date: %s',
+                                    obsdate)
+                    else:
+                        obsdate = "now"
+                        now = Time.now()
+                        logger.info('Using ephemeris website at date: %s',
+                                    now)
                     try:
-                        logger.info("Try #2 loading ephemeris")
                         ephret = self.get_non_sid_ephemeris_url(
                             name=obsdict['target'], eph_time=obsdate)
                     except ValueError:
                         logger.warning("ValueError exception")
                         pass
-
-                if ephret:
-                    pass
-                else:
-                    logger.info("Try #2 loading ephemeris unsuccessful: "
-                                "Trying again")
-                    try:
-                        logger.info("Try #3 loading ephemeris")
-                        ephret = self.get_non_sid_ephemeris_url(
-                            name=obsdict['target'], eph_time=obsdate)
-                    except ValueError:
-                        logger.warning("ValueError exception")
-                        pass
-
-                if ephret:
-                    pass
-                else:
-                    logger.error("Try #3 loading ephemeris unsuccessful: "
-                                 "Check object parameters")
 
                 logger.info("get_non_sid_ephemeris return:\n%s", ephret)
 
@@ -3357,8 +3340,18 @@ class SEDm:
                 return {"elaptime": time.time() - start,
                         "error: 'ephemeris' not in return": ephret}
 
-            nonsid_dict = ephret['ephemeris']['entries']['0']
-            nonsid_dict['epoch'] = iso_to_epoch(nonsid_dict['ISO_time'])
+            nonsid_dict = ephret['ephemeris']
+            if 'epoch' not in nonsid_dict:
+                if 'ISO_time' in nonsid_dict:
+                    nonsid_dict['epoch'] = iso_to_epoch(nonsid_dict['ISO_time'])
+                else:
+                    epdate = datetime.datetime.utcnow()
+                    nonsid_dict[
+                        'epoch'] = epdate.hour + (epdate.minute * 60
+                                                  + epdate.second) / 3600.0
+                    logger.warning('ISO_time not found, '
+                                   'using default value (now) for epoch')
+            logger.info("Using epoch: %f", nonsid_dict['epoch'])
 
             if 'repeat_filter' in obsdict:
                 repeat_filter = obsdict['repeat_filter']
