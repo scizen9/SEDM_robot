@@ -783,7 +783,7 @@ class Telescope:
                         "error": "Invalid RA decimal hour"}
             if abs(coords[1]) >= 110:
                 return {"elaptime": start - time.time(),
-                        "error": "Invalid Dec decimal hour"}
+                        "error": "Invalid Dec decimal degree"}
             if coords[2] < 0:
                 return {"elaptime": start - time.time(),
                         "error": "Invalid Epoch command"}
