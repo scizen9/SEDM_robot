@@ -2069,8 +2069,7 @@ class SEDm:
             return {'elaptime': time.time() - start,
                     'error': 'Image not acquired'}
 
-    def run_ifu_science_seq(self, cam, shutter="normal",
-                            readout=.1, name="",
+    def run_ifu_science_seq(self, cam, shutter="normal", readout=.1, name="",
                             test="", save_as=None, imgtype='Science',
                             exptime=90, ra=0, dec=0, equinox=2000,
                             epoch="", ra_rate=0, dec_rate=0, motion_flag="",
@@ -2703,7 +2702,12 @@ class SEDm:
             return False
 
         if 'ephemeris' in data_json:
-            ret_dict = {'ephemeris': data_json['ephemeris']['entries']['0']}
+            eph_dict = data_json['ephemeris']['entries'][0]
+            if 'RAVel' in eph_dict:
+                eph_dict['RAVel'] *= 60.    # convert from asec/min to asec/hr
+            if 'decvel' in eph_dict:
+                eph_dict['decvel'] *= 60.   # convert from asec/min to asec/hr
+            ret_dict = {'ephemeris': eph_dict}
             return ret_dict
         else:
             return False
@@ -3257,8 +3261,8 @@ class SEDm:
                 exptime=obsdict['exptime'],
                 ra=nonsid_dict['RA'], dec=nonsid_dict['Dec'],
                 equinox=2000, epoch=nonsid_dict['epoch'],
-                ra_rate=nonsid_dict['RAvel'] * 60,
-                dec_rate=nonsid_dict['decvel'] * 60, motion_flag="1",
+                ra_rate=nonsid_dict['RAvel'],
+                dec_rate=nonsid_dict['decvel'], motion_flag="1",
                 p60prid=p60prid, p60prpi=p60prpi, email='',
                 p60prnm=p60prnm, req_id=req_id,
                 obj_id=obj_id, objfilter='ifu',
@@ -3367,8 +3371,8 @@ class SEDm:
                 self.rc, shutter="normal", readout=.1, name=obsdict['target'],
                 test="", save_as=None, imgtype='Science',
                 ra=nonsid_dict['RA'], dec=nonsid_dict['Dec'], equinox=2000,
-                epoch=nonsid_dict['epoch'], ra_rate=nonsid_dict['RAvel'] * 60,
-                dec_rate=nonsid_dict['decvel'] * 60, motion_flag="1",
+                epoch=nonsid_dict['epoch'], ra_rate=nonsid_dict['RAvel'],
+                dec_rate=nonsid_dict['decvel'], motion_flag="1",
                 p60prid=p60prid, p60prpi=p60prpi, email='', p60prnm=p60prnm,
                 obj_id=obj_id, objfilter='RC%s' % (obsdict['rcfilter']),
                 imgset='NA', is_rc=True, run_acquisition=True, req_id=req_id,

@@ -149,6 +149,23 @@ class Observatory:
 
     def tel_move(self, name='Test', ra=None, dec=None, equinox=2000,
                  ra_rate=0, dec_rate=0, motion_flag=None, epoch=""):
+        """From the TCS manual:
+        COORDS (FAST) accepts information to specify a TARGET Position.
+        * If no non-sidereal motion is specified, parameters 6&7 may be omitted.
+        Parameters:
+            (1) Right Ascension in decimal hours;
+            (2) Declination in decimal degrees;
+            (3) Equinox of coordinates in decimal years -- zero means apparent;
+            (4) RA rate: 0.0001sec/yr if flag (see parameter 6) is 0,
+                arcsec/hr if flag is 1, sec/hr if flag is 2;
+            (5) Dec rate: 0.001 arcsec/yr if flag is 0,
+                arcsec/hr if flag is 1 or 2;
+            (6)*Motion flag: 0=proper motion, which is the default if this
+                parameter is absent; 1=non-sidereal rates (RA spatial rate),
+                2=non-sidereal rates (RA angular rate);
+            (7)*Epoch of coordinates for non-sidereal targets in decimal hours
+                (current UTC if omitted).]]
+"""
 
         ra = float(ra)/15   # convert decimal degrees to decimal hours
         dec = float(dec)
