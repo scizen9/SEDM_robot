@@ -177,7 +177,7 @@ class ocsServer:
                 pass
 
     def start(self):
-        logger.debug("IFU server now listening for connections on port:%s"
+        logger.debug("OCS server now listening for connections on port:%s"
                      % self.port)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -202,5 +202,5 @@ if __name__ == "__main__":
     # except Exception as e:
     #    logging.exception("Unexpected exception %s", str(e))
     # finally:
-    #    logging.info("Shutting down IFU server")
+    #    logging.info("Shutting down OCS server")
     logger.info("All done")
