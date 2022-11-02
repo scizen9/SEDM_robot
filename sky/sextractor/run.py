@@ -144,7 +144,8 @@ class sextractor:
         # cut on size
         size_cut_up = df['B_IMAGE'].median() + 2.5 * df['B_IMAGE'].std()
         size_cut_lo = df['B_IMAGE'].median() - 2.5 * df['B_IMAGE'].std()
-        df = df[(size_cut_lo < df['B_IMAGE'] < size_cut_up)]
+        df = df[(df['B_IMAGE'] < size_cut_up)]
+        df = df[(df['B_IMAGE'] > size_cut_lo)]
 
         if create_region_file:
             reg_file = catalog + '.reg'
