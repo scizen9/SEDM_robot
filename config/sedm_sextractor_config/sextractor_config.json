@@ -1,5 +1,6 @@
 {
   "exec_path": "/usr/bin/sextractor",
   "config_file": "/home/sedm/SEDM_robot/config/sedm_sextractor_config/daofind.sex",
+  "arc_config_file": "/home/sedm/SEDM_robot/config/sedm_sextractor_config/arclamp.sex",
   "default_path": "/home/sedm/robot/image.cat"
 }
