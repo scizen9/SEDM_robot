@@ -1523,8 +1523,8 @@ class SEDm:
             logger.info("ocs.arclamp status:\n%s", ret)
 
             if wait:
-                logger.info("Waiting %s seconds for dome lamps to warm up",
-                            self.lamp_wait_time[lamp.lower()])
+                logger.info("Waiting %s seconds for %s lamp to warm up",
+                            (self.lamp_wait_time[lamp.lower()], lamp))
                 time.sleep(self.lamp_wait_time[lamp.lower()])
 
         if foc_range is None:
@@ -1596,18 +1596,41 @@ class SEDm:
             ret = self.ocs.arclamp(lamp, command="OFF")
             logger.info("ocs.arclamp status:\n%s", ret)
 
-        logger.debug("Finished RC focus sequence")
+        logger.debug("Finished %s sequence", focus_type)
         logger.info("focus image list:\n%s", img_list)
         if solve:
-            ret = self.sky.get_focus(img_list, nominal_focus=nominal_rc_focus)
-            logger.info("sky.get_focus status:\n%s", ret)
-            if 'data' in ret:
-                best_foc = round(ret['data'][0][0], 2)
-                logger.info("Best FOCUS is: %s", best_foc)
+            if focus_type == 'rc_focus':
+                ret = self.sky.get_focus(img_list,
+                                         nominal_focus=nominal_rc_focus)
+                logger.info("sky.get_focus status:\n%s", ret)
+                if 'data' in ret:
+                    best_foc = round(ret['data'][0][0], 2)
+                    logger.info("Best FOCUS is: %s", best_foc)
+                else:
+                    logger.warning("Could not solve, using Nominal focus: %s",
+                                   nominal_rc_focus)
+                    best_foc = nominal_rc_focus
+            elif focus_type == 'ifu_stage':
+                ret = self.sky.get_focus(img_list)
+                logger.info("sky.get_focus status:\n%s", ret)
+                if 'data' in ret:
+                    best_foc = round(ret['data'][0][0], 2)
+                    logger.info("Best IFU stage 1 focus is %s", best_foc)
+                else:
+                    logger.warning("Could not solve for ifu_stage focus")
+                    best_foc = None
+            elif focus_type == 'ifu_stage2':
+                ret = self.sky.get_focus(img_list)
+                logger.info("sky.get_focus status:\n%s", ret)
+                if 'data' in ret:
+                    best_foc = round(ret['data'][0][0], 2)
+                    logger.info("Best IFU stage 1 focus is %s", best_foc)
+                else:
+                    logger.warning("Could not solve for ifu_stage2 focus")
+                    best_foc = None
             else:
-                logger.info("Could not solve, using Nominal focus: %s",
-                            nominal_rc_focus)
-                best_foc = nominal_rc_focus
+                logger.warning("Unknown focus type: %s", focus_type)
+                best_foc = None
 
             # TODO: this only really works for rc_focus,
             #  add routines for other focus types.
