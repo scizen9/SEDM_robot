@@ -272,9 +272,9 @@ class Controller:
             self.opt.SetImageFlip(0, 0)
             self.opt.SetImageRotate(0)
             self.opt.SetBaselineClamp(0)
-            self.opt.SetFanMode(1)
+            self.opt.SetFanMode(1)      # set to 0 when we have liquid cooling set up
             self.opt.SetADChannel(0)
-            self.opt.SetCoolerMode(0)
+            self.opt.SetCoolerMode(1)
             self.opt.SetFrameTransferMode(0)
             self.opt.SetPhotonCounting(0)
             self.opt.SetKineticCycleTime(0.0)

@@ -172,8 +172,8 @@ fan_modes = {0: 'Full',
              1: 'Low',
              2: 'OFF'}
 
-cooling_modes = {0: 'Maintain Current Temp',
-                 1: 'Return to Ambient Temp'}
+cooling_modes = {0: 'Return to Ambient Temp',
+                 1: 'Maintain Current Temp'}
 
 shutter_ttl_modes = {0: 'Low Signal',
                      1: 'High Signal'}
