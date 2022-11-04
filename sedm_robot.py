@@ -338,69 +338,74 @@ class SEDm:
     def get_status_dict(self, do_lamps=True, do_stages=True):
         stat_dict = {}
 
-        # First try at position
-        good_pos = False
-        ret = self.ocs.check_pos()
-        if 'data' in ret:
-            sd = ret['data']
-            if isinstance(sd, dict):
-                stat_dict.update(sd)
-                good_pos = True
-            else:
-                logger.warning("Bad ?POS return: %s", sd)
-        # Second try
-        if not good_pos:
+        # Are we NOT running the ocs?
+        if self.ocs is None:
+            pass
+        # We ARE running the ocs
+        else:
+            # First try at position
+            good_pos = False
             ret = self.ocs.check_pos()
             if 'data' in ret:
                 sd = ret['data']
                 if isinstance(sd, dict):
                     stat_dict.update(sd)
+                    good_pos = True
                 else:
                     logger.warning("Bad ?POS return: %s", sd)
-        try:
-            stat_dict.update(self.ocs.check_weather()['data'])
-            if self.use_winter:
-                wret = self.winter.get_weather()
-                if 'data' in wret:
-                    win_dict = wret['data']
-                    # stat_dict['weather_status'] = win_dict['Weather_Status']
-                    stat_dict['windspeed_average'] = win_dict[
-                        'Average_Wind_Speed']
-                    stat_dict['wind_dir_current'] = win_dict['Wind_Direction']
-                    stat_dict['outside_air_temp'] = win_dict['Outside_Temp']
-                    stat_dict['inside_air_temp'] = win_dict['Outside_Temp']
-                    stat_dict['outside_rel_hum'] = win_dict['Outside_RH']
-                    stat_dict['inside_rel_hum'] = win_dict['Outside_RH']
-                    stat_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
-                    stat_dict['inside_dewpt'] = win_dict['Outside_Dewpoint']
-            stat_dict.update(self.ocs.check_status()['data'])
-        except Exception as e:
-            logger.error(str(e))
-            pass
+            # Second try
+            if not good_pos:
+                ret = self.ocs.check_pos()
+                if 'data' in ret:
+                    sd = ret['data']
+                    if isinstance(sd, dict):
+                        stat_dict.update(sd)
+                    else:
+                        logger.warning("Bad ?POS return: %s", sd)
+            try:
+                stat_dict.update(self.ocs.check_weather()['data'])
+                if self.use_winter:
+                    wret = self.winter.get_weather()
+                    if 'data' in wret:
+                        win_dict = wret['data']
+                        # stat_dict['weather_status'] = win_dict['Weather_Status']
+                        stat_dict['windspeed_average'] = win_dict[
+                            'Average_Wind_Speed']
+                        stat_dict['wind_dir_current'] = win_dict['Wind_Direction']
+                        stat_dict['outside_air_temp'] = win_dict['Outside_Temp']
+                        stat_dict['inside_air_temp'] = win_dict['Outside_Temp']
+                        stat_dict['outside_rel_hum'] = win_dict['Outside_RH']
+                        stat_dict['inside_rel_hum'] = win_dict['Outside_RH']
+                        stat_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
+                        stat_dict['inside_dewpt'] = win_dict['Outside_Dewpoint']
+                stat_dict.update(self.ocs.check_status()['data'])
+            except Exception as e:
+                logger.error(str(e))
+                pass
 
-        if do_lamps and self.run_arclamps:
-            stat_dict['xe_lamp'] = self.ocs.arclamp('xe', 'status',
-                                                    force_check=True)['data']
-            self.lamp_dict_status['xe'] = stat_dict['xe_lamp']
-            stat_dict['cd_lamp'] = self.ocs.arclamp('cd', 'status',
-                                                    force_check=True)['data']
-            self.lamp_dict_status['cd'] = stat_dict['cd_lamp']
-            stat_dict['hg_lamp'] = self.ocs.arclamp('hg', 'status',
-                                                    force_check=True)['data']
-            self.lamp_dict_status['hg'] = stat_dict['hg_lamp']
-        else:
-            stat_dict['xe_lamp'] = self.lamp_dict_status['xe']
-            stat_dict['cd_lamp'] = self.lamp_dict_status['cd']
-            stat_dict['hg_lamp'] = self.lamp_dict_status['hg']
+            if do_lamps and self.run_arclamps:
+                stat_dict['xe_lamp'] = self.ocs.arclamp('xe', 'status',
+                                                        force_check=True)['data']
+                self.lamp_dict_status['xe'] = stat_dict['xe_lamp']
+                stat_dict['cd_lamp'] = self.ocs.arclamp('cd', 'status',
+                                                        force_check=True)['data']
+                self.lamp_dict_status['cd'] = stat_dict['cd_lamp']
+                stat_dict['hg_lamp'] = self.ocs.arclamp('hg', 'status',
+                                                        force_check=True)['data']
+                self.lamp_dict_status['hg'] = stat_dict['hg_lamp']
+            else:
+                stat_dict['xe_lamp'] = self.lamp_dict_status['xe']
+                stat_dict['cd_lamp'] = self.lamp_dict_status['cd']
+                stat_dict['hg_lamp'] = self.lamp_dict_status['hg']
 
-        if do_stages and self.run_stage:
-            stat_dict['ifufocus'] = self.ocs.stage_position(1)['data']
-            self.stage_dict['ifufocus'] = stat_dict['ifufocus']
-            stat_dict['ifufoc2'] = self.ocs.stage_position(2)['data']
-            self.stage_dict['ifufoc2'] = stat_dict['ifufoc2']
-        else:
-            stat_dict['ifufocus'] = self.stage_dict['ifufocus']
-            stat_dict['ifufoc2'] = self.stage_dict['ifufoc2']
+            if do_stages and self.run_stage:
+                stat_dict['ifufocus'] = self.ocs.stage_position(1)['data']
+                self.stage_dict['ifufocus'] = stat_dict['ifufocus']
+                stat_dict['ifufoc2'] = self.ocs.stage_position(2)['data']
+                self.stage_dict['ifufoc2'] = stat_dict['ifufoc2']
+            else:
+                stat_dict['ifufocus'] = self.stage_dict['ifufocus']
+                stat_dict['ifufoc2'] = self.stage_dict['ifufoc2']
         return stat_dict
 
     def take_image(self, cam, exptime=0, shutter='normal', readout=2.0,
