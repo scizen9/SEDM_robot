@@ -92,26 +92,26 @@ class ocsServer:
                         self.tcs = tcs.Telescope()
                         
                         response = {'elaptime': time.time() - start,
-                                    'data': 'OCS intialized'}
+                                    'data': 'OCS initialized'}
                     elif cmd == 'INITIALIZE_LAMPS':
                         if not self.lamp_controller:
                             logger.info("Initializing Arc Lamps")
                             self.lamp_controller = lamps.Lamp()
                             self.lamps_dict = self.lamp_controller.connect_all()
                             response = {'elaptime': time.time() - start,
-                                        'data': 'Arc lamps intialized'}
+                                        'data': 'Arc lamps initialized'}
                     elif cmd == 'INITIALIZE_STAGES':
                         if not self.stages:
                             logger.info("Initializing Stages")
                             self.stages = stages.Stage()
                             response = {'elaptime': time.time() - start,
-                                        'data': 'Stages intialized'}
+                                        'data': 'Stages initialized'}
                     elif cmd == 'INITIALIZE_TCS':
                         if not self.tcs:
                             logger.info("Initializing Telescope")
                             self.tcs = tcs.Telescope()
                             response = {'elaptime': time.time() - start,
-                                        'data': 'Telescope intialized'}
+                                        'data': 'Telescope initialized'}
                     elif cmd.upper() == "OBSSTATUS":
                         response = self.tcs.get_status()
                     elif cmd.upper() == "OBSWEATHER":

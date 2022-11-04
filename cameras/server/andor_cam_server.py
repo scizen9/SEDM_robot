@@ -111,7 +111,7 @@ class CamServer:
                             print(self.cam)
                             print(type(self.cam))
                             response = {'elaptime': time.time()-start,
-                                        'data': "Camera already intiailzed"}
+                                        'data': "Camera already initialized"}
 
                     elif data['command'].upper() == 'TAKE_IMAGE':
                         with open("ifu_exposure_start.txt", 'w') as file:
