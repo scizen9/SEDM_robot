@@ -164,7 +164,7 @@ class Controller:
 
         return self.opt.getParameter("ReadoutTimeCalculation")
 
-    def initialize(self, path_to_lib="", wait_to_cool=True):
+    def initialize(self, path_to_lib="", wait_to_cool=False):
         """
         Initialize the library and connect the cameras.  When no camera
         is detected the system opens a demo cam up for testing.
@@ -197,7 +197,7 @@ class Controller:
         for cams in range(connected_cams):
             handles = self.opt.GetCameraHandle(cams)
             camera_list.append(handles)
-            #camera_list.append(self.opt.GetCameraHandle(cams))
+            # camera_list.append(self.opt.GetCameraHandle(cams))
 
         logger.info("Available Cameras:%s", camera_list)
         if self.cameraHandle:
@@ -227,7 +227,6 @@ class Controller:
         # before continuing. We wait for this cooling to occur because
         # past experience has shown working with the cameras during the
         # cooling cycle can cause issues.
-
 
         logger.info("Setting temperature to: %s", self.setTemperature)
         self.opt.SetTemperature(self.setTemperature)
@@ -355,6 +354,18 @@ class Controller:
                 "error": str(e), "camexptime": -9999,
                 "camtemp": -9999, "camspeed": -999
             }
+
+    def get_temp_status(self):
+        """Return temperature and lock status"""
+        locked = False
+        temp = 0.
+        try:
+            temp = self.opt.GetTemperature()[1]
+            lock = self.opt.GetTemperature()[0]
+            locked = (lock == 'DRV_TEMP_STABILIZED')
+            return {'camtemp': temp, 'templock': locked}
+        except Exception as e:
+            return {'error': str(e), 'camtemp': temp, 'templock': locked}
 
     def take_image(self, shutter='normal', exptime=0.0,
                    readout=2.0, save_as="", timeout=None):

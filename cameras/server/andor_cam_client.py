@@ -95,12 +95,12 @@ class Camera:
 
 
 if __name__ == '__main__':
-    rc = Camera(address='127.0.0.1', port=5001)
-    print(rc.initialize())
-    # print(rc.status())
-    print(rc.take_image(exptime=1, save_as='', readout=5.0,
-                        return_before_done=False))
-    rc.shutdown()
-    # print(rc.status())
-    # print(rc.status())
-    # print(rc.shutdown())
+    ifu = Camera(address='127.0.0.1', port=5001)
+    print(ifu.initialize())
+    # print(ifu.status())
+    print(ifu.take_image(exptime=0, save_as='', readout=5.0,
+                         return_before_done=False))
+    ifu.shutdown()
+    # print(ifu.status())
+    # print(ifu.status())
+    # print(ifu.shutdown())

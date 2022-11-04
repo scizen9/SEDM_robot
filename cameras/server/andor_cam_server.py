@@ -79,6 +79,7 @@ class CamServer:
                                 send_to_remote = sedm_cfg['rc_send_to_remote']
                                 output_dir = sedm_cfg['cam_image_dir']
                                 set_temperature = sedm_cfg['rc_set_temperature']
+                                camera_handle = None
                             else:
                                 cam_prefix = "ifu"
                                 send_to_remote = sedm_cfg['ifu_send_to_remote']
