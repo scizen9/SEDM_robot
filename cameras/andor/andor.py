@@ -274,7 +274,7 @@ class Controller:
             self.opt.SetBaselineClamp(0)
             self.opt.SetFanMode(1)
             self.opt.SetADChannel(0)
-            self.opt.SetCoolerMode(1)
+            self.opt.SetCoolerMode(0)
             self.opt.SetFrameTransferMode(0)
             self.opt.SetPhotonCounting(0)
             self.opt.SetKineticCycleTime(0.0)
@@ -362,6 +362,7 @@ class Controller:
         try:
             temp = self.opt.GetTemperature()[1]
             lock = self.opt.GetTemperature()[0]
+            logger.info("status: %s", lock)
             locked = (lock == 'DRV_TEMP_STABILIZED')
             return {'camtemp': temp, 'templock': locked}
         except Exception as e:
@@ -370,7 +371,6 @@ class Controller:
     def take_image(self, shutter='normal', exptime=0.0,
                    readout=2.0, save_as="", timeout=None):
         s = time.time()
-        readout_time = 5  # Don't know what this is for
 
         # 1. Set the shutter state
         shutter_return = self._set_shutter(shutter)
@@ -382,7 +382,6 @@ class Controller:
         # Andor exposure times are in seconds
         try:
             self.opt.SetExposureTime(exptime)
-            exptime_ms = int(float(exptime) * 1000)
         except Exception as e:
             self.lastError = str(e)
             logger.error("Error setting exposure time", exc_info=True)
@@ -397,35 +396,13 @@ class Controller:
         self.opt.SetHSSpeed(self.AdcQuality_States[self.AdcQuality],
                             self.AdcSpeed_States[readout])
 
-        # 4. Set parameters and get readout time
-        try:
-            logger.info("Sending configuration to camera")
-
-            readout_time = self.opt.GetReadOutTime()  # This function may not be available for this camera
-
-            r = int(readout_time) / 1000
-            logger.info("Expected readout time=%ss", r)
-        except Exception as e:
-            self.lastError = str(e)
-            logger.error("Error setting parameters", exc_info=True)
-
-        # 5. Set the timeout return for the camera
-        if not timeout:
-            timeout = int(int(readout_time) + exptime_ms + 100000)
-        else:
-            timeout = 100000000
-
         # 6. Get the exposure start time to use for the naming convention
-
-        # start_time = datetime.datetime.utcnow()
         start_time = datetime.utcnow()
 
         self.lastExposed = start_time
         logger.info("Starting %(camPrefix)s exposure",
                     {'camPrefix': self.camPrefix})
         try:
-            # imdata = self.opt.readNFrames(N=1, timeout=timeout)[0][0]
-            # Don't know what this is either
             self.opt.StartAcquisition()
             imdata = []
             self.opt.GetAcquiredData16(imdata, width=self.ROI[3],
@@ -455,7 +432,6 @@ class Controller:
         try:
             datetimestr = start_time.isoformat()
             datestr, timestr = datetimestr.split('T')
-            # hdul = fits.PrimaryHDU(imdata, uint=True)
             hdul = fits.PrimaryHDU(self.opt.imageArray, uint=True)
             hdul.scale('int16', bzero=32768)
             hdul.header.set("EXPTIME", float(exptime),
