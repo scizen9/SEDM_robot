@@ -114,7 +114,7 @@ class CamServer:
                                         'data': "Camera already initialized"}
 
                     elif data['command'].upper() == 'TAKE_IMAGE':
-                        with open("ifu_exposure_start.txt", 'w') as file:
+                        with open(exp_start_file, 'w') as file:
                             file.write(time.strftime('%Y-%m-%d %H:%M:%S.%d',
                                                      time.gmtime()))
                         response = self.cam.take_image(**data['parameters'])
@@ -142,7 +142,7 @@ class CamServer:
                         response = self.cam.lastError
                         print(response)
                     elif data['command'].upper() == "LASTEXPOSED":
-                        obs_time = open("ifu_exposure_start.txt").readlines()[0]
+                        obs_time = open(exp_start_file).readlines()[0]
                         response = {'elaptime': time.time()-start,
                                     'data': str(obs_time)}
                     elif data['command'].upper() == "PREFIX":
