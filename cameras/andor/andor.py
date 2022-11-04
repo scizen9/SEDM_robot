@@ -231,6 +231,7 @@ class Controller:
         logger.info("Setting temperature to: %s", self.setTemperature)
         self.opt.SetTemperature(self.setTemperature)
 
+        self.opt.IsCoolerOn()
         self.opt.CoolerON()
         if wait_to_cool:
             temp = self.opt.GetTemperature()[1]
