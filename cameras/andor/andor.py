@@ -61,8 +61,8 @@ class Controller:
         self.opt = None
         self.ROI = [1, 1, 1, 2088, 1, 2048]
 
-        self.AdcSpeed = 5.0  # Horizontal Shift Speed
-        self.AdcAnalogGain = "Low"  # Pre Amp Gain
+        self.AdcSpeed = 1.0  # Horizontal Shift Speed
+        self.AdcAnalogGain = "High"  # Pre Amp Gain
         self.AdcQuality = "HighSensitivity"  # Output Amplification
 
         self.VerticalShiftSpeed = 77
@@ -316,7 +316,7 @@ class Controller:
             self.cdelt2_comment = '.394"'
             self.gain = 1.77
         elif self.camPrefix == 'ifu':
-            self.gain = 1.78
+            self.gain = 0.9
             self.crpix1 = 1075
             self.crpix2 = 974
             self.cdelt1 = -2.5767E-06
@@ -330,6 +330,7 @@ class Controller:
             self.cdelt2 = -0.00010944
             self.cdelt1_comment = '.394"'
             self.cdelt2_comment = '.394"'
+            self.gain = 0.9
         return True
 
     def get_status(self):
