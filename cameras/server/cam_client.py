@@ -5,13 +5,13 @@ import os
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 
-with open(os.path.join(SITE_ROOT, 'config', 'sedm.json')) as cfg_file:
-    sedm_cfg = json.load(cfg_file)
+with open(os.path.join(SITE_ROOT, 'config', 'cameras.json')) as cfg_file:
+    cam_cfg = json.load(cfg_file)
 
 
 class Camera:
 
-    def __init__(self, address='pylos.palomar.caltech.edu', port=5001):
+    def __init__(self, address=cam_cfg['rc_ip'], port=cam_cfg['rc_port']):
         """
 
         :param address:
@@ -99,7 +99,7 @@ class Camera:
 
 
 if __name__ == '__main__':
-    rc = Camera(address=sedm_cfg['rc_ip'], port=sedm_cfg['rc_port'])
+    rc = Camera(address=cam_cfg['rc_ip'], port=cam_cfg['rc_port'])
     print(rc.initialize())
     print(rc.status())
     print(rc.take_image(exptime=1, save_as='',

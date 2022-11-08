@@ -12,8 +12,8 @@ SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as cfg_file:
     log_cfg = json.load(cfg_file)
 
-with open(os.path.join(SITE_ROOT, 'config', 'sedm.json')) as cfg_file:
-    sedm_cfg = json.load(cfg_file)
+with open(os.path.join(SITE_ROOT, 'config', 'cameras.json')) as cfg_file:
+    cam_cfg = json.load(cfg_file)
 
 logger = logging.getLogger("ifu_cameraLogger")
 logger.setLevel(logging.DEBUG)
@@ -74,39 +74,44 @@ class CamServer:
 
                     if data['command'].upper() == 'INITIALIZE':
                         if not self.cam:
-                            if self.port == sedm_cfg['rc_port']:
+                            if self.port == cam_cfg['rc_port']:
                                 cam_prefix = "rc"
-                                send_to_remote = sedm_cfg['rc_send_to_remote']
-                                output_dir = sedm_cfg['cam_image_dir']
-                                set_temperature = sedm_cfg['rc_set_temperature']
+                                send_to_remote = cam_cfg['rc_send_to_remote']
+                                output_dir = cam_cfg['cam_image_dir']
+                                set_temperature = cam_cfg['rc_set_temperature']
                                 camera_handle = None
+                                cam_ser_no = cam_cfg['rc_serial_number']
+                                driver = cam_cfg['rc_driver']
                             else:
                                 cam_prefix = "ifu"
-                                send_to_remote = sedm_cfg['ifu_send_to_remote']
-                                output_dir = sedm_cfg['cam_image_dir']
-                                set_temperature = sedm_cfg[
+                                send_to_remote = cam_cfg['ifu_send_to_remote']
+                                output_dir = cam_cfg['cam_image_dir']
+                                set_temperature = cam_cfg[
                                     'ifu_set_temperature']
-                                camera_handle = sedm_cfg['ifu_handle']
-                            self.cam = andor.Controller(
-                                serial_number="", cam_prefix=cam_prefix,
-                                send_to_remote=send_to_remote,
-                                set_temperature=set_temperature,
-                                camera_handle=camera_handle,
-                                output_dir=output_dir,)
+                                camera_handle = cam_cfg['ifu_handle']
+                                cam_ser_no = cam_cfg['ifu_serial_number']
+                                driver = cam_cfg['ifu_driver']
+                            if 'andor' in driver:
+                                self.cam = andor.Controller(
+                                    serial_number="", cam_prefix=cam_prefix,
+                                    send_to_remote=send_to_remote,
+                                    set_temperature=set_temperature,
+                                    camera_handle=camera_handle,
+                                    output_dir=output_dir,)
 
-                            ret = self.cam.initialize()
-                            if self.port == 6942:
-                                # Spare camera SN
-                                # self.cam.serialNumber = "2803120001"
-                                self.cam.serialNumber = "04001312"
+                                ret = self.cam.initialize()
+                                # And now we check the correct serial number
+                                print("Do these match?", self.cam.serialNumber,
+                                      cam_ser_no)
+                                if ret:
+                                    response = {'elaptime': time.time()-start,
+                                                'data': "Camera started"}
+                                else:
+                                    response = {'elaptime': time.time()-start,
+                                                'error': self.cam.lastError}
                             else:
-                                self.cam.serialNumber = "05313416"
-                            if ret:
                                 response = {'elaptime': time.time()-start,
-                                            'data': "Camera started"}
-                            else:
-                                response = {'elaptime': time.time()-start,
-                                            'error': self.cam.lastError}
+                                            'error': "can only use andor driver!"}
                         else:
                             print(self.cam)
                             print(type(self.cam))
@@ -152,8 +157,8 @@ class CamServer:
                         response = self.cam.opt.disconnect()
                         print(response)
                     elif data['command'].upper() == "SHUTDOWN":
-                        #_ = self.cam.opt.disconnect()
-                        #_ = self.cam.opt.unloadLibrary()
+                        # _ = self.cam.opt.disconnect()
+                        # _ = self.cam.opt.unloadLibrary()
                         _ = self.cam.opt.ShutDown()
                         self.cam = None
                         response = {'elaptime': time.time()-start,
@@ -172,8 +177,8 @@ class CamServer:
                 time.sleep(60)
 
     def start(self):
-        logger.debug("IFU server now listening for connections on port:%s" %
-                     self.port)
+        logger.debug("IFU server now listening for connections on %s port:%s",
+                     self.hostname, self.port)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.settimeout(None)
@@ -190,17 +195,8 @@ class CamServer:
 
 
 if __name__ == "__main__":
-    server = CamServer("127.0.0.1", 5001)
-    # try:
+    server = CamServer(cam_cfg['ifu_ip'], cam_cfg['ifu_port'])
+    #
     logger.info("Starting IFU Server")
-    # server.cam = pixis.Controller(serial_number="", cam_prefix="ifu",
-    #                               send_to_remote=True, output_dir="C:/images")
-    # server.cam.initialize()
-    # server.cam.serialNumber = "05313416"
     server.start()
-    # except Exception as e:
-    #    print(str(e))
-    #    logging.exception("Unexpected exception %s", str(e))
-    # finally:
-    #    logging.info("Shutting down IFU server")
     logger.info("All done")
