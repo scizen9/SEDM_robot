@@ -1,11 +1,17 @@
 import socket
+import os
 import time
 import json
+
+SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
+
+with open(os.path.join(SITE_ROOT, 'config', 'cameras.json')) as cfg_file:
+    cam_cfg = json.load(cfg_file)
 
 
 class Camera:
 
-    def __init__(self, address='127.0.0.51', port=6942):
+    def __init__(self, address=cam_cfg['ifu_ip'], port=cam_cfg['ifu_port']):
         """
 
         :param address:
@@ -16,7 +22,7 @@ class Camera:
         self.port = port
         print(self.address, self.port)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print(self.socket)
+        # print(self.socket)
         self.socket.connect((self.address, self.port))
 
     def __send_command(self, cmd="", parameters=None, timeout=300,
@@ -95,12 +101,12 @@ class Camera:
 
 
 if __name__ == '__main__':
-    rc = Camera(address='127.0.0.1', port=5001)
-    print(rc.initialize())
-    # print(rc.status())
-    print(rc.take_image(exptime=1, save_as='', readout=5.0,
-                        return_before_done=False))
-    rc.shutdown()
-    # print(rc.status())
-    # print(rc.status())
-    # print(rc.shutdown())
+    ifu = Camera(address=cam_cfg['ifu_ip'], port=cam_cfg['ifu_port'])
+    print(ifu.initialize())
+    # print(ifu.status())
+    print(ifu.take_image(exptime=0, save_as='', readout=1.0,
+                         return_before_done=False))
+    ifu.shutdown()
+    # print(ifu.status())
+    # print(ifu.status())
+    # print(ifu.shutdown())

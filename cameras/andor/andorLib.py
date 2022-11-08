@@ -172,8 +172,8 @@ fan_modes = {0: 'Full',
              1: 'Low',
              2: 'OFF'}
 
-cooling_modes = {0: 'Maintain Current Temp',
-                 1: 'Return to Ambient Temp'}
+cooling_modes = {0: 'Return to Ambient Temp',
+                 1: 'Maintain Current Temp'}
 
 shutter_ttl_modes = {0: 'Low Signal',
                      1: 'High Signal'}
@@ -262,10 +262,12 @@ class Andor:
             self.lib = cdll.LoadLibrary(pathToLib)
 
     def CoolerON(self):
+        status_msg("Turning cooler ON")
         status = check_call(self.lib.CoolerON())
         return ERROR_STRING[status]
 
     def CoolerOFF(self):
+        status_msg("Turning cooler OFF")
         status = check_call(self.lib.CoolerOFF())
         return ERROR_STRING[status]
 
@@ -452,6 +454,13 @@ class Andor:
         pathToDir = c_char()
         status = check_call(self.lib.Initialize(pathToDir))
         return ERROR_STRING[status]
+
+    def IsCoolerOn(self):
+        cooler_status = c_int()
+        check_call(self.lib.IsCoolerOn(byref(cooler_status)))
+        state = cooler_status.value
+        status_msg("Cooler state: %d" % state)
+        return state
 
     def saveFits(self):
         self.imageArray = np.reshape(self.imageArray, (self.detector_height,

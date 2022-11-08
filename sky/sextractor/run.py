@@ -36,14 +36,17 @@ class sextractor:
 
         self.sex_exec = params["exec_path"]
         self.default_config = params["config_file"]
+        self.arc_config = params["arc_config_file"]
         self.default_cat_path = params["default_path"]
         self.run_sex_cmd = "%s -c %s " % (self.sex_exec, self.default_config)
+        self.run_arc_sex_cmd = "%s -c %s " % (self.sex_exec, self.arc_config)
 
         self.y_max = 2000
         self.y_min = 50
 
     def run(self, input_image, output_file=None, save_in_seperate_dir=True,
-            output_type=None, create_region_file=True, overwrite=False):
+            output_type=None, create_region_file=True, overwrite=False,
+            arc=False):
 
         """
 
@@ -53,6 +56,7 @@ class sextractor:
         :param output_type:
         :param create_region_file:
         :param overwrite:
+        :param arc:
         :return:
         """
         if output_type:
@@ -84,17 +88,23 @@ class sextractor:
 
         # 3. If we made it here then it's time to run the command.
 
-        # Lets just make sure there are no old files in place
+        # Let's just make sure there are no old files in place
         if os.path.exists(self.default_cat_path):
             os.remove(self.default_cat_path)
-        print("sex.run - running sextractor")
+
+        if arc:
+            print("sex.run - running sextractor on arc image")
+            run_sex_cmd = self.run_arc_sex_cmd
+        else:
+            print("sex.run - running sextractor on star image")
+            run_sex_cmd = self.run_sex_cmd
         # Run the sextractor command
         try:
-            subprocess.call("%s %s" % (self.run_sex_cmd, input_image),
+            subprocess.call("%s %s" % (run_sex_cmd, input_image),
                             stdout=subprocess.DEVNULL, shell=True)
         except:
             time.sleep(10)
-            subprocess.call("%s %s" % (self.run_sex_cmd, input_image),
+            subprocess.call("%s %s" % (run_sex_cmd, input_image),
                             stdout=subprocess.DEVNULL, shell=True)
             pass
 
@@ -119,8 +129,72 @@ class sextractor:
         return {"elaptime": time.time()-start,
                 "data": output_file}
 
-    def filter_catalog(self, catalog, mag_quantile=.8, ellp_quantile=.25,
-                       create_region_file=True, radius=10):
+    def filter_arc_catalog(self, catalog, create_region_file=True, radius=10):
+
+        start = time.time()
+
+        if not os.path.exists(catalog):
+            return {"elaptime": time.time()-start,
+                    "error": "%s does not exist" % catalog}
+        cdata = ascii.read(catalog)
+
+        df = cdata.to_pandas()
+        df = df[(df['Y_IMAGE'] < self.y_max) & (df['Y_IMAGE'] > self.y_min)]
+        df = df[(df['FLAGS'] <= 0)]
+        # cut on size
+        size_cut_up = df['B_IMAGE'].median() + 2.5 * df['B_IMAGE'].std()
+        size_cut_lo = df['B_IMAGE'].median() - 2.5 * df['B_IMAGE'].std()
+        df = df[(df['B_IMAGE'] < size_cut_up)]
+        df = df[(df['B_IMAGE'] > size_cut_lo)]
+
+        if create_region_file:
+            reg_file = catalog + '.reg'
+            cdata = open(reg_file, 'w')
+            for ind in df.index:
+                cdata.write("circle(%s, %s, %s\n" % (df["X_IMAGE"][ind],
+                                                     df["Y_IMAGE"][ind],
+                                                     radius))
+            cdata.close()
+            print("sex.filter_arc_catalog - ds9 region file:", reg_file)
+
+        return {"elaptime": time.time()-start, "data": df}
+
+    def get_arc_fwhm(self, obs, overwrite=True, filter_catalog=True,
+                     catalog_field='B_IMAGE'):
+        # run sextractor
+        sret = self.run(obs, overwrite=overwrite, arc=True)
+        print("sex.run status:\n", sret)
+
+        # 5. Check that there were no errors
+        if 'error' in sret:
+            print("sex.get_arc_fwhm - sextractor error for", obs)
+            return None, None
+
+        # 6. Filter the data if requested
+        if filter_catalog:
+            sret = self.filter_arc_catalog(sret['data'])
+            print("sex.filter_star_catalog filtered")
+
+        # 7. Again check there were no errors
+        if 'error' in sret:
+            print("sex.get_arc_fwhm - filter_arc_catalog error:\n", sret)
+            return None, None
+
+        # 8. Now we get the mean values for the catalog
+        df = sret['data']
+        if df.empty:
+            print("sex.get_arc_fwhm - no data for", obs)
+            return None, None
+
+        # 9. Finally get the stats for the image
+        print("sex.get_arc_fwhm - number of sources:", len(df.index))
+        fwhm = df[catalog_field].median()
+        fwhm_std = df.loc[:, catalog_field].std()
+
+        return fwhm, fwhm_std
+
+    def filter_star_catalog(self, catalog, mag_quantile=.8, ellp_quantile=.25,
+                            create_region_file=True, radius=10):
 
         start = time.time()
 
@@ -147,15 +221,15 @@ class sextractor:
                                                      df["Y_IMAGE"][ind],
                                                      radius))
             cdata.close()
-            print("sex.filter_catalog - ds9 region file:", reg_file)
+            print("sex.filter_star_catalog - ds9 region file:", reg_file)
 
         return {"elaptime": time.time()-start, "data": df}
 
     def _reject_outliers(self, indata, m=.5):
         return indata[abs(indata - np.mean(indata)) < m * np.std(indata)]
 
-    def get_fwhm(self, catalog, do_filter=True, ellip_constraint=.2,
-                 create_region_file=True):
+    def get_star_fwhm(self, catalog, do_filter=True, ellip_constraint=.2,
+                      create_region_file=True):
 
         # Read in the sextractor catalog and convert to dataframe
         if catalog[-4:] == 'fits':
@@ -261,12 +335,12 @@ class sextractor:
 
             # 6. Filter the data if requested
             if filter_catalog:
-                sret = self.filter_catalog(sret['data'])
-                print("sex.filter_catalog filtered")
+                sret = self.filter_star_catalog(sret['data'])
+                print("sex.filter_star_catalog filtered")
 
             # 7. Again check there were no errors
             if 'error' in sret:
-                print("sex.run_loop - filter_catalog error:\n", sret)
+                print("sex.run_loop - filter_star_catalog error:\n", sret)
                 header_field_list.append(np.NaN)
                 catalog_field_list.append(np.NaN)
                 error_list.append(np.NaN)
@@ -353,7 +427,7 @@ if __name__ == "__main__":
     data = open('test.csv', 'w')
     data.write("image, fwhm\n")
     for i in data_list:
-        ret = x.get_fwhm(i)
+        ret = x.get_star_fwhm(i)
         data.write("%s,%s\n" % (i, ret))
     data.close()
     # print(data_list[0])

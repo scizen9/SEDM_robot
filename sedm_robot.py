@@ -1,6 +1,4 @@
 import urllib.error
-
-from cameras.server import cam_client
 from observatory.server import ocs_client
 from observatory.telescope import winter
 from sky.server import sky_client
@@ -42,6 +40,9 @@ with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as cfg_file:
 
 with open(os.path.join(Version.CONFIG_DIR, 'sedm_robot.json')) as cfg_file:
     sedm_robot_cfg = json.load(cfg_file)
+
+with open(os.path.join(Version.CONFIG_DIR, 'cameras.json')) as cfg_file:
+    cam_cfg = json.load(cfg_file)
 
 logger = logging.getLogger("sedmLogger")
 logger.setLevel(logging.DEBUG)
@@ -208,11 +209,18 @@ class SEDm:
         if self.run_rc:
             logger.info("Initializing RC camera on")
             try:
-                self.rc = cam_client.Camera(self.rc_ip, self.rc_port)
+                if "pixis" in cam_cfg['rc_driver']:
+                    from cameras.server import cam_client as cam_driver
+                    logger.info("Using PIXIS driver")
+                else:
+                    from cameras.server import andor_cam_client as cam_driver
+                    logger.info("Using Andor driver")
+
+                self.rc = cam_driver.Camera(self.rc_ip, self.rc_port)
                 logger.info('rc return: %s', self.rc.initialize())
             except Exception as e:
                 make_alert_call("RC client not set up. "
-                                "Check on Pylos if client is running")
+                                "Check on Pylos if server is running")
                 logger.error("Error setting up RC client")
                 logger.error(str(e))
 
@@ -220,11 +228,17 @@ class SEDm:
         if self.run_ifu:
             logger.info("Initializing IFU camera")
             try:
-                self.ifu = cam_client.Camera(self.ifu_ip, self.ifu_port)
+                if "pixis" in cam_cfg['ifu_driver']:
+                    from cameras.server import cam_client as cam_driver
+                    logger.info("Using PIXIS driver")
+                else:
+                    from cameras.server import andor_cam_client as cam_driver
+                    logger.info("Using Andor driver")
+                self.ifu = cam_driver.Camera(self.ifu_ip, self.ifu_port)
                 logger.info('ifu return: %s', self.ifu.initialize())
             except Exception as e:
                 make_alert_call("IFU client not set up. "
-                                "Check on Pylos to see if client is running")
+                                "Check on Pylos to see if server is running")
                 logger.error("Error setting up IFU client")
                 logger.error(str(e))
 
@@ -338,69 +352,74 @@ class SEDm:
     def get_status_dict(self, do_lamps=True, do_stages=True):
         stat_dict = {}
 
-        # First try at position
-        good_pos = False
-        ret = self.ocs.check_pos()
-        if 'data' in ret:
-            sd = ret['data']
-            if isinstance(sd, dict):
-                stat_dict.update(sd)
-                good_pos = True
-            else:
-                logger.warning("Bad ?POS return: %s", sd)
-        # Second try
-        if not good_pos:
+        # Are we NOT running the ocs?
+        if self.ocs is None:
+            pass
+        # We ARE running the ocs
+        else:
+            # First try at position
+            good_pos = False
             ret = self.ocs.check_pos()
             if 'data' in ret:
                 sd = ret['data']
                 if isinstance(sd, dict):
                     stat_dict.update(sd)
+                    good_pos = True
                 else:
                     logger.warning("Bad ?POS return: %s", sd)
-        try:
-            stat_dict.update(self.ocs.check_weather()['data'])
-            if self.use_winter:
-                wret = self.winter.get_weather()
-                if 'data' in wret:
-                    win_dict = wret['data']
-                    # stat_dict['weather_status'] = win_dict['Weather_Status']
-                    stat_dict['windspeed_average'] = win_dict[
-                        'Average_Wind_Speed']
-                    stat_dict['wind_dir_current'] = win_dict['Wind_Direction']
-                    stat_dict['outside_air_temp'] = win_dict['Outside_Temp']
-                    stat_dict['inside_air_temp'] = win_dict['Outside_Temp']
-                    stat_dict['outside_rel_hum'] = win_dict['Outside_RH']
-                    stat_dict['inside_rel_hum'] = win_dict['Outside_RH']
-                    stat_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
-                    stat_dict['inside_dewpt'] = win_dict['Outside_Dewpoint']
-            stat_dict.update(self.ocs.check_status()['data'])
-        except Exception as e:
-            logger.error(str(e))
-            pass
+            # Second try
+            if not good_pos:
+                ret = self.ocs.check_pos()
+                if 'data' in ret:
+                    sd = ret['data']
+                    if isinstance(sd, dict):
+                        stat_dict.update(sd)
+                    else:
+                        logger.warning("Bad ?POS return: %s", sd)
+            try:
+                stat_dict.update(self.ocs.check_weather()['data'])
+                if self.use_winter:
+                    wret = self.winter.get_weather()
+                    if 'data' in wret:
+                        win_dict = wret['data']
+                        # stat_dict['weather_status'] = win_dict['Weather_Status']
+                        stat_dict['windspeed_average'] = win_dict[
+                            'Average_Wind_Speed']
+                        stat_dict['wind_dir_current'] = win_dict['Wind_Direction']
+                        stat_dict['outside_air_temp'] = win_dict['Outside_Temp']
+                        stat_dict['inside_air_temp'] = win_dict['Outside_Temp']
+                        stat_dict['outside_rel_hum'] = win_dict['Outside_RH']
+                        stat_dict['inside_rel_hum'] = win_dict['Outside_RH']
+                        stat_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
+                        stat_dict['inside_dewpt'] = win_dict['Outside_Dewpoint']
+                stat_dict.update(self.ocs.check_status()['data'])
+            except Exception as e:
+                logger.error(str(e))
+                pass
 
-        if do_lamps and self.run_arclamps:
-            stat_dict['xe_lamp'] = self.ocs.arclamp('xe', 'status',
-                                                    force_check=True)['data']
-            self.lamp_dict_status['xe'] = stat_dict['xe_lamp']
-            stat_dict['cd_lamp'] = self.ocs.arclamp('cd', 'status',
-                                                    force_check=True)['data']
-            self.lamp_dict_status['cd'] = stat_dict['cd_lamp']
-            stat_dict['hg_lamp'] = self.ocs.arclamp('hg', 'status',
-                                                    force_check=True)['data']
-            self.lamp_dict_status['hg'] = stat_dict['hg_lamp']
-        else:
-            stat_dict['xe_lamp'] = self.lamp_dict_status['xe']
-            stat_dict['cd_lamp'] = self.lamp_dict_status['cd']
-            stat_dict['hg_lamp'] = self.lamp_dict_status['hg']
+            if do_lamps and self.run_arclamps:
+                stat_dict['xe_lamp'] = self.ocs.arclamp('xe', 'status',
+                                                        force_check=True)['data']
+                self.lamp_dict_status['xe'] = stat_dict['xe_lamp']
+                stat_dict['cd_lamp'] = self.ocs.arclamp('cd', 'status',
+                                                        force_check=True)['data']
+                self.lamp_dict_status['cd'] = stat_dict['cd_lamp']
+                stat_dict['hg_lamp'] = self.ocs.arclamp('hg', 'status',
+                                                        force_check=True)['data']
+                self.lamp_dict_status['hg'] = stat_dict['hg_lamp']
+            else:
+                stat_dict['xe_lamp'] = self.lamp_dict_status['xe']
+                stat_dict['cd_lamp'] = self.lamp_dict_status['cd']
+                stat_dict['hg_lamp'] = self.lamp_dict_status['hg']
 
-        if do_stages and self.run_stage:
-            stat_dict['ifufocus'] = self.ocs.stage_position(1)['data']
-            self.stage_dict['ifufocus'] = stat_dict['ifufocus']
-            stat_dict['ifufoc2'] = self.ocs.stage_position(2)['data']
-            self.stage_dict['ifufoc2'] = stat_dict['ifufoc2']
-        else:
-            stat_dict['ifufocus'] = self.stage_dict['ifufocus']
-            stat_dict['ifufoc2'] = self.stage_dict['ifufoc2']
+            if do_stages and self.run_stage:
+                stat_dict['ifufocus'] = self.ocs.stage_position(1)['data']
+                self.stage_dict['ifufocus'] = stat_dict['ifufocus']
+                stat_dict['ifufoc2'] = self.ocs.stage_position(2)['data']
+                self.stage_dict['ifufoc2'] = stat_dict['ifufoc2']
+            else:
+                stat_dict['ifufocus'] = self.stage_dict['ifufocus']
+                stat_dict['ifufoc2'] = self.stage_dict['ifufoc2']
         return stat_dict
 
     def take_image(self, cam, exptime=0, shutter='normal', readout=2.0,
@@ -1523,8 +1542,8 @@ class SEDm:
             logger.info("ocs.arclamp status:\n%s", ret)
 
             if wait:
-                logger.info("Waiting %s seconds for dome lamps to warm up",
-                            self.lamp_wait_time[lamp.lower()])
+                logger.info("Waiting %s seconds for %s lamp to warm up",
+                            (self.lamp_wait_time[lamp.lower()], lamp))
                 time.sleep(self.lamp_wait_time[lamp.lower()])
 
         if foc_range is None:
@@ -1596,18 +1615,41 @@ class SEDm:
             ret = self.ocs.arclamp(lamp, command="OFF")
             logger.info("ocs.arclamp status:\n%s", ret)
 
-        logger.debug("Finished RC focus sequence")
+        logger.debug("Finished %s sequence", focus_type)
         logger.info("focus image list:\n%s", img_list)
         if solve:
-            ret = self.sky.get_focus(img_list, nominal_focus=nominal_rc_focus)
-            logger.info("sky.get_focus status:\n%s", ret)
-            if 'data' in ret:
-                best_foc = round(ret['data'][0][0], 2)
-                logger.info("Best FOCUS is: %s", best_foc)
+            if focus_type == 'rc_focus':
+                ret = self.sky.get_focus(img_list,
+                                         nominal_focus=nominal_rc_focus)
+                logger.info("sky.get_focus status:\n%s", ret)
+                if 'data' in ret:
+                    best_foc = round(ret['data'][0][0], 2)
+                    logger.info("Best FOCUS is: %s", best_foc)
+                else:
+                    logger.warning("Could not solve, using Nominal focus: %s",
+                                   nominal_rc_focus)
+                    best_foc = nominal_rc_focus
+            elif focus_type == 'ifu_stage':
+                ret = self.sky.get_focus(img_list)
+                logger.info("sky.get_focus status:\n%s", ret)
+                if 'data' in ret:
+                    best_foc = round(ret['data'][0][0], 2)
+                    logger.info("Best IFU stage 1 focus is %s", best_foc)
+                else:
+                    logger.warning("Could not solve for ifu_stage focus")
+                    best_foc = None
+            elif focus_type == 'ifu_stage2':
+                ret = self.sky.get_focus(img_list)
+                logger.info("sky.get_focus status:\n%s", ret)
+                if 'data' in ret:
+                    best_foc = round(ret['data'][0][0], 2)
+                    logger.info("Best IFU stage 1 focus is %s", best_foc)
+                else:
+                    logger.warning("Could not solve for ifu_stage2 focus")
+                    best_foc = None
             else:
-                logger.info("Could not solve, using Nominal focus: %s",
-                            nominal_rc_focus)
-                best_foc = nominal_rc_focus
+                logger.warning("Unknown focus type: %s", focus_type)
+                best_foc = None
 
             # TODO: this only really works for rc_focus,
             #  add routines for other focus types.

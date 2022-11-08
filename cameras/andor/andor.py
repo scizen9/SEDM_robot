@@ -42,7 +42,7 @@ class Controller:
     def __init__(self, cam_prefix="ifu", serial_number="test",
                  camera_handle=None, output_dir="",
                  force_serial=True, set_temperature=-50, send_to_remote=False,
-                 remote_config='sedm.json'):
+                 remote_config='nemea.json'):
         """
         Initialize the controller for the ANDOR camera and
         :param cam_prefix:
@@ -53,16 +53,16 @@ class Controller:
         """
 
         self.camPrefix = cam_prefix
-        self.serialNumber = serial_number  # Serial number needs to be added to config file (serial = 26265)
-        self.cameraHandle = camera_handle  # Cam handle needs to be added to config file (handle = 100)
+        self.serialNumber = serial_number
+        self.cameraHandle = camera_handle
         self.outputDir = output_dir
         self.forceSerial = force_serial
         self.setTemperature = set_temperature
         self.opt = None
         self.ROI = [1, 1, 1, 2088, 1, 2048]
 
-        self.AdcSpeed = 5.0  # Horizontal Shift Speed
-        self.AdcAnalogGain = "Low"  # Pre Amp Gain
+        self.AdcSpeed = 1.0  # Horizontal Shift Speed
+        self.AdcAnalogGain = "High"  # Pre Amp Gain
         self.AdcQuality = "HighSensitivity"  # Output Amplification
 
         self.VerticalShiftSpeed = 77
@@ -71,7 +71,7 @@ class Controller:
 
         self.ExposureTime = 0
         self.lastExposed = None
-        self.telescope = '60'
+        self.telescope = 'P60'
         self.gain = -999
         self.crpix1 = -999
         self.crpix2 = -999
@@ -164,7 +164,7 @@ class Controller:
 
         return self.opt.getParameter("ReadoutTimeCalculation")
 
-    def initialize(self, path_to_lib="", wait_to_cool=True):
+    def initialize(self, path_to_lib="", wait_to_cool=False):
         """
         Initialize the library and connect the cameras.  When no camera
         is detected the system opens a demo cam up for testing.
@@ -197,7 +197,7 @@ class Controller:
         for cams in range(connected_cams):
             handles = self.opt.GetCameraHandle(cams)
             camera_list.append(handles)
-            #camera_list.append(self.opt.GetCameraHandle(cams))
+            # camera_list.append(self.opt.GetCameraHandle(cams))
 
         logger.info("Available Cameras:%s", camera_list)
         if self.cameraHandle:
@@ -228,10 +228,10 @@ class Controller:
         # past experience has shown working with the cameras during the
         # cooling cycle can cause issues.
 
-
         logger.info("Setting temperature to: %s", self.setTemperature)
         self.opt.SetTemperature(self.setTemperature)
 
+        self.opt.IsCoolerOn()
         self.opt.CoolerON()
         if wait_to_cool:
             temp = self.opt.GetTemperature()[1]
@@ -273,7 +273,7 @@ class Controller:
             self.opt.SetImageFlip(0, 0)
             self.opt.SetImageRotate(0)
             self.opt.SetBaselineClamp(0)
-            self.opt.SetFanMode(1)
+            self.opt.SetFanMode(1)      # set to 2 (OFF) when we have liquid cooling set up
             self.opt.SetADChannel(0)
             self.opt.SetCoolerMode(1)
             self.opt.SetFrameTransferMode(0)
@@ -316,7 +316,7 @@ class Controller:
             self.cdelt2_comment = '.394"'
             self.gain = 1.77
         elif self.camPrefix == 'ifu':
-            self.gain = 1.78
+            self.gain = 0.9
             self.crpix1 = 1075
             self.crpix2 = 974
             self.cdelt1 = -2.5767E-06
@@ -330,6 +330,7 @@ class Controller:
             self.cdelt2 = -0.00010944
             self.cdelt1_comment = '.394"'
             self.cdelt2_comment = '.394"'
+            self.gain = 0.9
         return True
 
     def get_status(self):
@@ -356,10 +357,22 @@ class Controller:
                 "camtemp": -9999, "camspeed": -999
             }
 
+    def get_temp_status(self):
+        """Return temperature and lock status"""
+        locked = False
+        temp = 0.
+        try:
+            temp = self.opt.GetTemperature()[1]
+            lock = self.opt.GetTemperature()[0]
+            logger.info("status: %s", lock)
+            locked = (lock == 'DRV_TEMP_STABILIZED')
+            return {'camtemp': temp, 'templock': locked}
+        except Exception as e:
+            return {'error': str(e), 'camtemp': temp, 'templock': locked}
+
     def take_image(self, shutter='normal', exptime=0.0,
                    readout=2.0, save_as="", timeout=None):
         s = time.time()
-        readout_time = 5  # Don't know what this is for
 
         # 1. Set the shutter state
         shutter_return = self._set_shutter(shutter)
@@ -371,7 +384,6 @@ class Controller:
         # Andor exposure times are in seconds
         try:
             self.opt.SetExposureTime(exptime)
-            exptime_ms = int(float(exptime) * 1000)
         except Exception as e:
             self.lastError = str(e)
             logger.error("Error setting exposure time", exc_info=True)
@@ -386,39 +398,18 @@ class Controller:
         self.opt.SetHSSpeed(self.AdcQuality_States[self.AdcQuality],
                             self.AdcSpeed_States[readout])
 
-        # 4. Set parameters and get readout time
-        try:
-            logger.info("Sending configuration to camera")
-
-            readout_time = self.opt.GetReadOutTime()  # This function may not be available for this camera
-
-            r = int(readout_time) / 1000
-            logger.info("Expected readout time=%ss", r)
-        except Exception as e:
-            self.lastError = str(e)
-            logger.error("Error setting parameters", exc_info=True)
-
-        # 5. Set the timeout return for the camera
-        if not timeout:
-            timeout = int(int(readout_time) + exptime_ms + 100000)
-        else:
-            timeout = 100000000
-
         # 6. Get the exposure start time to use for the naming convention
-
-        # start_time = datetime.datetime.utcnow()
         start_time = datetime.utcnow()
 
         self.lastExposed = start_time
         logger.info("Starting %(camPrefix)s exposure",
                     {'camPrefix': self.camPrefix})
         try:
-            # imdata = self.opt.readNFrames(N=1, timeout=timeout)[0][0]
-            # Don't know what this is either
             self.opt.StartAcquisition()
             imdata = []
             self.opt.GetAcquiredData16(imdata, width=self.ROI[3],
                                        height=self.ROI[5])
+            end_time = datetime.utcnow()
         except Exception as e:
             self.lastError = str(e)
             logger.error("Unable to get camera data", exc_info=True)
@@ -444,7 +435,6 @@ class Controller:
         try:
             datetimestr = start_time.isoformat()
             datestr, timestr = datetimestr.split('T')
-            # hdul = fits.PrimaryHDU(imdata, uint=True)
             hdul = fits.PrimaryHDU(self.opt.imageArray, uint=True)
             hdul.scale('int16', bzero=32768)
             hdul.header.set("EXPTIME", float(exptime),
@@ -458,19 +448,22 @@ class Controller:
                             "Detector temp in deg C")
             hdul.header.set("GAIN_SET", 2, "Gain mode")
             hdul.header.set("ADC", self.AdcQuality, "ADC Quality")
+            hdul.header.set("SHUTMODE", shutter, "Shutter Mode")
             hdul.header.set("MODEL", 22, "Instrument Model Number")
             hdul.header.set("INTERFC", "USB", "Instrument Interface")
             hdul.header.set("SNSR_NM", "E2V 2048 x 2048 (CCD 42-40)(B)",
                             "Sensor Name")
             hdul.header.set("SER_NO", self.serialNumber, "Serial Number")
-            hdul.header.set("TELESCOP", self.telescope, "Telescope ID")
             hdul.header.set("GAIN", self.gain, "Gain")
             hdul.header.set("CAM_NAME", "%s Cam" % self.camPrefix.upper(),
                             "Camera Name")
             hdul.header.set("INSTRUME", "SEDM-P60", "Camera Name")
+            hdul.header.set("TELESCOP", self.telescope, "Telescope ID")
             hdul.header.set("UTC", start_time.isoformat(), "UT-Shutter Open")
-            hdul.header.set("END_SHUT", datetime.utcnow().isoformat(),
+            hdul.header.set("END_SHUT", end_time.isoformat(),
                             "Shutter Close Time")
+            hdul.header.set("END_READ", end_time.isoformat(),
+                            "End of Readout Time")
             hdul.header.set("OBSDATE", datestr, "UT Start Date")
             hdul.header.set("OBSTIME", timestr, "UT Start Time")
             hdul.header.set("CRPIX1", self.crpix1, "Center X pixel")

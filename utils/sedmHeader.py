@@ -225,7 +225,7 @@ class addHeader():
         prihdr.set("EQUINOX", float(
             obsdict["telescope_equinox"].replace('j', '').replace('b', '')),
                    "Telescope Equinox")
-        prihdr.set("TEL_HA", obsdict["telescope_ha"], "Telecope Hour Angle")
+        prihdr.set("TEL_HA", obsdict["telescope_ha"], "Telescope Hour Angle")
         prihdr.set("RA", obsdict["telescope_ra"], "Telescope Ra position start")
         prihdr.set("TEL_RA", obsdict["telescope_ra"],
                    "Telescope Ra position start")

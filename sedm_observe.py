@@ -458,6 +458,8 @@ if __name__ == "__main__":
                         help='Temperature estimate (for focus)')
     parser.add_argument('-w', '--winter', action="store_true", default=False,
                         help='Use WINTER for weather data')
+    parser.add_argument('-n', '--noclean', action="store_true", default=False,
+                        help='Do not clean residual manual files')
     args = parser.parse_args()
 
     if args.reset:      # reset dome, arc lamps
@@ -483,27 +485,32 @@ if __name__ == "__main__":
 
     else:               # start observations
         lampsoff = False
+        clean_manual = not args.noclean
         try:
             while True:
                 try:
                     if lampsoff:
                         print("Turning all lamps off")
                     else:
-                        print("Keeping lamps in current status")
+                        print("Keeping lamps in current state")
                     run_observing_loop(lamps_off=lampsoff,
                                        temperature=args.temperature,
-                                       use_winter=args.winter)
+                                       use_winter=args.winter,
+                                       clean_manual=clean_manual)
                     lampsoff = False
+                    clean_manual = True
                 except Exception as e:
                     tb_str = traceback.format_exception(etype=type(e), value=e,
                                                         tb=e.__traceback__)
                     print(datetime.datetime.utcnow(),
                           "FATAL (restart):\n", "".join(tb_str))
                     print("\nSleep for 60s and start loop again")
-                    # Something went wrong, let's restart with all cal lamps off
+                    # Something went wrong:
+                    #   let's restart with all cal lamps off,
+                    #   and clean manual files
                     lampsoff = True
+                    clean_manual = True
                     time.sleep(60)
-                    pass
 
         except Exception as e:
             tb_str = traceback.format_exception(etype=type(e), value=e,

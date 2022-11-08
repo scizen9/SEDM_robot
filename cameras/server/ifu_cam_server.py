@@ -12,8 +12,8 @@ SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as cfg_file:
     log_cfg = json.load(cfg_file)
 
-with open(os.path.join(SITE_ROOT, 'config', 'sedm.json')) as cfg_file:
-    sedm_cfg = json.load(cfg_file)
+with open(os.path.join(SITE_ROOT, 'config', 'cameras.json')) as cfg_file:
+    cam_cfg = json.load(cfg_file)
 
 logger = logging.getLogger("ifu_cameraLogger")
 logger.setLevel(logging.DEBUG)
@@ -74,45 +74,51 @@ class CamServer:
 
                     if data['command'].upper() == 'INITIALIZE':
                         if not self.cam:
-                            if self.port == sedm_cfg['rc_port']:
+                            if self.port == cam_cfg['rc_port']:
                                 cam_prefix = "rc"
-                                send_to_remote = sedm_cfg['rc_send_to_remote']
-                                output_dir = sedm_cfg['cam_image_dir']
-                                set_temperature = sedm_cfg['rc_set_temperature']
-                                cam_ser_no = sedm_cfg['rc_serial_number']
+                                send_to_remote = cam_cfg['rc_send_to_remote']
+                                output_dir = cam_cfg['cam_image_dir']
+                                set_temperature = cam_cfg['rc_set_temperature']
+                                cam_ser_no = cam_cfg['rc_serial_number']
+                                driver = cam_cfg['rc_driver']
                             else:
                                 cam_prefix = "ifu"
-                                send_to_remote = sedm_cfg['ifu_send_to_remote']
-                                output_dir = sedm_cfg['cam_image_dir']
-                                set_temperature = sedm_cfg[
+                                send_to_remote = cam_cfg['ifu_send_to_remote']
+                                output_dir = cam_cfg['cam_image_dir']
+                                set_temperature = cam_cfg[
                                     'ifu_set_temperature']
-                                cam_ser_no = sedm_cfg['ifu_serial_number']
+                                cam_ser_no = cam_cfg['ifu_serial_number']
+                                driver = cam_cfg['ifu_driver']
                             # Trick pixis code into connecting to first camera
                             # in list by sending an empty serial number.
                             # This is why we start rc_cam_server first!
-                            self.cam = pixis.Controller(
-                                serial_number="",
-                                cam_prefix=cam_prefix,
-                                send_to_remote=send_to_remote,
-                                set_temperature=set_temperature,
-                                output_dir=output_dir)
+                            if "pixis" in driver:
+                                self.cam = pixis.Controller(
+                                    serial_number="",
+                                    cam_prefix=cam_prefix,
+                                    send_to_remote=send_to_remote,
+                                    set_temperature=set_temperature,
+                                    output_dir=output_dir)
 
-                            # Initialize the camera
-                            ret = self.cam.initialize()
-                            # And now we check the correct serial number
-                            print("Do these match?", self.cam.serialNumber,
-                                  cam_ser_no)
-                            if ret:
-                                response = {'elaptime': time.time()-start,
-                                            'data': "Camera started"}
+                                # Initialize the camera
+                                ret = self.cam.initialize()
+                                # And now we check the correct serial number
+                                print("Do these match?", self.cam.serialNumber,
+                                      cam_ser_no)
+                                if ret:
+                                    response = {'elaptime': time.time()-start,
+                                                'data': "Camera started"}
+                                else:
+                                    response = {'elaptime': time.time()-start,
+                                                'error': self.cam.lastError}
                             else:
                                 response = {'elaptime': time.time()-start,
-                                            'error': self.cam.lastError}
+                                            'error': "can only use pixis driver!"}
                         else:
                             print(self.cam)
                             print(type(self.cam))
                             response = {'elaptime': time.time()-start,
-                                        'data': "Camera already intiailzed"}
+                                        'data': "Camera already initialized"}
 
                     elif data['command'].upper() == 'TAKE_IMAGE':
                         with open(exp_start_file, 'w') as file:

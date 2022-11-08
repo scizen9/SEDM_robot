@@ -92,26 +92,26 @@ class ocsServer:
                         self.tcs = tcs.Telescope()
                         
                         response = {'elaptime': time.time() - start,
-                                    'data': 'OCS intialized'}
+                                    'data': 'OCS initialized'}
                     elif cmd == 'INITIALIZE_LAMPS':
                         if not self.lamp_controller:
                             logger.info("Initializing Arc Lamps")
                             self.lamp_controller = lamps.Lamp()
                             self.lamps_dict = self.lamp_controller.connect_all()
                             response = {'elaptime': time.time() - start,
-                                        'data': 'Arc lamps intialized'}
+                                        'data': 'Arc lamps initialized'}
                     elif cmd == 'INITIALIZE_STAGES':
                         if not self.stages:
                             logger.info("Initializing Stages")
                             self.stages = stages.Stage()
                             response = {'elaptime': time.time() - start,
-                                        'data': 'Stages intialized'}
+                                        'data': 'Stages initialized'}
                     elif cmd == 'INITIALIZE_TCS':
                         if not self.tcs:
                             logger.info("Initializing Telescope")
                             self.tcs = tcs.Telescope()
                             response = {'elaptime': time.time() - start,
-                                        'data': 'Telescope intialized'}
+                                        'data': 'Telescope initialized'}
                     elif cmd.upper() == "OBSSTATUS":
                         response = self.tcs.get_status()
                     elif cmd.upper() == "OBSWEATHER":
@@ -177,7 +177,7 @@ class ocsServer:
                 pass
 
     def start(self):
-        logger.debug("IFU server now listening for connections on port:%s"
+        logger.debug("OCS server now listening for connections on port:%s"
                      % self.port)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -202,5 +202,5 @@ if __name__ == "__main__":
     # except Exception as e:
     #    logging.exception("Unexpected exception %s", str(e))
     # finally:
-    #    logging.info("Shutting down IFU server")
+    #    logging.info("Shutting down OCS server")
     logger.info("All done")
