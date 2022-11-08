@@ -42,7 +42,7 @@ class Controller:
     def __init__(self, cam_prefix="ifu", serial_number="test",
                  camera_handle=None, output_dir="",
                  force_serial=True, set_temperature=-50, send_to_remote=False,
-                 remote_config='sedm.json'):
+                 remote_config='nemea.json'):
         """
         Initialize the controller for the ANDOR camera and
         :param cam_prefix:
@@ -53,8 +53,8 @@ class Controller:
         """
 
         self.camPrefix = cam_prefix
-        self.serialNumber = serial_number  # Serial number needs to be added to config file (serial = 26265)
-        self.cameraHandle = camera_handle  # Cam handle needs to be added to config file (handle = 100)
+        self.serialNumber = serial_number
+        self.cameraHandle = camera_handle
         self.outputDir = output_dir
         self.forceSerial = force_serial
         self.setTemperature = set_temperature
@@ -71,7 +71,7 @@ class Controller:
 
         self.ExposureTime = 0
         self.lastExposed = None
-        self.telescope = '60'
+        self.telescope = 'P60'
         self.gain = -999
         self.crpix1 = -999
         self.crpix2 = -999
@@ -273,7 +273,7 @@ class Controller:
             self.opt.SetImageFlip(0, 0)
             self.opt.SetImageRotate(0)
             self.opt.SetBaselineClamp(0)
-            self.opt.SetFanMode(1)      # set to 0 when we have liquid cooling set up
+            self.opt.SetFanMode(1)      # set to 2 (OFF) when we have liquid cooling set up
             self.opt.SetADChannel(0)
             self.opt.SetCoolerMode(1)
             self.opt.SetFrameTransferMode(0)
@@ -409,6 +409,7 @@ class Controller:
             imdata = []
             self.opt.GetAcquiredData16(imdata, width=self.ROI[3],
                                        height=self.ROI[5])
+            end_time = datetime.utcnow()
         except Exception as e:
             self.lastError = str(e)
             logger.error("Unable to get camera data", exc_info=True)
@@ -447,19 +448,22 @@ class Controller:
                             "Detector temp in deg C")
             hdul.header.set("GAIN_SET", 2, "Gain mode")
             hdul.header.set("ADC", self.AdcQuality, "ADC Quality")
+            hdul.header.set("SHUTMODE", shutter, "Shutter Mode")
             hdul.header.set("MODEL", 22, "Instrument Model Number")
             hdul.header.set("INTERFC", "USB", "Instrument Interface")
             hdul.header.set("SNSR_NM", "E2V 2048 x 2048 (CCD 42-40)(B)",
                             "Sensor Name")
             hdul.header.set("SER_NO", self.serialNumber, "Serial Number")
-            hdul.header.set("TELESCOP", self.telescope, "Telescope ID")
             hdul.header.set("GAIN", self.gain, "Gain")
             hdul.header.set("CAM_NAME", "%s Cam" % self.camPrefix.upper(),
                             "Camera Name")
             hdul.header.set("INSTRUME", "SEDM-P60", "Camera Name")
+            hdul.header.set("TELESCOP", self.telescope, "Telescope ID")
             hdul.header.set("UTC", start_time.isoformat(), "UT-Shutter Open")
-            hdul.header.set("END_SHUT", datetime.utcnow().isoformat(),
+            hdul.header.set("END_SHUT", end_time.isoformat(),
                             "Shutter Close Time")
+            hdul.header.set("END_READ", end_time.isoformat(),
+                            "End of Readout Time")
             hdul.header.set("OBSDATE", datestr, "UT Start Date")
             hdul.header.set("OBSTIME", timestr, "UT Start Time")
             hdul.header.set("CRPIX1", self.crpix1, "Center X pixel")
