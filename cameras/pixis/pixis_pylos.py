@@ -13,10 +13,10 @@ SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 with open(os.path.join(SITE_ROOT, 'config', 'logging.json')) as data_file:
     params = json.load(data_file)
 
-with open(os.path.join(SITE_ROOT, 'config', 'sedm.json')) as data_file:
-    sedm_cfg = json.load(data_file)
+with open(os.path.join(SITE_ROOT, 'config', 'cameras.json')) as data_file:
+    cam_cfg = json.load(data_file)
 
-_remote_config = sedm_cfg["remote_config"]  # default remote config file
+_remote_config = cam_cfg["remote_config"]  # default remote config file
 
 # logger = logging.getLogger("pixisLogger")
 # logger.setLevel(logging.DEBUG)
