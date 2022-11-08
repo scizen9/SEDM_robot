@@ -40,7 +40,7 @@
          "dome_azimuth", "windscreen_elevation", "utsunset", "utsunrise", "solar_ra", "solar_dec", "sec_vacuum", "bar_pressure"],
   "default_dict": {"bar_pressure": -999, "endbarpr": -999, "object": "SEDmDefault", "endair": -999,
     "enddome": "NA", "abpair": "NA", "imgset": "NA", "imgtype": "NA", "name": "NA", "objtype": "NA",
-    "filter": "NA", "utc": "NA", "telescope_id": "NA", "telescope_control_status": "NA",
+    "filter": "NA", "utc": "NA", "telescope_id": "60", "telescope_control_status": "NA",
     "lamp_status": "NA", "lamp_current": "NA", "dome_shutter_status": "NA", "ws_motion_mode": "NA",
     "dome_motion_mode": "NA", "telescope_power_status": "NA", "oil_pad_status": "NA",
     "weather_status": "NA", "sunlight_status": "NA", "remote_close_status": "NA",
