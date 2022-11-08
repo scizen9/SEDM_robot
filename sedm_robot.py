@@ -1,6 +1,4 @@
 import urllib.error
-
-from cameras.server import cam_client
 from observatory.server import ocs_client
 from observatory.telescope import winter
 from sky.server import sky_client
@@ -42,6 +40,9 @@ with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as cfg_file:
 
 with open(os.path.join(Version.CONFIG_DIR, 'sedm_robot.json')) as cfg_file:
     sedm_robot_cfg = json.load(cfg_file)
+
+with open(os.path.join(Version.CONFIG_DIR, 'cameras.json')) as cfg_file:
+    cam_cfg = json.load(cfg_file)
 
 logger = logging.getLogger("sedmLogger")
 logger.setLevel(logging.DEBUG)
@@ -208,11 +209,18 @@ class SEDm:
         if self.run_rc:
             logger.info("Initializing RC camera on")
             try:
-                self.rc = cam_client.Camera(self.rc_ip, self.rc_port)
+                if "pixis" in cam_cfg['rc_driver']:
+                    from cameras.server import cam_client as cam_driver
+                    logger.info("Using PIXIS driver")
+                else:
+                    from cameras.server import andor_cam_client as cam_driver
+                    logger.info("Using Andor driver")
+
+                self.rc = cam_driver.Camera(self.rc_ip, self.rc_port)
                 logger.info('rc return: %s', self.rc.initialize())
             except Exception as e:
                 make_alert_call("RC client not set up. "
-                                "Check on Pylos if client is running")
+                                "Check on Pylos if server is running")
                 logger.error("Error setting up RC client")
                 logger.error(str(e))
 
@@ -220,11 +228,17 @@ class SEDm:
         if self.run_ifu:
             logger.info("Initializing IFU camera")
             try:
-                self.ifu = cam_client.Camera(self.ifu_ip, self.ifu_port)
+                if "pixis" in cam_cfg['ifu_driver']:
+                    from cameras.server import cam_client as cam_driver
+                    logger.info("Using PIXIS driver")
+                else:
+                    from cameras.server import andor_cam_client as cam_driver
+                    logger.info("Using Andor driver")
+                self.ifu = cam_driver.Camera(self.ifu_ip, self.ifu_port)
                 logger.info('ifu return: %s', self.ifu.initialize())
             except Exception as e:
                 make_alert_call("IFU client not set up. "
-                                "Check on Pylos to see if client is running")
+                                "Check on Pylos to see if server is running")
                 logger.error("Error setting up IFU client")
                 logger.error(str(e))
 
