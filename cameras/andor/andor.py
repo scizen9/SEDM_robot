@@ -273,7 +273,7 @@ class Controller:
             self.opt.SetImageFlip(0, 0)
             self.opt.SetImageRotate(0)
             self.opt.SetBaselineClamp(0)
-            self.opt.SetFanMode(1)      # set to 2 (OFF) when we have liquid cooling set up
+            self.opt.SetFanMode(0)      # set to 2 (OFF) when we have liquid cooling set up
             self.opt.SetADChannel(0)
             self.opt.SetCoolerMode(1)
             self.opt.SetFrameTransferMode(0)
@@ -446,6 +446,10 @@ class Controller:
             hdul.header.set("TEMP",
                             self.opt.GetTemperature()[1],
                             "Detector temp in deg C")
+            hdul.header.set("PSCANX0", 1, "Pre-scan column start")
+            hdul.header.set("PSCANX1", 20, "Pre-scan column end")
+            hdul.header.set("OSCANX0", 2069, "Over-scan column start")
+            hdul.header.set("OSCANX1", 2088, "Over-scan column end")
             hdul.header.set("GAIN_SET", 2, "Gain mode")
             hdul.header.set("ADC", self.AdcQuality, "ADC Quality")
             hdul.header.set("SHUTMODE", shutter, "Shutter Mode")
