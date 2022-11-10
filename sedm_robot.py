@@ -1,6 +1,5 @@
 import urllib.error
 from observatory.server import ocs_client
-from observatory.telescope import winter
 from sky.server import sky_client
 from sanity.server import sanity_client
 from utils import sedmHeader, rc_filter_coords, rc_focus
@@ -344,6 +343,7 @@ class SEDm:
 
         if self.use_winter:
             logger.info("Setting up connection to WINTER for weather info")
+            from observatory.telescope import winter
             self.winter = winter.Winter()
 
         self.initialized = True
@@ -499,7 +499,6 @@ class SEDm:
                 object_dec = obsdict['telescope_dec']
             except KeyError:
                 logger.warning("No TCS object coords in status!")
-                print("No TCS object coords in status!")
                 object_ra = 0.0
                 object_dec = 0.0
 
