@@ -79,7 +79,6 @@ class Winter:
         # Start timer
         start = time.time()
 
-        info = False
         # Check if the socket is open
         if not self.socket:
             logger.info("Socket not connected")
