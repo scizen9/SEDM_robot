@@ -68,6 +68,10 @@ class Controller:
         self.VerticalShiftSpeed = 77
         self.ReadMode = "Image"
         self.AcquisitionMode = "SingleScan"
+        self.ShutterTTLMode = "high"
+        self.ShutterMode = "normal"
+        self.ShutterOpenTimeMs = 12
+        self.ShutterCloseTimeMs = 14
 
         self.ExposureTime = 0
         self.lastExposed = None
@@ -93,6 +97,11 @@ class Controller:
             'normal': 0,  # Values are index as per andor SDK documentation
             'open': 1,  # Values are index as per andor SDK documentation
             'closed': 2,  # Values are index as per andor SDK documentation
+        }
+
+        self.shutter_ttl_modes = {
+            'low': 0,   # Output TTL low signal to open shutter
+            'high': 1,  # Output TTL high signal to open shutter
         }
 
         # Assuming this is the same as the Horizontal Shift Speed in Andor (MHz)
@@ -141,7 +150,10 @@ class Controller:
         # 1. Make sure shutter state is correct string format
         shutter = shutter.lower()
         if shutter in self.shutter_dict:
-            self.opt.SetShutter(0, self.shutter_dict[shutter], 0, 0)
+            self.opt.SetShutter(self.shutter_ttl_modes[self.ShutterTTLMode],
+                                self.shutter_dict[shutter],
+                                self.ShutterOpenTimeMs,
+                                self.ShutterCloseTimeMs)
             return True
         else:
             logger.error('%s is not a valid shutter state', shutter,
@@ -236,14 +248,6 @@ class Controller:
         if wait_to_cool:
             temp = self.opt.GetTemperature()[1]
             lock = self.opt.GetTemperature()[0]
-            '''
-            while temp != self.setTemperature:
-                logger.debug("Detector temp at %sC", temp)
-                print(lock, temp)
-                time.sleep(5)
-                temp = self.opt.GetTemperature()[1]
-                lock = self.opt.GetTemperature()[0]
-            '''
 
             while lock != 'DRV_TEMP_STABILIZED':
                 print(lock, temp)
@@ -253,19 +257,6 @@ class Controller:
                 time.sleep(10)
             logger.info("Camera temperature locked in place. Continuing "
                         "initialization")
-
-        # Set default Adc values
-        '''
-        try:
-            self.opt.SetPreAmpGain(self.AdcAnalogGain_States[self.AdcAnalogGain])
-            self.opt.SetHSSpeed(self.AdcQuality_States[self.AdcQuality],
-                                self.AdcSpeed_States[self.AdcSpeed])
-
-        except Exception as e:
-            self.lastError = str(e)
-            logger.error("Error setting the Adc values", exc_info=True)
-            return False
-        '''
 
         # Sets Default Parameters
         try:
@@ -285,6 +276,10 @@ class Controller:
             self.opt.SetReadMode(self.ReadModes[self.ReadMode])
             self.opt.SetAcquisitionMode(self.AcquisitionModes[
                                             self.AcquisitionMode])
+            self.opt.SetShutter(self.shutter_ttl_modes[self.ShutterTTLMode],
+                                self.shutter_dict[self.ShutterMode],
+                                self.ShutterOpenTimeMs,
+                                self.ShutterCloseTimeMs)
             self.opt.SetImage(hbin=self.ROI[0],
                               vbin=self.ROI[1],
                               hstart=self.ROI[2],
