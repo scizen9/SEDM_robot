@@ -111,7 +111,8 @@ class CamServer:
                                                 'error': self.cam.lastError}
                             else:
                                 response = {'elaptime': time.time()-start,
-                                            'error': "can only use andor driver!"}
+                                            'error':
+                                                "can only use andor driver!"}
                         else:
                             print(self.cam)
                             print(type(self.cam))
@@ -176,6 +177,19 @@ class CamServer:
                 logger.error("Big error", exc_info=True)
                 time.sleep(60)
 
+    def execute_warmup(self):
+        """Execute a warmup sequence"""
+        # set cooling mode to warmup
+        self.cam.opt.SetCoolerMode(0)   # warm up to ambient
+        self.cam.opt.CoolerOFF()        # turn off cooler
+        print("Executing warmup sequence, ^C to exit")
+        try:
+            while True:
+                print(self.cam.get_temp_status())
+                time.sleep(5)
+        except KeyboardInterrupt:
+            pass
+
     def start(self):
         logger.debug("IFU server now listening for connections on %s port:%s",
                      self.hostname, self.port)
@@ -185,13 +199,21 @@ class CamServer:
         self.socket.bind((self.hostname, self.port))
         self.socket.listen(5)
 
-        while True:
-            conn, address = self.socket.accept()
-            logger.debug("Got connection from %s:%s" % (conn, address))
-            new_thread = threading.Thread(target=self.handle, args=(conn,
-                                                                    address))
-            new_thread.start()
-            logger.debug("Started process")
+        try:
+            while True:
+                conn, address = self.socket.accept()
+                logger.debug("Got connection from %s:%s" % (conn, address))
+                new_thread = threading.Thread(target=self.handle,
+                                              args=(conn, address))
+                new_thread.start()
+                logger.debug("Started process")
+        except KeyboardInterrupt:
+            q = input("Warm up before shutdown? (Y/n): ")
+            if 'Y' in q.upper():
+                self.execute_warmup()
+                self.cam.opt.ShutDown()
+            else:
+                self.cam.opt.ShutDown()
 
 
 if __name__ == "__main__":
