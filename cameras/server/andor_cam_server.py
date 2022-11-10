@@ -211,8 +211,10 @@ class CamServer:
             q = input("Warm up before shutdown? (Y/n): ")
             if 'Y' in q.upper():
                 self.execute_warmup()
+                logger.info("Executing camera shutdown")
                 self.cam.opt.ShutDown()
             else:
+                logger.info("Executing camera shutdown")
                 self.cam.opt.ShutDown()
 
 
