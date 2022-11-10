@@ -261,16 +261,16 @@ class Controller:
         # Sets Default Parameters
         try:
             self.serialNumber = self.opt.GetCameraSerialNumber()
-            self.opt.SetImageFlip(0, 0)
-            self.opt.SetImageRotate(0)
-            self.opt.SetBaselineClamp(0)
-            self.opt.SetFanMode(0)      # set to 2 (OFF) when we have liquid cooling set up
-            self.opt.SetADChannel(0)
-            self.opt.SetCoolerMode(1)
-            self.opt.SetFrameTransferMode(0)
-            self.opt.SetPhotonCounting(0)
-            self.opt.SetKineticCycleTime(0.0)
-            self.opt.SetVSAmplitude(0)
+            self.opt.SetImageFlip(0, 0)     # Image flip disabled
+            self.opt.SetImageRotate(0)      # Image rotation disabled
+            self.opt.SetBaselineClamp(0)    # Baseline clamp disabled
+            self.opt.SetFanMode(0)      # set to 2 (OFF) for liquid cooling
+            self.opt.SetADChannel(0)    # First (and only?) ADC channel
+            self.opt.SetCoolerMode(1)   # Temperature maintained on shutdown
+            self.opt.SetFrameTransferMode(0)    # Frame Transfer disabled
+            self.opt.SetPhotonCounting(0)   # Photon counting disabled
+            self.opt.SetKineticCycleTime(0.0)   # ?
+            self.opt.SetVSAmplitude(0)  # Normal vert. clock voltage amplitude
             self.opt.SetVSSpeed(self.VerticalShiftSpeed_States[
                                     self.VerticalShiftSpeed])
             self.opt.SetReadMode(self.ReadModes[self.ReadMode])
