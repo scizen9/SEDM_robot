@@ -206,7 +206,7 @@ class SEDm:
 
         logger.info("run_rc = %s", self.run_rc)
         if self.run_rc:
-            logger.info("Initializing RC camera on")
+            logger.info("Initializing RC camera")
             try:
                 if "pixis" in cam_cfg['rc_driver']:
                     from cameras.server import cam_client as cam_driver
@@ -251,10 +251,8 @@ class SEDm:
             if "error" in rc_get_temp_status:
                 logger.error('error: %s', rc_get_temp_status['error'])
                 rc_lock = False
-                rc_temp = 0.
             else:
                 rc_lock = rc_get_temp_status['templock']
-                rc_temp = rc_get_temp_status['camtemp']
         else:
             rc_lock = True
 
@@ -264,10 +262,8 @@ class SEDm:
             if "error" in ifu_get_temp_status:
                 logger.error('error: %s', ifu_get_temp_status['error'])
                 ifu_lock = False
-                ifu_temp = 0.
             else:
                 ifu_lock = ifu_get_temp_status['templock']
-                ifu_temp = ifu_get_temp_status['camtemp']
         else:
             ifu_lock = True
 
@@ -315,7 +311,7 @@ class SEDm:
                 if lamps_off:
                     logger.info("Turning arc lamps off")
                     for lamp in ['xe', 'cd', 'hg']:
-                        ret = self.ocs.arclamp(lamp, command="OFF")
+                        self.ocs.arclamp(lamp, command="OFF")
                         logger.info(lamp)
                         time.sleep(1)
                     logger.info("Turning halogen lamp off")
@@ -326,7 +322,7 @@ class SEDm:
                     if lamps_off:
                         logger.info("Turning arc lamps off")
                         for lamp in ['xe', 'cd', 'hg']:
-                            ret = self.ocs.arclamp(lamp, command="OFF")
+                            self.ocs.arclamp(lamp, command="OFF")
                             logger.info(lamp)
                             time.sleep(1)
                 if self.run_stage:
@@ -342,7 +338,7 @@ class SEDm:
             self.sanity = sanity_client.Sanity()
 
         if self.use_winter:
-            logger.info("Setting up connection to WINTER for weather info")
+            logger.info("Initializing connection to WINTER for weather info")
             from observatory.telescope import winter
             self.winter = winter.Winter()
 
@@ -382,15 +378,18 @@ class SEDm:
                     wret = self.winter.get_weather()
                     if 'data' in wret:
                         win_dict = wret['data']
-                        # stat_dict['weather_status'] = win_dict['Weather_Status']
+                        # stat_dict['weather_status'] = win_dict[
+                        #   'Weather_Status']
                         stat_dict['windspeed_average'] = win_dict[
                             'Average_Wind_Speed']
-                        stat_dict['wind_dir_current'] = win_dict['Wind_Direction']
+                        stat_dict['wind_dir_current'] = win_dict[
+                            'Wind_Direction']
                         stat_dict['outside_air_temp'] = win_dict['Outside_Temp']
                         stat_dict['inside_air_temp'] = win_dict['Outside_Temp']
                         stat_dict['outside_rel_hum'] = win_dict['Outside_RH']
                         stat_dict['inside_rel_hum'] = win_dict['Outside_RH']
-                        stat_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
+                        stat_dict['outside_dewpt'] = win_dict[
+                            'Outside_Dewpoint']
                         stat_dict['inside_dewpt'] = win_dict['Outside_Dewpoint']
                 stat_dict.update(self.ocs.check_status()['data'])
             except Exception as e:
@@ -398,14 +397,14 @@ class SEDm:
                 pass
 
             if do_lamps and self.run_arclamps:
-                stat_dict['xe_lamp'] = self.ocs.arclamp('xe', 'status',
-                                                        force_check=True)['data']
+                stat_dict['xe_lamp'] = self.ocs.arclamp(
+                    'xe', 'status', force_check=True)['data']
                 self.lamp_dict_status['xe'] = stat_dict['xe_lamp']
-                stat_dict['cd_lamp'] = self.ocs.arclamp('cd', 'status',
-                                                        force_check=True)['data']
+                stat_dict['cd_lamp'] = self.ocs.arclamp(
+                    'cd', 'status', force_check=True)['data']
                 self.lamp_dict_status['cd'] = stat_dict['cd_lamp']
-                stat_dict['hg_lamp'] = self.ocs.arclamp('hg', 'status',
-                                                        force_check=True)['data']
+                stat_dict['hg_lamp'] = self.ocs.arclamp(
+                    'hg', 'status', force_check=True)['data']
                 self.lamp_dict_status['hg'] = stat_dict['hg_lamp']
             else:
                 stat_dict['xe_lamp'] = self.lamp_dict_status['xe']
