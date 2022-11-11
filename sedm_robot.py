@@ -22,6 +22,7 @@ import subprocess
 from twilio.rest import Client
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
+from astroquery.mpc import MPC
 import pickle
 from selenium import webdriver
 from selenium.webdriver.support.select import Select
@@ -2684,7 +2685,7 @@ class SEDm:
 
         return {"elaptime": time.time() - start, "ephemeris": return_dict}
 
-    def get_non_sid_ephemeris_url(self, name, eph_time="now", eph_nsteps="1",
+    def get_non_sid_ephemeris_pluto(self, name, eph_time="now", eph_nsteps="1",
                                   eph_stepsize="0.00001", eph_mpc="I41",
                                   eph_faint="99", eph_type="0", eph_motion="2",
                                   eph_center="-2", eph_epoch="default",
@@ -2752,6 +2753,45 @@ class SEDm:
         else:
             return False
 
+    def get_non_sid_ephemeris_MPC(self, name, start=None, location="I41", number=1, step='1s',
+                                  proper_motion='coordinate'):
+        """
+                Use MPC from astroquery.mpc to create an ephemeris of a classified object
+
+                :param name: str - target name in obsdict
+                :param start: str or Time
+                :param location: str or EarthLocation - Observatory location; typically an MPC observatory code
+                :param number: int - number of lines to output
+                :param step: str or Quantity - units of days (d), hours (h), minutes (min), or seconds (s)
+                :param proper_motion: str
+                :return: dict
+                """
+        # Pre-process name because comet designations wreak havoc
+        if name.count('_') >= 2:
+            cname = name.replace('_', '/', 1)
+            cname = cname.replace('_', ' ')
+        elif name.count('_') == 1:
+            cname = name.replace('_', ' ')
+        else:
+            cname = name
+
+        safe_name = quote_plus(cname)
+
+        logger.info("Using MPC package")
+
+        try:
+            eph = MPC.get_ephemeris(safe_name, start=start, location=location, number=number, step=step,
+                                    proper_motion=proper_motion)  # Returns a table
+        except ValueError as e:
+            logger.error(str(e))
+            return False
+        # Fill in nonsid_dict parameters with ephemeris table values
+        eph_dict = {'ISO_time': eph["Date"].value[0], 'RA': eph['RA'][0], 'Dec': eph['Dec'][0],
+                    'RAvel': eph['dRA'][0], 'decvel': eph['dDec'][0]}
+
+        ret_dict = {'ephemeris': eph_dict}
+        return ret_dict
+
     def get_non_sid_ephemeris(self, name, eph_time="now", eph_nsteps="1",
                               eph_stepsize="0.00001", eph_mpc="I41",
                               eph_faint="99", eph_type=0, eph_motion=2,
@@ -2779,6 +2819,10 @@ class SEDm:
          around 1 second. Also shouldn't need changing if nsteps stays at 1
 
         'eph_mpc' is the Observatory Code given by the MPC. I41 is ZTF
+        if 'RAVel' in eph_dict:
+            eph_dict['RAVel'] *= 60.  # convert from asec/min to asec/hr
+        if 'decvel' in eph_dict:
+            eph_dict['decvel'] *= 60.  # convert from asec/min to asec/hr
 
         'eph_faint' is the limiting magnitude. Default is 99
 
@@ -3235,18 +3279,28 @@ class SEDm:
                 else:
                     if "obsdate" in obsdict:
                         obsdate = obsdict['obsdate']
+                        obsdateMPC = obsdict['obsdate']
                         logger.info('Using ephemeris website at date: %s',
                                     obsdate)
                     else:
                         obsdate = "now"
+                        obsdateMPC = None
                         now = Time.now()
                         logger.info('Using ephemeris website at date: %s', now)
-                    try:
-                        ephret = self.get_non_sid_ephemeris_url(
-                            name=obsdict['target'], eph_time=obsdate)
-                    except ValueError:
-                        logger.warning("ValueError exception")
-                        pass
+                    if "candidate" in obsdict:
+                        try:
+                            ephret = self.get_non_sid_ephemeris_pluto(
+                                name=obsdict['target'], eph_time=obsdate)
+                        except ValueError:
+                            logger.warning("ValueError exception")
+                            pass
+                    else:
+                        try:
+                            ephret = self.get_non_sid_ephemeris_MPC(
+                                name=obsdict['target'], start=obsdateMPC)
+                        except ValueError:
+                            logger.warning("ValueError exception")
+                            pass
                 logger.info("Returned ephemeris:\n%s", ephret)
 
             else:
@@ -3330,19 +3384,29 @@ class SEDm:
                 else:
                     if "obsdate" in obsdict:
                         obsdate = obsdict['obsdate']
+                        obsdateMPC = obsdict['obsdate']
                         logger.info('Using ephemeris website at date: %s',
                                     obsdate)
                     else:
                         obsdate = "now"
+                        obsdateMPC = None
                         now = Time.now()
                         logger.info('Using ephemeris website at date: %s',
                                     now)
-                    try:
-                        ephret = self.get_non_sid_ephemeris_url(
-                            name=obsdict['target'], eph_time=obsdate)
-                    except ValueError:
-                        logger.warning("ValueError exception")
-                        pass
+                    if "candidate" in obsdict:
+                        try:
+                            ephret = self.get_non_sid_ephemeris_pluto(
+                                name=obsdict['target'], eph_time=obsdate)
+                        except ValueError:
+                            logger.warning("ValueError exception")
+                            pass
+                    else:
+                        try:
+                            ephret = self.get_non_sid_ephemeris_MPC(
+                                name=obsdict['target'], start=obsdateMPC)
+                        except ValueError:
+                            logger.warning("ValueError exception")
+                            pass
 
                 logger.info("get_non_sid_ephemeris return:\n%s", ephret)
 

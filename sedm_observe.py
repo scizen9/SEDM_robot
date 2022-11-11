@@ -485,7 +485,7 @@ if __name__ == "__main__":
 
     else:               # start observations
         lampsoff = False
-        clean_manual = not args.noclean
+        del_manual = not args.noclean
         try:
             while True:
                 try:
@@ -496,9 +496,9 @@ if __name__ == "__main__":
                     run_observing_loop(lamps_off=lampsoff,
                                        temperature=args.temperature,
                                        use_winter=args.winter,
-                                       clean_manual=clean_manual)
+                                       clean_manual=del_manual)
                     lampsoff = False
-                    clean_manual = True
+                    del_manual = True
                 except Exception as e:
                     tb_str = traceback.format_exception(etype=type(e), value=e,
                                                         tb=e.__traceback__)
@@ -509,7 +509,7 @@ if __name__ == "__main__":
                     #   let's restart with all cal lamps off,
                     #   and clean manual files
                     lampsoff = True
-                    clean_manual = True
+                    del_manual = True
                     time.sleep(60)
 
         except Exception as e:
