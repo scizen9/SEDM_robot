@@ -182,13 +182,20 @@ class CamServer:
         # set cooling mode to warmup
         self.cam.opt.SetCoolerMode(0)   # warm up to ambient
         self.cam.opt.CoolerOFF()        # turn off cooler
-        print("Executing warmup sequence, ^C to exit")
+        print("Executing warmup sequence, waiting for -20 C or above")
+
         try:
             while True:
-                print(self.cam.get_temp_status())
+                ret = self.cam.get_temp_status()
+                print(ret)
+                if 'camtemp' in ret:
+                    if ret['camtemp'] > -20.:
+                        break
                 time.sleep(5)
         except KeyboardInterrupt:
             pass
+        else:
+            print("Warmup sequence complete.")
 
     def start(self):
         logger.debug("IFU server now listening for connections on %s port:%s",
