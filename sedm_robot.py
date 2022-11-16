@@ -1,6 +1,5 @@
 import urllib.error
 from observatory.server import ocs_client
-from observatory.telescope import winter
 from sky.server import sky_client
 from sanity.server import sanity_client
 from utils import sedmHeader, rc_filter_coords, rc_focus
@@ -23,6 +22,7 @@ import subprocess
 from twilio.rest import Client
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
+from astroquery.mpc import MPC
 import pickle
 from selenium import webdriver
 from selenium.webdriver.support.select import Select
@@ -207,7 +207,7 @@ class SEDm:
 
         logger.info("run_rc = %s", self.run_rc)
         if self.run_rc:
-            logger.info("Initializing RC camera on")
+            logger.info("Initializing RC camera")
             try:
                 if "pixis" in cam_cfg['rc_driver']:
                     from cameras.server import cam_client as cam_driver
@@ -252,10 +252,8 @@ class SEDm:
             if "error" in rc_get_temp_status:
                 logger.error('error: %s', rc_get_temp_status['error'])
                 rc_lock = False
-                rc_temp = 0.
             else:
                 rc_lock = rc_get_temp_status['templock']
-                rc_temp = rc_get_temp_status['camtemp']
         else:
             rc_lock = True
 
@@ -265,10 +263,8 @@ class SEDm:
             if "error" in ifu_get_temp_status:
                 logger.error('error: %s', ifu_get_temp_status['error'])
                 ifu_lock = False
-                ifu_temp = 0.
             else:
                 ifu_lock = ifu_get_temp_status['templock']
-                ifu_temp = ifu_get_temp_status['camtemp']
         else:
             ifu_lock = True
 
@@ -316,7 +312,7 @@ class SEDm:
                 if lamps_off:
                     logger.info("Turning arc lamps off")
                     for lamp in ['xe', 'cd', 'hg']:
-                        ret = self.ocs.arclamp(lamp, command="OFF")
+                        self.ocs.arclamp(lamp, command="OFF")
                         logger.info(lamp)
                         time.sleep(1)
                     logger.info("Turning halogen lamp off")
@@ -327,7 +323,7 @@ class SEDm:
                     if lamps_off:
                         logger.info("Turning arc lamps off")
                         for lamp in ['xe', 'cd', 'hg']:
-                            ret = self.ocs.arclamp(lamp, command="OFF")
+                            self.ocs.arclamp(lamp, command="OFF")
                             logger.info(lamp)
                             time.sleep(1)
                 if self.run_stage:
@@ -343,7 +339,8 @@ class SEDm:
             self.sanity = sanity_client.Sanity()
 
         if self.use_winter:
-            logger.info("Setting up connection to WINTER for weather info")
+            logger.info("Initializing connection to WINTER for weather info")
+            from observatory.telescope import winter
             self.winter = winter.Winter()
 
         self.initialized = True
@@ -382,15 +379,18 @@ class SEDm:
                     wret = self.winter.get_weather()
                     if 'data' in wret:
                         win_dict = wret['data']
-                        # stat_dict['weather_status'] = win_dict['Weather_Status']
+                        # stat_dict['weather_status'] = win_dict[
+                        #   'Weather_Status']
                         stat_dict['windspeed_average'] = win_dict[
                             'Average_Wind_Speed']
-                        stat_dict['wind_dir_current'] = win_dict['Wind_Direction']
+                        stat_dict['wind_dir_current'] = win_dict[
+                            'Wind_Direction']
                         stat_dict['outside_air_temp'] = win_dict['Outside_Temp']
                         stat_dict['inside_air_temp'] = win_dict['Outside_Temp']
                         stat_dict['outside_rel_hum'] = win_dict['Outside_RH']
                         stat_dict['inside_rel_hum'] = win_dict['Outside_RH']
-                        stat_dict['outside_dewpt'] = win_dict['Outside_Dewpoint']
+                        stat_dict['outside_dewpt'] = win_dict[
+                            'Outside_Dewpoint']
                         stat_dict['inside_dewpt'] = win_dict['Outside_Dewpoint']
                 stat_dict.update(self.ocs.check_status()['data'])
             except Exception as e:
@@ -398,14 +398,14 @@ class SEDm:
                 pass
 
             if do_lamps and self.run_arclamps:
-                stat_dict['xe_lamp'] = self.ocs.arclamp('xe', 'status',
-                                                        force_check=True)['data']
+                stat_dict['xe_lamp'] = self.ocs.arclamp(
+                    'xe', 'status', force_check=True)['data']
                 self.lamp_dict_status['xe'] = stat_dict['xe_lamp']
-                stat_dict['cd_lamp'] = self.ocs.arclamp('cd', 'status',
-                                                        force_check=True)['data']
+                stat_dict['cd_lamp'] = self.ocs.arclamp(
+                    'cd', 'status', force_check=True)['data']
                 self.lamp_dict_status['cd'] = stat_dict['cd_lamp']
-                stat_dict['hg_lamp'] = self.ocs.arclamp('hg', 'status',
-                                                        force_check=True)['data']
+                stat_dict['hg_lamp'] = self.ocs.arclamp(
+                    'hg', 'status', force_check=True)['data']
                 self.lamp_dict_status['hg'] = stat_dict['hg_lamp']
             else:
                 stat_dict['xe_lamp'] = self.lamp_dict_status['xe']
@@ -499,7 +499,6 @@ class SEDm:
                 object_dec = obsdict['telescope_dec']
             except KeyError:
                 logger.warning("No TCS object coords in status!")
-                print("No TCS object coords in status!")
                 object_ra = 0.0
                 object_dec = 0.0
 
@@ -2686,7 +2685,7 @@ class SEDm:
 
         return {"elaptime": time.time() - start, "ephemeris": return_dict}
 
-    def get_non_sid_ephemeris_url(self, name, eph_time="now", eph_nsteps="1",
+    def get_non_sid_ephemeris_pluto(self, name, eph_time="now", eph_nsteps="1",
                                   eph_stepsize="0.00001", eph_mpc="I41",
                                   eph_faint="99", eph_type="0", eph_motion="2",
                                   eph_center="-2", eph_epoch="default",
@@ -2754,6 +2753,45 @@ class SEDm:
         else:
             return False
 
+    def get_non_sid_ephemeris_MPC(self, name, start=None, location="I41", number=1, step='1s',
+                                  proper_motion='coordinate'):
+        """
+                Use MPC from astroquery.mpc to create an ephemeris of a classified object
+
+                :param name: str - target name in obsdict
+                :param start: str or Time
+                :param location: str or EarthLocation - Observatory location; typically an MPC observatory code
+                :param number: int - number of lines to output
+                :param step: str or Quantity - units of days (d), hours (h), minutes (min), or seconds (s)
+                :param proper_motion: str
+                :return: dict
+                """
+        # Pre-process name because comet designations wreak havoc
+        if name.count('_') >= 2:
+            cname = name.replace('_', '/', 1)
+            cname = cname.replace('_', ' ')
+        elif name.count('_') == 1:
+            cname = name.replace('_', ' ')
+        else:
+            cname = name
+
+        safe_name = quote_plus(cname)
+
+        logger.info("Using MPC package")
+
+        try:
+            eph = MPC.get_ephemeris(safe_name, start=start, location=location, number=number, step=step,
+                                    proper_motion=proper_motion)  # Returns a table
+        except ValueError as e:
+            logger.error(str(e))
+            return False
+        # Fill in nonsid_dict parameters with ephemeris table values
+        eph_dict = {'ISO_time': eph["Date"].value[0], 'RA': eph['RA'][0], 'Dec': eph['Dec'][0],
+                    'RAvel': eph['dRA'][0], 'decvel': eph['dDec'][0]}
+
+        ret_dict = {'ephemeris': eph_dict}
+        return ret_dict
+
     def get_non_sid_ephemeris(self, name, eph_time="now", eph_nsteps="1",
                               eph_stepsize="0.00001", eph_mpc="I41",
                               eph_faint="99", eph_type=0, eph_motion=2,
@@ -2781,6 +2819,10 @@ class SEDm:
          around 1 second. Also shouldn't need changing if nsteps stays at 1
 
         'eph_mpc' is the Observatory Code given by the MPC. I41 is ZTF
+        if 'RAVel' in eph_dict:
+            eph_dict['RAVel'] *= 60.  # convert from asec/min to asec/hr
+        if 'decvel' in eph_dict:
+            eph_dict['decvel'] *= 60.  # convert from asec/min to asec/hr
 
         'eph_faint' is the limiting magnitude. Default is 99
 
@@ -3237,18 +3279,28 @@ class SEDm:
                 else:
                     if "obsdate" in obsdict:
                         obsdate = obsdict['obsdate']
+                        obsdateMPC = obsdict['obsdate']
                         logger.info('Using ephemeris website at date: %s',
                                     obsdate)
                     else:
                         obsdate = "now"
+                        obsdateMPC = None
                         now = Time.now()
                         logger.info('Using ephemeris website at date: %s', now)
-                    try:
-                        ephret = self.get_non_sid_ephemeris_url(
-                            name=obsdict['target'], eph_time=obsdate)
-                    except ValueError:
-                        logger.warning("ValueError exception")
-                        pass
+                    if "candidate" in obsdict:
+                        try:
+                            ephret = self.get_non_sid_ephemeris_pluto(
+                                name=obsdict['target'], eph_time=obsdate)
+                        except ValueError:
+                            logger.warning("ValueError exception")
+                            pass
+                    else:
+                        try:
+                            ephret = self.get_non_sid_ephemeris_MPC(
+                                name=obsdict['target'], start=obsdateMPC)
+                        except ValueError:
+                            logger.warning("ValueError exception")
+                            pass
                 logger.info("Returned ephemeris:\n%s", ephret)
 
             else:
@@ -3332,19 +3384,29 @@ class SEDm:
                 else:
                     if "obsdate" in obsdict:
                         obsdate = obsdict['obsdate']
+                        obsdateMPC = obsdict['obsdate']
                         logger.info('Using ephemeris website at date: %s',
                                     obsdate)
                     else:
                         obsdate = "now"
+                        obsdateMPC = None
                         now = Time.now()
                         logger.info('Using ephemeris website at date: %s',
                                     now)
-                    try:
-                        ephret = self.get_non_sid_ephemeris_url(
-                            name=obsdict['target'], eph_time=obsdate)
-                    except ValueError:
-                        logger.warning("ValueError exception")
-                        pass
+                    if "candidate" in obsdict:
+                        try:
+                            ephret = self.get_non_sid_ephemeris_pluto(
+                                name=obsdict['target'], eph_time=obsdate)
+                        except ValueError:
+                            logger.warning("ValueError exception")
+                            pass
+                    else:
+                        try:
+                            ephret = self.get_non_sid_ephemeris_MPC(
+                                name=obsdict['target'], start=obsdateMPC)
+                        except ValueError:
+                            logger.warning("ValueError exception")
+                            pass
 
                 logger.info("get_non_sid_ephemeris return:\n%s", ephret)
 

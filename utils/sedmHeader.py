@@ -377,7 +377,6 @@ class addHeader():
             # "Center Dec value")
             prihdr.set("CRVAL2", dec_to_deg(obsdict["telescope_dec"]) - 0.03333,
                        "Center Dec value")
-
         except:
             prihdr.set("CRVAL2", -999, "Failed to calculate")
 
