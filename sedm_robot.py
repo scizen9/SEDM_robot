@@ -2621,6 +2621,8 @@ class SEDm:
         exists = set(needed_keys).issubset(df.keys())
 
         if not exists:
+            print("needed_keys: ", needed_keys)
+            print("eph columns: ", df.keys())
             return {"elaptime": time.time() - start,
                     "error": 'Specified keys in csv file were not found'}
 
