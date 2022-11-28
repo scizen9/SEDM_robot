@@ -23,6 +23,7 @@ from twilio.rest import Client
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from astroquery.mpc import MPC
+import astroquery.exceptions
 import pickle
 from selenium import webdriver
 from selenium.webdriver.support.select import Select
@@ -2620,6 +2621,8 @@ class SEDm:
         exists = set(needed_keys).issubset(df.keys())
 
         if not exists:
+            print("needed_keys: ", needed_keys)
+            print("eph columns: ", df.keys())
             return {"elaptime": time.time() - start,
                     "error": 'Specified keys in csv file were not found'}
 
@@ -2775,18 +2778,22 @@ class SEDm:
         else:
             cname = name
 
-        safe_name = quote_plus(cname)
-
         logger.info("Using MPC package")
 
         try:
-            eph = MPC.get_ephemeris(safe_name, start=start, location=location, number=number, step=step,
-                                    proper_motion=proper_motion)  # Returns a table
+            # Returns a table
+            eph = MPC.get_ephemeris(cname, start=start, location=location,
+                                    number=number, step=step,
+                                    proper_motion=proper_motion)
         except ValueError as e:
             logger.error(str(e))
             return False
+        except astroquery.exceptions.InvalidQueryError as e:
+            logger.error(str(e))
+            return False
         # Fill in nonsid_dict parameters with ephemeris table values
-        eph_dict = {'ISO_time': eph["Date"].value[0], 'RA': eph['RA'][0], 'Dec': eph['Dec'][0],
+        eph_dict = {'ISO_time': eph["Date"].value[0],
+                    'RA': eph['RA'][0], 'Dec': eph['Dec'][0],
                     'RAvel': eph['dRA'][0], 'decvel': eph['dDec'][0]}
 
         ret_dict = {'ephemeris': eph_dict}
