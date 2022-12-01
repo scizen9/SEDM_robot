@@ -3237,8 +3237,33 @@ class SEDm:
                 logger.info("decimal deg: %f, %f", RA, DEC)
 
             else:
+                logger.error("target not found")
                 return {'elaptime': time.time() - start,
                         'error': "rc 'target' in manual dict not found"}
+
+            if 'allocation_id' in obsdict:
+                alloc_id = obsdict['allocation_id']
+            else:
+                alloc_id = None
+            # ret = self.sky.get_manual_request_id(name=obsdict['target'],
+            #                                     typedesig="f",
+            #                                     allocation_id=alloc_id,
+            #                                     ra=RA, dec=DEC)
+            ret = {'status': 'request ids not implemented yet'}
+            logger.info("sky.get_manual_request_id status:\n%s", ret)
+            if 'data' in ret:
+                req_id = ret['data']['request_id']
+                obj_id = ret['data']['object_id']
+                p60prid = ret['data']['p60prid']
+                p60prnm = ret['data']['p60prnm']
+                p60prpi = ret['data']['p60prpi']
+            else:
+                req_id = -999
+                obj_id = -999
+                p60prid = '2022A-calib'
+                p60prnm = 'SEDm calibration'
+                p60prpi = 'SEDm'
+                logger.warning("Unable to obtain request data")
 
             if 'repeat_filter' in obsdict:
                 repeat_filter = obsdict['repeat_filter']
