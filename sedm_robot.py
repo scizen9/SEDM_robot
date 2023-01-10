@@ -23,6 +23,7 @@ from twilio.rest import Client
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from astroquery.mpc import MPC
+from astroquery.jplhorizons import Horizons
 import astroquery.exceptions
 import pickle
 from selenium import webdriver
@@ -2791,10 +2792,30 @@ class SEDm:
         except astroquery.exceptions.InvalidQueryError as e:
             logger.error(str(e))
             return False
-        # Fill in nonsid_dict parameters with ephemeris table values
-        eph_dict = {'ISO_time': eph["Date"].value[0],
-                    'RA': eph['RA'][0], 'Dec': eph['Dec'][0],
-                    'RAvel': eph['dRA'][0], 'decvel': eph['dDec'][0]}
+
+        if eph['Delta'][0] < 0.03:
+            logger.info("Woah, this object is pretty nearby. Better use JPL HORIZONS instead")
+            try:
+                # Returns a 1-row table at current time
+                ephjpl = Horizons(id=cname, location=location).ephemerides()
+
+            except ValueError as e:
+                logger.error(str(e))
+                return False
+            except astroquery.exceptions.InvalidQueryError as e:
+                logger.error(str(e))
+                return False
+
+            # Fill in nonsid_dict parameters with JPL ephemeris table values
+            eph_dict = {'ISO_time': Time(ephjpl['datetime_jd'][0], format='jd').iso,
+                        'RA': ephjpl['RA'][0], 'Dec': ephjpl['Dec'][0],
+                        'RAvel': ephjpl['RA_rate'][0], 'decvel': ephjpl['DEC_rate'][0]}
+
+        else:
+            # Fill in nonsid_dict parameters with MPC ephemeris table values
+            eph_dict = {'ISO_time': eph["Date"].value[0],
+                        'RA': eph['RA'][0], 'Dec': eph['DEC'][0],
+                        'RAvel': eph['dRA'][0], 'decvel': eph['dDec'][0]}
 
         ret_dict = {'ephemeris': eph_dict}
         return ret_dict
