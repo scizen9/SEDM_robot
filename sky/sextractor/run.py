@@ -396,13 +396,14 @@ class sextractor:
             pltfile = os.path.join(pltdir, 'rcfocus%s.png' % tstamp)
             plt.plot(header, catalog, 'b+')
             plt.plot(xfp, p(xfp))
-            plt.axvline(x=best)
-            plt.axvline(x=mod_foc, c='g')
+            plt.axvline(x=best, label="FIT")
+            plt.axvline(x=mod_foc, c='g', label="MOD")
             plt.xlabel(header_field)
             plt.ylabel(catalog_field)
             plt.title("Best Fit RC Focus: %.2f \n"
                       "Thermal Model Focus: %.2f at %.2f deg"
                       % (best, mod_foc, current_temp))
+            plt.legend()
             plt.savefig(pltfile)
             plt.clf()
 
