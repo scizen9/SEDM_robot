@@ -16,7 +16,7 @@
     "rc_set_temperature": -50,
     "remote_config": "nemea.config.json",
     "dbhost_config": "minar.config.json",
-    "rc_focus_offset": 0.1,
+    "rc_focus_offset": 0.0,
     "ifu_datacube": {
         "cd": {
             "N": 5,

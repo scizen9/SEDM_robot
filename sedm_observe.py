@@ -306,8 +306,8 @@ def run_observing_loop(do_focus=True, do_standard=True,
             ret = robot.sky.get_next_observable_target(return_type='json')
             print('sky.get_next_observable_target status (2):\n', ret)
 
-        # did we get a target?
-        if 'data' in ret:
+        # did we get a valid target?
+        if 'data' in ret and isinstance(ret['data'], dict):
             obsdict = ret['data']
             # Has this request already been observed?
             if obsdict['req_id'] in done_list:
