@@ -2747,7 +2747,7 @@ class SEDm:
             return False
 
         if 'ephemeris' in data_json:
-            eph_dict = data_json['ephemeris']['entries'][0]
+            eph_dict = data_json['ephemeris']['entries']['0']
             if 'RAVel' in eph_dict:
                 eph_dict['RAVel'] *= 60.    # convert from asec/min to asec/hr
             if 'decvel' in eph_dict:
