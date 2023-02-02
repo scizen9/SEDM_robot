@@ -2808,13 +2808,13 @@ class SEDm:
 
             # Fill in nonsid_dict parameters with JPL ephemeris table values
             eph_dict = {'ISO_time': Time(ephjpl['datetime_jd'][0], format='jd').iso,
-                        'RA': ephjpl['RA'][0], 'Dec': ephjpl['Dec'][0],
+                        'RA': ephjpl['RA'][0], 'Dec': ephjpl['DEC'][0],
                         'RAvel': ephjpl['RA_rate'][0], 'decvel': ephjpl['DEC_rate'][0]}
 
         else:
             # Fill in nonsid_dict parameters with MPC ephemeris table values
             eph_dict = {'ISO_time': eph["Date"].value[0],
-                        'RA': eph['RA'][0], 'Dec': eph['DEC'][0],
+                        'RA': eph['RA'][0], 'Dec': eph['Dec'][0],
                         'RAvel': eph['dRA'][0], 'decvel': eph['dDec'][0]}
 
         ret_dict = {'ephemeris': eph_dict}
