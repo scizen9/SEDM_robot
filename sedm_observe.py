@@ -103,6 +103,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
     loop_count = 1
     sci_count = 0
     std_count = 0
+    foc_count = 0
 
     robot = SEDm(focus_temp=focus_temp, focus_guess=focus_guess,
                  use_winter=use_winter)
@@ -201,6 +202,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
         print("\n", datetime.datetime.utcnow(),
               "START TARGET LOOP #%d" % loop_count)
         print("number of science observations taken: %d" % sci_count)
+        print("number of focus sequences taken: %d" % foc_count)
         print("number of standard observations taken: %d\n" % std_count)
 
         # are we cleared to observe?
@@ -228,6 +230,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
             print("run_focus_seq status:\n", ret)
             if 'data' in ret:
                 focus_done = True
+                foc_count += 1
                 focus_data = ret['data']
                 robot.focus_temp = focus_data['focus_temp']
                 robot.focus_pos = focus_data['focus_pos']
@@ -324,6 +327,9 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 print("Doing morning standard")
                 ret = robot.run_standard_seq(robot.ifu)
                 print("run_standard_seq status:\n", ret)
+                with open(standard_done_file, 'w') as the_file:
+                    the_file.write('Standard completed:%s' % uttime())
+                standard_done = True
                 std_count += 1
                 time.sleep(600)
                 continue
@@ -336,20 +342,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
 
             # Update focus done file status (in case a new focus run needed)
             if not os.path.exists(focus_done_file):
-                ret = robot.run_focus_seq(robot.rc, 'rc_focus', name="Focus",
-                                          exptime=30)
-                print("run_focus_seq status:\n", ret)
-                if 'data' in ret:
-                    focus_done = True
-                    focus_data = ret['data']
-                    robot.focus_temp = focus_data['focus_temp']
-                    robot.focus_pos = focus_data['focus_pos']
-                    robot.focus_time = focus_data['focus_time']
-                    with open(focus_done_file, 'w') as the_file:
-                        the_file.write(json.dumps(focus_data))
-                else:
-                    focus_done = False
-                    print("Unable to calculate focus")
+                focus_done = False
             # Check focus status based on temperature
             else:
                 # get nominal rc focus based on current temperature
@@ -366,13 +359,22 @@ def run_observing_loop(do_focus=True, do_standard=True,
             print("No observable target in queue, doing standard")
             ret = robot.run_standard_seq(robot.ifu)
             print("run_standard_seq status:\n", ret)
+            with open(standard_done_file, 'w') as the_file:
+                the_file.write('Standard completed:%s' % uttime())
+            standard_done = True
             std_count += 1
+
+        # check standard status
+        if not os.path.exists(standard_done_file):
+            standard_done = False
+
         loop_count += 1
     # end of main observing loop
 
     print("\nSCIENCE OBSERVATIONS COMPLETE\nMORNING NAUTICAL TWILIGHT: ",
           datetime.datetime.utcnow(), "\n")
     print("number of science observations taken: %d" % sci_count)
+    print("number of focus sequences taken: %d" % foc_count)
     print("number of standard observations taken: %d" % std_count)
 
     # Morning twilight flats loop from nautical to civil twilight
