@@ -3205,11 +3205,11 @@ class SEDm:
                     alloc_id = obsdict['allocation_id']
                 else:
                     alloc_id = None
-                # ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                #                                     typedesig="f",
-                #                                     allocation_id=alloc_id,
-                #                                     ra=RA, dec=DEC)
-                ret = {'status': 'request ids not implemented yet'}
+                ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                     typedesig="f",
+                                                     allocation_id=alloc_id,
+                                                     ra=RA, dec=DEC)
+                
                 logger.info("sky.get_manual_request_id status:\n%s", ret)
                 if 'data' in ret:
                     req_id = ret['data']['request_id']
@@ -3266,11 +3266,11 @@ class SEDm:
                 alloc_id = obsdict['allocation_id']
             else:
                 alloc_id = None
-            # ret = self.sky.get_manual_request_id(name=obsdict['target'],
-            #                                     typedesig="f",
-            #                                     allocation_id=alloc_id,
-            #                                     ra=RA, dec=DEC)
-            ret = {'status': 'request ids not implemented yet'}
+            ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                 typedesig="f",
+                                                 allocation_id=alloc_id,
+                                                 ra=RA, dec=DEC)
+
             logger.info("sky.get_manual_request_id status:\n%s", ret)
             if 'data' in ret:
                 req_id = ret['data']['request_id']
@@ -3303,10 +3303,10 @@ class SEDm:
             ret = self.run_rc_science_seq(
                 self.rc, shutter="normal", readout=.1, name=obsdict['target'],
                 test="", save_as=None, imgtype='Science', ra=RA, dec=DEC,
-                equinox=2000, p60prid='2022B-Asteroids', p60prpi='SEDm',
-                email='', p60prnm='Near-Earth Asteroid', obj_id=-999,
+                equinox=2000, p60prid=p60prid, p60prpi=p60prpi,
+                email='', p60prnm=p60prnm, obj_id=obj_id,
                 objfilter='RC%s' % (obsdict['rcfilter']), imgset='NA',
-                is_rc=True, run_acquisition=True, req_id=-999, acq_readout=2.0,
+                is_rc=True, run_acquisition=True, req_id=req_id, acq_readout=2.0,
                 objtype='Transient', obs_order=obsdict['rcfilter'],
                 obs_exptime=obsdict['exptime'],
                 obs_repeat_filter=repeat_filter, repeat=n_sets,
@@ -3366,10 +3366,10 @@ class SEDm:
             else:
                 alloc_id = None
 
-            # ret = self.sky.get_manual_request_id(name=obsdict['target'],
-            #                                     allocation_id=alloc_id,
-            #                                     typedesig="e")
-            ret = {'status': 'request ids not implemented yet'}
+            ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                 allocation_id=alloc_id,
+                                                 typedesig="e")
+
             logger.info("sky.get_manual_request_id status:\n%s", ret)
             if 'data' in ret:
                 req_id = ret['data']['request_id']
@@ -3473,10 +3473,10 @@ class SEDm:
             else:
                 alloc_id = None
 
-            # ret = self.sky.get_manual_request_id(name=obsdict['target'],
-            #                                     allocation_id=alloc_id,
-            #                                     typedesig="e")
-            ret = {'status': 'request ids not implemented yet'}
+            ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                 allocation_id=alloc_id,
+                                                 typedesig="e")
+
             logger.info("sky.get_manual_request_id status:\n%s", ret)
             if 'data' in ret:
                 req_id = ret['data']['request_id']
