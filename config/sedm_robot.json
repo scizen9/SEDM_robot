@@ -5,7 +5,7 @@
     "rc_ip": "10.200.155.4",
     "rc_port": 5002,
     "non_sid_dir": "/home/sedm/robot/non_sid_dir/",
-    "rc_focus_offset": 0.1,
+    "rc_focus_offset": 0.0,
     "ifu": {
         "cd": {
             "N": 5,
