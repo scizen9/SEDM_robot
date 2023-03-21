@@ -1270,7 +1270,7 @@ class SEDm:
                                  airmass=(1, 2.5), moon_sep=(20, 180),
                                  altitude_min=15, ha=(18.75, 5.75),
                                  return_type='json',
-                                 do_sort=True,
+                                 do_sort=True, do_fwhm=False,
                                  sort_columns=('priority', 'start_alt'),
                                  sort_order=(False, False), save=True,
                                  save_as=None, move=True,
@@ -1286,6 +1286,7 @@ class SEDm:
         :param ha:
         :param return_type:
         :param do_sort:
+        :param do_fwhm:
         :param sort_columns:
         :param sort_order:
         :param save:
@@ -1310,7 +1311,7 @@ class SEDm:
         ret = self.sky.get_next_observable_target(
             target_list=target_list, obsdatetime=obsdatetime.isoformat(),
             airmass=airmass, moon_sep=moon_sep, altitude_min=altitude_min,
-            ha=ha, do_sort=do_sort, return_type=return_type,
+            ha=ha, do_sort=do_sort, do_fwhm=do_fwhm, return_type=return_type,
             sort_order=sort_order, sort_columns=sort_columns, save=save,
             save_as=save_as, check_end_of_night=check_end_of_night,
             update_coords=update_coords)

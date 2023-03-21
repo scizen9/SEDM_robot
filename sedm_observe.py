@@ -292,6 +292,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
 
         # Proceed with normal queued observations
         try:
+            # TODO: add do_fwhm=True after testing
             ret = robot.sky.get_next_observable_target(return_type='json')
             print('sky.get_next_observable_target status:\n', ret)
         except Exception as ex:
@@ -306,6 +307,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
 
         # Try again to get next target
         if not ret:
+            # TODO: add do_fwhm=True after testing
             ret = robot.sky.get_next_observable_target(return_type='json')
             print('sky.get_next_observable_target status (2):\n', ret)
 
