@@ -1,11 +1,14 @@
+import glob
 import json
 from string import Template
 import datetime
+import numpy as np
 import pandas as pd
 import astroplan
 
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_moon
 import astropy.units as u
+from astropy.io import fits
 import os
 import sys
 import psycopg2.extras
@@ -15,6 +18,7 @@ from utils import obstimes
 from utils import sedmpy_import
 import sqlite3
 from sky.growth.marshal import Interface
+from sky.sextractor import run
 import SEDM_robot_version as Version
 
 from astropy.time import Time, TimeDelta
@@ -605,6 +609,7 @@ class Scheduler:
                                    altitude_min=15, ha=(18.75, 5.75),
                                    return_type='', do_airmass=True,
                                    do_sort=True, do_moon_sep=True,
+                                   do_fwhm=False,
                                    sort_columns=('priority', 'set_time'),
                                    sort_order=(False, False), save=False,
                                    save_as='',
@@ -679,8 +684,12 @@ class Scheduler:
                 min=altitude_min * u.deg)]
             # Requested airmass constraint
             if do_airmass:
+                if row.maxairmass is not None:
+                    maxairmass = row.maxairmass
+                else:
+                    maxairmass = airmass[1]
                 constraint.append(astroplan.AirmassConstraint(min=airmass[0],
-                                                              max=airmass[1]))
+                                                              max=maxairmass))
             # Requested moon distance constraint
             if do_moon_sep:
                 moon_illum = float(
@@ -733,6 +742,14 @@ class Scheduler:
                     if e_air > 3.5:
                         print("gnot: Airmass end outside range: %.3f" % e_air)
                         continue
+                    if do_fwhm:
+                        # Skip target if curr FWHM more that max FWHM requested
+                        cur_fwhm = self.get_recent_fwhm()
+                        if cur_fwhm['data'] != -1 and \
+                                cur_fwhm['data'] > max(5, row.max_fwhm):
+                            print("gnot: Current FWHM (%.3f) > Requested FWHM "
+                                  "(%.3f)" % (cur_fwhm['data'], row.max_fwhm))
+                            continue
 
                     # Here is our target!
                     moon_coords = get_moon(obsdatetime,
@@ -815,6 +832,47 @@ class Scheduler:
         if return_type == 'json':
             return {"elaptime": time.time() - st, "error": "No targets found"}
         return False, False
+
+    def get_recent_fwhm(self):
+        start = time.time()
+        extractor = run.sextractor()
+        rcfiles = sorted(
+            glob.glob(os.path.join(self.params['rc_images_dir'], "%s/rc*.fits" %
+                      datetime.datetime.utcnow().strftime('%Y%m%d'))))
+        start_time = Time(
+            datetime.datetime.utcnow() - datetime.timedelta(seconds=3600))
+        rc_times = Time([datetime.datetime.strptime(os.path.basename(f)[2:-5],
+                                                    '%Y%m%d_%H_%M_%S') for f in
+                         rcfiles])
+        lasthour_files = np.array(rc_times) >= start_time
+
+        if len(rcfiles[lasthour_files]) >= 20:
+            usefiles = rcfiles[lasthour_files]
+        elif len(rcfiles) >= 0:
+            usefiles = rcfiles[len(rcfiles) - 50:]
+        else:
+            print('No RC files, returning')
+            return {
+                "elaptime": time.time() - start,
+                "data": -1
+            }
+
+        try:
+            fwhm_list = []
+            for f in usefiles:
+                hdr = fits.open(f)[0].header
+                if 'Guider' in hdr['IMGTYPE']:
+                    ret = extractor.get_star_fwhm(f)
+                    fwhm_list.append(ret)
+            return {
+                "elaptime": time.time() - start,
+                "data": np.mean(fwhm_list)
+            }
+        except:
+            return {
+                "elaptime": time.time() - start,
+                "data": -1
+            }
 
     def get_lst(self, obsdatetime=None):
         start = time.time()
