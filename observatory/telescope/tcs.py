@@ -152,10 +152,10 @@ class Telescope:
             logger.info("Sending:%s", cmd)
             self.socket.send(b"%s \r" % cmd.encode('utf-8'))
         except Exception as e:
-            logger.error("Error sending command: %s\nClosing socket",
-                         str(e), exc_info=True)
-            self.socket.close()
-            self.socket = None
+            logger.error("Error sending command: %s", str(e), exc_info=True)
+            # These lines apparently cause trouble: JDN - 2023-Mar-38
+            # self.socket.close()
+            # self.socket = None
             return {"elaptime": time.time() - start,
                     "error": "Error commamd:%s failed" % cmd}
 
