@@ -1270,7 +1270,7 @@ class SEDm:
                                  airmass=(1, 2.5), moon_sep=(20, 180),
                                  altitude_min=15, ha=(18.75, 5.75),
                                  return_type='json',
-                                 do_sort=True,
+                                 do_sort=True, do_fwhm=False,
                                  sort_columns=('priority', 'start_alt'),
                                  sort_order=(False, False), save=True,
                                  save_as=None, move=True,
@@ -1286,6 +1286,7 @@ class SEDm:
         :param ha:
         :param return_type:
         :param do_sort:
+        :param do_fwhm:
         :param sort_columns:
         :param sort_order:
         :param save:
@@ -1310,7 +1311,7 @@ class SEDm:
         ret = self.sky.get_next_observable_target(
             target_list=target_list, obsdatetime=obsdatetime.isoformat(),
             airmass=airmass, moon_sep=moon_sep, altitude_min=altitude_min,
-            ha=ha, do_sort=do_sort, return_type=return_type,
+            ha=ha, do_sort=do_sort, do_fwhm=do_fwhm, return_type=return_type,
             sort_order=sort_order, sort_columns=sort_columns, save=save,
             save_as=save_as, check_end_of_night=check_end_of_night,
             update_coords=update_coords)
@@ -3205,11 +3206,11 @@ class SEDm:
                     alloc_id = obsdict['allocation_id']
                 else:
                     alloc_id = None
-                # ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                #                                     typedesig="f",
-                #                                     allocation_id=alloc_id,
-                #                                     ra=RA, dec=DEC)
-                ret = {'status': 'request ids not implemented yet'}
+                ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                     typedesig="f",
+                                                     allocation_id=alloc_id,
+                                                     ra=RA, dec=DEC)
+                
                 logger.info("sky.get_manual_request_id status:\n%s", ret)
                 if 'data' in ret:
                     req_id = ret['data']['request_id']
@@ -3258,8 +3259,33 @@ class SEDm:
                 logger.info("decimal deg: %f, %f", RA, DEC)
 
             else:
+                logger.error("target not found")
                 return {'elaptime': time.time() - start,
                         'error': "rc 'target' in manual dict not found"}
+
+            if 'allocation_id' in obsdict:
+                alloc_id = obsdict['allocation_id']
+            else:
+                alloc_id = None
+            ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                 typedesig="f",
+                                                 allocation_id=alloc_id,
+                                                 ra=RA, dec=DEC)
+
+            logger.info("sky.get_manual_request_id status:\n%s", ret)
+            if 'data' in ret:
+                req_id = ret['data']['request_id']
+                obj_id = ret['data']['object_id']
+                p60prid = ret['data']['p60prid']
+                p60prnm = ret['data']['p60prnm']
+                p60prpi = ret['data']['p60prpi']
+            else:
+                req_id = -999
+                obj_id = -999
+                p60prid = '2022A-calib'
+                p60prnm = 'SEDm calibration'
+                p60prpi = 'SEDm'
+                logger.warning("Unable to obtain request data")
 
             if 'repeat_filter' in obsdict:
                 repeat_filter = obsdict['repeat_filter']
@@ -3278,10 +3304,10 @@ class SEDm:
             ret = self.run_rc_science_seq(
                 self.rc, shutter="normal", readout=.1, name=obsdict['target'],
                 test="", save_as=None, imgtype='Science', ra=RA, dec=DEC,
-                equinox=2000, p60prid='2022B-Asteroids', p60prpi='SEDm',
-                email='', p60prnm='Near-Earth Asteroid', obj_id=-999,
+                equinox=2000, p60prid=p60prid, p60prpi=p60prpi,
+                email='', p60prnm=p60prnm, obj_id=obj_id,
                 objfilter='RC%s' % (obsdict['rcfilter']), imgset='NA',
-                is_rc=True, run_acquisition=True, req_id=-999, acq_readout=2.0,
+                is_rc=True, run_acquisition=True, req_id=req_id, acq_readout=2.0,
                 objtype='Transient', obs_order=obsdict['rcfilter'],
                 obs_exptime=obsdict['exptime'],
                 obs_repeat_filter=repeat_filter, repeat=n_sets,
@@ -3341,10 +3367,10 @@ class SEDm:
             else:
                 alloc_id = None
 
-            # ret = self.sky.get_manual_request_id(name=obsdict['target'],
-            #                                     allocation_id=alloc_id,
-            #                                     typedesig="e")
-            ret = {'status': 'request ids not implemented yet'}
+            ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                 allocation_id=alloc_id,
+                                                 typedesig="e")
+
             logger.info("sky.get_manual_request_id status:\n%s", ret)
             if 'data' in ret:
                 req_id = ret['data']['request_id']
@@ -3448,10 +3474,10 @@ class SEDm:
             else:
                 alloc_id = None
 
-            # ret = self.sky.get_manual_request_id(name=obsdict['target'],
-            #                                     allocation_id=alloc_id,
-            #                                     typedesig="e")
-            ret = {'status': 'request ids not implemented yet'}
+            ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                 allocation_id=alloc_id,
+                                                 typedesig="e")
+
             logger.info("sky.get_manual_request_id status:\n%s", ret)
             if 'data' in ret:
                 req_id = ret['data']['request_id']

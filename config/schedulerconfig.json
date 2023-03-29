@@ -7,5 +7,6 @@
   "standard_db": "/home/sedm/SEDM_robot/sky/standards/standards.sql",
   "scheduler_path": "/scr2/sedm/sedmpy/web/static/scheduler/scheduler.html",
   "scheduler_logdir": "/scr2/sedm/logs/scheduler",
-  "target_dir": "/home/sedm/robot/targets/"
+  "target_dir": "/home/sedm/robot/targets/",
+  "rc_images_dir": "/home/sedm/images"
 }
