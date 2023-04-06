@@ -80,7 +80,7 @@ class Camera:
     def prefix(self):
         return self.__send_command(cmd="PREFIX")
 
-    def take_image(self, shutter='normal', exptime=0.0, readout=2.0,
+    def take_image(self, shutter='normal', exptime=0.0, readout=1.0,
                    save_as="", return_before_done=False):
 
         parameters = {'shutter': shutter, "exptime": exptime,

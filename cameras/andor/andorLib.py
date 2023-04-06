@@ -288,7 +288,7 @@ class Andor:
         kinetic = c_float()
         check_call(self.lib.GetAcquisitionTimings(byref(exposure), byref(accumulate), byref(kinetic)))
         self.acquisition_timings = [exposure.value, accumulate.value, kinetic.value]
-        status_msg(f'Acquisition Timings: {self.acquisition_timings}')
+        # status_msg(f'Acquisition Timings: {self.acquisition_timings}')
         return self.acquisition_timings
 
     def GetAvailableCameras(self):

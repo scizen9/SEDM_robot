@@ -42,7 +42,7 @@ class Controller:
     def __init__(self, cam_prefix="ifu", serial_number="test",
                  camera_handle=None, output_dir="",
                  force_serial=True, set_temperature=-50, send_to_remote=False,
-                 remote_config='nemea.json'):
+                 remote_config='nemea.config.json'):
         """
         Initialize the controller for the ANDOR camera and
         :param cam_prefix:
@@ -264,7 +264,7 @@ class Controller:
             self.opt.SetImageFlip(0, 0)     # Image flip disabled
             self.opt.SetImageRotate(0)      # Image rotation disabled
             self.opt.SetBaselineClamp(0)    # Baseline clamp disabled
-            self.opt.SetFanMode(0)      # set to 2 (OFF) for liquid cooling
+            self.opt.SetFanMode(2)      # set to 2 (OFF) for liquid cooling
             self.opt.SetADChannel(0)    # First (and only?) ADC channel
             self.opt.SetCoolerMode(1)   # Temperature maintained on shutdown
             self.opt.SetFrameTransferMode(0)    # Frame Transfer disabled
@@ -333,7 +333,7 @@ class Controller:
          on the website"""
         try:
             status = {
-                'camexptime': self.opt.getParameter("ExposureTime"),
+                'camexptime': self.opt.GetAcquisitionTimings()[0],
 
                 'camtemp': self.opt.GetTemperature()[1],
 
@@ -341,7 +341,7 @@ class Controller:
                     0, self.AdcQuality_States[self.AdcQuality],
                     self.AdcSpeed_States[self.AdcSpeed]),
 
-                'state': self.opt.getParameter("OutputSignal")  # Don't know what this is
+                'state': self.opt.GetTemperatureRange()[0]
             }
             logger.info(status)
             return status
@@ -366,7 +366,7 @@ class Controller:
             return {'error': str(e), 'camtemp': temp, 'templock': locked}
 
     def take_image(self, shutter='normal', exptime=0.0,
-                   readout=2.0, save_as="", timeout=None):
+                   readout=1.0, save_as="", timeout=None):
         s = time.time()
 
         # 1. Set the shutter state
