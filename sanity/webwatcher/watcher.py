@@ -122,8 +122,11 @@ def get_camera_info(conn, cam_string='ifu'):
 
     try:
         cam_dict = json.loads(ret.decode('utf-8'))
-        info_dict['%s_ExposureTime' % cam_string] = \
-            str(cam_dict['camexptime'] / 1000)
+        if 'ifu' in cam_string:
+            expt = "%.1f" % cam_dict['camexptime']
+        else:
+            expt = "%.1f" % (cam_dict['camexptime'] / 1000)
+        info_dict['%s_ExposureTime' % cam_string] = expt
         info_dict['%s_Temperature' % cam_string] = str(cam_dict['camtemp'])
         info_dict['%s_SetPoint' % cam_string] = str(cam_dict['state'])
     except Exception as ex:

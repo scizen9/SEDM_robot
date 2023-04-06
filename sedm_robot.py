@@ -1045,11 +1045,12 @@ class SEDm:
 
         if 'fast_bias' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['fast_bias']['N']
+            rdo = cube_params[cube_type]['fast_bias']['readout']
             files_completed = 0
             if check_for_previous:
                 ret = self.sanity.check_for_files(camera=cube,
                                                   keywords={'imgtype': 'bias',
-                                                            'adcspeed': 2.0},
+                                                            'adcspeed': rdo},
                                                   data_dir=data_dir)
                 if 'data' in ret:
                     files_completed = int(ret['data'])
@@ -1059,15 +1060,16 @@ class SEDm:
             else:
                 N = N - files_completed
                 logger.info("Taking %d fast biases for %s", N, cube)
-                self.take_bias(cam, N=N, readout=2.0)
+                self.take_bias(cam, N=N, readout=rdo)
 
         if 'slow_bias' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['slow_bias']['N']
+            rdo = cube_params[cube_type]['slow_bias']['readout']
             files_completed = 0
             if check_for_previous:
                 ret = self.sanity.check_for_files(camera=cube,
                                                   keywords={'imgtype': 'bias',
-                                                            'adcspeed': 0.1},
+                                                            'adcspeed': rdo},
                                                   data_dir=data_dir)
                 if 'data' in ret:
                     files_completed = int(ret['data'])
@@ -1077,17 +1079,21 @@ class SEDm:
             else:
                 N = N - files_completed
                 logger.info("Taking %d slow biases for %s", N, cube)
-                self.take_bias(cam, N=N, readout=0.1)
+                self.take_bias(cam, N=N, readout=rdo)
 
         if 'dome' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['dome']['N']
             files_completed = 0
             check_for_previous = False
             if check_for_previous:
-                ret = self.sanity.check_for_files(camera=cube,
-                                                  keywords={'imgtype': 'dome',
-                                                            'adcspeed': 2.0},
-                                                  data_dir=data_dir)
+                if 'ifu' in cube_type:
+                    ret = self.sanity.check_for_files(
+                            camera=cube, keywords={'imgtype': 'dome',
+                                'adcspeed': 1.0}, data_dir=data_dir)
+                else:
+                    ret = self.sanity.check_for_files(
+                            camera=cube, keywords={'imgtype': 'dome',
+                                'adcspeed': 2.0}, data_dir=data_dir)
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
@@ -1112,11 +1118,12 @@ class SEDm:
         for lamp in ['hg', 'xe', 'cd']:
             if lamp in cube_params[cube_type]['order']:
                 N = cube_params[cube_type][lamp]['N']
+                rdo = cube_params[cube_type][lamp]['readout']
                 if check_for_previous:
                     pass
                 exptime = cube_params[cube_type][lamp]['exptime']
                 logger.info("Taking %d %s arcs for %s", N, lamp, cube)
-                self.take_arclamp(cam, lamp, N=N, readout=2.0, move=False,
+                self.take_arclamp(cam, lamp, N=N, readout=rdo, move=False,
                                   exptime=exptime)
         return {'elaptime': time.time() - start, 'data': '%s complete' %
                                                          cube_type}
@@ -1186,7 +1193,7 @@ class SEDm:
         # Wait 5s to start the IFU calibrations so they finish last
         time.sleep(5)
         N_ifu = cube_params['ifu']['fast_bias']['N']
-        self.take_bias(self.ifu, N=N_ifu, readout=2.0)
+        self.take_bias(self.ifu, N=N_ifu, readout=1.0)
 
         # Start the RC biases in the background
         N_rc = cube_params['rc']['fast_bias']['N']
@@ -1198,9 +1205,9 @@ class SEDm:
         t.start()
 
         # Wait 5s to start the IFU calibrations so they finish last
-        time.sleep(5)
-        N_ifu = cube_params['ifu']['fast_bias']['N']
-        self.take_bias(self.ifu, N=N_ifu, readout=.1)
+        # time.sleep(5)
+        # N_ifu = cube_params['ifu']['fast_bias']['N']
+        # self.take_bias(self.ifu, N=N_ifu, readout=.1)
 
         # Make sure that we have waited long enough for the 'Cd' lamp to warm
         while time.time() - lamp_start < self.lamp_wait_time['cd']:
@@ -1211,7 +1218,7 @@ class SEDm:
             N_cd = cube_params['ifu']['cd']['N']
             exptime = cube_params['ifu']['cd']['exptime']
             self.take_arclamp(self.ifu, 'cd', wait=False, do_lamp=False, N=N_cd,
-                              readout=2.0, move=False, exptime=exptime)
+                              readout=1.0, move=False, exptime=exptime)
 
             # Turn the lamps off
             ret = self.ocs.arclamp('cd', command="OFF")
@@ -1259,7 +1266,7 @@ class SEDm:
             if lamp in cube_params['ifu']['order']:
                 N = cube_params['ifu'][lamp]['N']
                 exptime = cube_params['ifu'][lamp]['exptime']
-                self.take_arclamp(self.ifu, lamp, N=N, readout=2.0, move=False,
+                self.take_arclamp(self.ifu, lamp, N=N, readout=1.0, move=False,
                                   exptime=exptime)
 
         return {'elaptime': time.time() - start,
@@ -1326,7 +1333,7 @@ class SEDm:
 
     def run_acquisition_ifumap(self, cam=None, ra=200.8974, dec=36.133,
                                equinox=2000, ra_rate=0.0, dec_rate=0.0,
-                               motion_flag="", exptime=120, readout=2.0,
+                               motion_flag="", exptime=120, readout=1.0,
                                shutter='normal', move=True,
                                name='HZ44_IFU_MAPPING', obj_id=24, req_id=-50,
                                retry_on_failed_astrometry=False, tcsx=False,
@@ -1770,7 +1777,7 @@ class SEDm:
         logger.debug("Finished guider sequence for %s" % name)
 
     def run_standard_seq(self, cam, shutter="normal",
-                         readout=.1, name="", get_standard=True,
+                         readout=1.0, name="", get_standard=True,
                          test="", save_as=None, imgtype='Standard',
                          exptime=90, ra=0, dec=0, equinox=2000,
                          epoch="", ra_rate=0, dec_rate=0, motion_flag="",
@@ -1845,7 +1852,7 @@ class SEDm:
                     else:
                         rc_exptime = 10
                     ret = self.take_image(self.rc, exptime=rc_exptime,
-                                          shutter='normal', readout=2.0,
+                                          shutter='normal', readout=1.0,
                                           start=start, save_as=save_as,
                                           test=test,
                                           imgtype=imgtype, objtype=objtype,
@@ -2080,7 +2087,7 @@ class SEDm:
         if obsdict['obs_dict']['ifu'] and self.run_ifu:
             ret = self.run_ifu_science_seq(
                 self.ifu, name=obsdict['name'], test=test,
-                ra=obsdict['ra'], dec=obsdict['dec'], readout=.1,
+                ra=obsdict['ra'], dec=obsdict['dec'], readout=1.0,
                 exptime=obsdict['obs_dict']['ifu_exptime'],
                 run_acquisition=run_acquisition_ifu, objtype='Transient',
                 move_during_readout=True, abpair=False, guide=guide, move=move,
@@ -2113,7 +2120,7 @@ class SEDm:
             return {'elaptime': time.time() - start,
                     'error': 'Image not acquired'}
 
-    def run_ifu_science_seq(self, cam, shutter="normal", readout=.1, name="",
+    def run_ifu_science_seq(self, cam, shutter="normal", readout=1.0, name="",
                             test="", save_as=None, imgtype='Science',
                             exptime=90, ra=0, dec=0, equinox=2000,
                             epoch="", ra_rate=0, dec_rate=0, motion_flag="",
@@ -3232,7 +3239,7 @@ class SEDm:
 
             ret = self.run_ifu_science_seq(
                 self.ifu, name=obsdict['target'], imgtype='Science',
-                exptime=obsdict['exptime'], ra=RA, dec=DEC, readout=.1,
+                exptime=obsdict['exptime'], ra=RA, dec=DEC, readout=1.0,
                 p60prid=p60prid, p60prpi=p60prpi, email='',
                 p60prnm=p60prnm, req_id=req_id,
                 obj_id=obj_id, objfilter='ifu',
