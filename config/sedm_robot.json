@@ -10,25 +10,19 @@
         "cd": {
             "N": 5,
             "exptime": 30,
-            "readout": 2.0
+            "readout": 1.0
         },
         "dome": {
             "N": 5,
-            "exptime": [180],
-            "readout": [2.0]
-        },
-        "fast_bias": {
-            "N": 10,
-            "exptime": 0,
-            "readout": 2.0
+            "exptime": [40],
+            "readout": [1.0]
         },
         "hg": {
             "N": 5,
             "exptime": 30,
-            "readout": 2.0
+            "readout": 1.0
         },
         "order": [
-            "fast_bias",
             "slow_bias",
             "dome",
             "hg",
@@ -38,12 +32,12 @@
         "slow_bias": {
             "N": 10,
             "exptime": 0,
-            "readout": 0.1
+            "readout": 1.0
         },
         "xe": {
             "N": 5,
-            "exptime": 60,
-            "readout": 2.0
+            "exptime": 20,
+            "readout": 1.0
         },
         "offset": {"ra": -94.9, "dec": -118.5}
     },
