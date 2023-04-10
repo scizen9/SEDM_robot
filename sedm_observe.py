@@ -317,8 +317,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
             # Has this request already been observed?
             if obsdict['req_id'] in done_list:
                 robot.sky.update_target_request(obsdict['req_id'],
-                                                status='COMPLETED',
-                                                check_growth=True)
+                                                status='COMPLETED')
                 continue    # skip it then
             # When will this observation end?
             end_time = datetime.datetime.utcnow() + datetime.timedelta(
@@ -361,10 +360,13 @@ def run_observing_loop(do_focus=True, do_standard=True,
             print("No observable target in queue, doing standard")
             ret = robot.run_standard_seq(robot.ifu)
             print("run_standard_seq status:\n", ret)
-            with open(standard_done_file, 'w') as the_file:
-                the_file.write('Standard completed:%s' % uttime())
-            standard_done = True
-            std_count += 1
+            if 'data' in ret:
+                with open(standard_done_file, 'w') as the_file:
+                    the_file.write('Standard completed:%s' % uttime())
+                standard_done = True
+                std_count += 1
+            else:
+                print("Skipping standard, new loop")
 
         # check standard status
         if not os.path.exists(standard_done_file):
