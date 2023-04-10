@@ -20,7 +20,7 @@ class Camera:
 
         self.address = address
         self.port = port
-        print(self.address, self.port)
+        print("andor_cam_client.__init__", self.address, self.port)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # print(self.socket)
         self.socket.connect((self.address, self.port))
