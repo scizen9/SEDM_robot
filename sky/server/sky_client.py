@@ -260,7 +260,7 @@ class Sky:
                                    parameters=parameters)
 
     def update_target_request(self, request_id, status="COMPLETED",
-                              check_growth=True):
+                              check_growth=False):
 
         parameters = {
             'request_id': request_id,
