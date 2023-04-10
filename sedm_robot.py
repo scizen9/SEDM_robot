@@ -562,7 +562,7 @@ class SEDm:
                                           "%Y%m%d"))
             latest_file = max(list_of_files, key=os.path.getctime)
 
-            logger.info(latest_file)
+            logger.info('Checking latest file: %s' % latest_file)
             base_file = os.path.basename(latest_file)
             if 'ifu' in base_file:
                 fdate = datetime.datetime.strptime(base_file,
@@ -1806,10 +1806,15 @@ class SEDm:
             logger.info("sky.get_standard status:\n%s", ret)
 
             if 'data' in ret:
-                name = ret['data']['name']
-                ra = ret['data']['ra']
-                dec = ret['data']['dec']
-                exptime = ret['data']['exptime']
+                try:
+                    name = ret['data']['name']
+                    ra = ret['data']['ra']
+                    dec = ret['data']['dec']
+                    exptime = ret['data']['exptime']
+                except KeyError:
+                    logger.error("Invalid STD record, missing keyword")
+                    return {'elaptime': time.time() - start,
+                            'error': 'Invalid standard record'}
 
         if get_request_id:
 
@@ -2147,8 +2152,7 @@ class SEDm:
             pass
 
         if mark_status:
-            self.sky.update_target_request(req_id, status="ACTIVE",
-                                           check_growth=True)
+            self.sky.update_target_request(req_id, status="ACTIVE")
 
         if move:
             if run_acquisition:
@@ -2229,12 +2233,10 @@ class SEDm:
         logger.info("take_image(IFU) status:\n%s", ret)
 
         if 'data' in ret and mark_status:
-            self.sky.update_target_request(req_id, status='COMPLETED',
-                                           check_growth=True)
+            self.sky.update_target_request(req_id, status='COMPLETED')
             logger.info("sky.update_target_request status: %s", ret)
         else:
-            self.sky.update_target_request(req_id, status='FAILURE',
-                                           check_growth=True)
+            self.sky.update_target_request(req_id, status='FAILURE')
 
         return ret
 
@@ -2266,8 +2268,7 @@ class SEDm:
         object_dec = dec
 
         if mark_status:
-            self.sky.update_target_request(req_id, status="ACTIVE",
-                                           check_growth=True)
+            self.sky.update_target_request(req_id, status="ACTIVE")
 
         if move:
             if run_acquisition:
@@ -2356,8 +2357,7 @@ class SEDm:
                         else:
                             img_dict[objfilter] = ret['data']
         if mark_status:
-            self.sky.update_target_request(req_id, status="COMPLETED",
-                                           check_growth=True)
+            self.sky.update_target_request(req_id, status="COMPLETED")
 
         return {'elaptime': time.time() - start, 'data': img_dict}
 
