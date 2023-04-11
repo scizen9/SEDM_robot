@@ -69,6 +69,7 @@ logger.info("Starting Logger: Logger file is %s", 'sedm_robot.log')
 
 
 def make_alert_call(body):
+    """
     account_sid = twi_cfg['account_sid']
     auth_token = twi_cfg['auth_token']
     to_number = twi_cfg['to_number']
@@ -79,6 +80,9 @@ def make_alert_call(body):
     message = client.messages.create(to=to_number, from_=from_number, body=body)
 
     logger.info(message.sid)
+    """
+    print("Twilio alert: ", body)
+    logger.info(body)
 
 
 def iso_to_epoch(iso_time, epoch_year=False):
