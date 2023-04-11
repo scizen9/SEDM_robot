@@ -60,8 +60,7 @@ class CamServer:
                 data = connection.recv(2048)
 
                 data = data.decode("utf8")
-                logger.info("Received: %s", data)
-                logger.info(data)
+                logger.info("Received: %s", str(data))
 
                 if not data:
                     break
@@ -108,8 +107,9 @@ class CamServer:
                                 # Initialize the camera
                                 ret = self.cam.initialize()
                                 # And now we check the correct serial number
-                                logger.info("Do these match? %d %d" %
-                                            (self.cam.serialNumber, cam_ser_no))
+                                logger.info("Do these match? %s %s" %
+                                            (str(self.cam.serialNumber),
+                                             str(cam_ser_no)))
                                 if ret:
                                     response = {'elaptime': time.time()-start,
                                                 'data': "Camera started"}
@@ -130,7 +130,7 @@ class CamServer:
                             file.write(time.strftime('%Y-%m-%d %H:%M:%S.%d',
                                                      time.gmtime()))
                         response = self.cam.take_image(**data['parameters'])
-                        logger.info(response)
+                        logger.info(str(response))
                     elif data['command'].upper() == 'LOGROLLOVER':
                         logger.removeHandler(logHandler)
                         logHandler.doRollover()
@@ -141,12 +141,12 @@ class CamServer:
                         response = self.cam.get_status()
                     elif data['command'].upper() == 'GETTEMPSTATUS':
                         response = self.cam.get_temp_status()
-                        logger.info(response)
+                        logger.info(str(response))
                     elif data['command'].upper() == 'PING':
                         response = {'data': 'PONG'}
                     elif data['command'].upper() == "LASTERROR":
                         response = self.cam.lastError
-                        logger.info(response)
+                        logger.info(str(response))
                     elif data['command'].upper() == "LASTEXPOSED":
                         obs_time = open(exp_start_file).readlines()[0]
                         response = {'elaptime': time.time()-start,
@@ -156,14 +156,14 @@ class CamServer:
                                     'data': self.cam.camPrefix}
                     elif data['command'].upper() == "REINIT":
                         response = self.cam.opt.disconnect()
-                        logger.info(response)
+                        logger.info(str(response))
                     elif data['command'].upper() == "SHUTDOWN":
                         _ = self.cam.opt.disconnect()
                         # ret = self.cam.opt.unloadLibrary()
                         self.cam = None
                         response = {'elaptime': time.time()-start,
                                     'data': "Camera shutdown"}
-                        logger.info(response)
+                        logger.info(str(response))
                 else:
                     response = {'elaptime': time.time()-start,
                                 'error': "Command not found"}
