@@ -478,14 +478,23 @@ class Controller:
                 if 'data' in ret:
                     save_as = ret['data']
                 elif 'error' in ret:
-                    print(ret)
-                    print("wait 5s, try again")
-                    time.sleep(5)
-                    ret = self.transfer.send(save_as)
-                    if 'error' in ret:
-                        print("Error transferring andor file to remote")
-                    else:
-                        save_as = ret['data']
+                    retries = 1
+                    transfer_worked = False
+                    while retries < 5 and not transfer_worked:
+                        print(ret)
+                        print("Transfer ERROR: wait 5s, try again")
+                        time.sleep(5)
+                        ret = self.transfer.send(save_as)
+                        if 'error' in ret:
+                            print("Transfer try %d failed" % retries)
+                            retries += 1
+                        else:
+                            save_as = ret['data']
+                            print("Transfer succeeded after %d retries"
+                                  % retries)
+                            transfer_worked = True
+                    if not transfer_worked:
+                        print("Unable to transfer andor file to remote")
                 else:
                     print("Error transferring andor file to remote")
             return {'elaptime': time.time() - s, 'data': save_as}
