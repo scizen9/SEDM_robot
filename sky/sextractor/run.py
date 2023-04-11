@@ -410,7 +410,7 @@ class sextractor:
             plt.savefig(pltfile)
             plt.clf()
 
-            if (mod_foc - 0.1) <= best <= (mod_foc + 0.1):
+            if (mod_foc - 0.25) <= best <= (mod_foc + 0.25):
                 pass
             else:
                 print("Fit value outside model range, using model value")
