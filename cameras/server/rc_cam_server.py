@@ -108,8 +108,8 @@ class CamServer:
                                 # Initialize the camera
                                 ret = self.cam.initialize()
                                 # And now we check the correct serial number
-                                logger.info("Do these match?",
-                                            self.cam.serialNumber, cam_ser_no)
+                                logger.info("Do these match? %d %d" %
+                                            (self.cam.serialNumber, cam_ser_no))
                                 if ret:
                                     response = {'elaptime': time.time()-start,
                                                 'data': "Camera started"}
