@@ -261,7 +261,7 @@ class Controller:
         # Sets Default Parameters
         try:
             self.serialNumber = self.opt.GetCameraSerialNumber()
-            self.opt.SetImageFlip(0, 0)     # Image flip disabled
+            self.opt.SetImageFlip(1, 1)     # Image flip on both axes
             self.opt.SetImageRotate(0)      # Image rotation disabled
             self.opt.SetBaselineClamp(0)    # Baseline clamp disabled
             self.opt.SetFanMode(2)      # set to 2 (OFF) for liquid cooling
@@ -483,17 +483,17 @@ class Controller:
                     time.sleep(5)
                     ret = self.transfer.send(save_as)
                     if 'error' in ret:
-                        print("Error transferring file to remote")
+                        print("Error transferring andor file to remote")
                     else:
                         save_as = ret['data']
                 else:
-                    print("Error transferring file to remote")
+                    print("Error transferring andor file to remote")
             return {'elaptime': time.time() - s, 'data': save_as}
         except Exception as e:
             self.lastError = str(e)
-            logger.error("Error writing data to disk", exc_info=True)
+            logger.error("Error transferring andor data to remote: %s" % save_as, exc_info=True)
             return {'elaptime': time.time() - s,
-                    'error': 'Error writing file to disk'}
+                    'error': 'Error transferring andor file to remote: %s' % save_as}
 
 
 if __name__ == "__main__":
