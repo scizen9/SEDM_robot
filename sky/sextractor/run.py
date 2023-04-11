@@ -301,9 +301,9 @@ class sextractor:
             # sure the file exists
             if not os.path.exists(obs):
                 print("sex.run_loop - image not found:", obs)
-                header_field_list.append(np.NaN)
-                catalog_field_list.append(np.NaN)
-                error_list.append(np.NaN)
+                # header_field_list.append(np.NaN)
+                # catalog_field_list.append(np.NaN)
+                # error_list.append(np.NaN)
                 continue
 
             # 2.5 Get plot directory
@@ -316,9 +316,9 @@ class sextractor:
                     float(fits.getheader(obs)[header_field]))
             except:
                 print("sex.run_loop - no hdr kwd:", header_field)
-                header_field_list.append(np.NaN)
-                catalog_field_list.append(np.NaN)
-                error_list.append(np.NaN)
+                # header_field_list.append(np.NaN)
+                # catalog_field_list.append(np.NaN)
+                # error_list.append(np.NaN)
                 continue
 
             # 4. We should now be ready to run sextractor
@@ -328,9 +328,9 @@ class sextractor:
             # 5. Check that there were no errors
             if 'error' in sret:
                 print("sex.run_loop - sextractor error for", obs)
-                header_field_list.append(np.NaN)
-                catalog_field_list.append(np.NaN)
-                error_list.append(np.NaN)
+                # header_field_list.append(np.NaN)
+                # catalog_field_list.append(np.NaN)
+                # error_list.append(np.NaN)
                 continue
 
             # 6. Filter the data if requested
@@ -341,18 +341,18 @@ class sextractor:
             # 7. Again check there were no errors
             if 'error' in sret:
                 print("sex.run_loop - filter_star_catalog error:\n", sret)
-                header_field_list.append(np.NaN)
-                catalog_field_list.append(np.NaN)
-                error_list.append(np.NaN)
+                # header_field_list.append(np.NaN)
+                # catalog_field_list.append(np.NaN)
+                # error_list.append(np.NaN)
                 continue
 
             # 8. Now we get the mean values for the catalog
             df = sret['data']
             if df.empty:
                 print("sex.run_loop - no data for", obs)
-                header_field_list.append(np.NaN)
-                catalog_field_list.append(np.NaN)
-                error_list.append(np.NaN)
+                # header_field_list.append(np.NaN)
+                # catalog_field_list.append(np.NaN)
+                # error_list.append(np.NaN)
                 continue
 
             # 9. Finally get the stats for the image
