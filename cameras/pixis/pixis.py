@@ -477,6 +477,17 @@ class Controller:
                 ret = self.transfer.send(save_as)
                 if 'data' in ret:
                     save_as = ret['data']
+                elif 'error' in ret:
+                    print(ret)
+                    print("wait 5s, try again")
+                    time.sleep(5)
+                    ret = self.transfer.send(save_as)
+                    if 'error' in ret:
+                        print("Error transferring file to remote")
+                    else:
+                        save_as = ret['data']
+                else:
+                    print("Error transferring file to remote")
             return {'elaptime': time.time()-s, 'data': save_as}
         except Exception as e:
             self.lastError = str(e)
