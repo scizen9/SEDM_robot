@@ -106,7 +106,7 @@ class CamServer:
 
                                 ret = self.cam.initialize()
                                 # And now we check the correct serial number
-                                logger.info("Do these match? %s %s",
+                                logger.info("Do these match? %s %s" %
                                             (str(self.cam.serialNumber),
                                              str(cam_ser_no)))
                                 if ret:
