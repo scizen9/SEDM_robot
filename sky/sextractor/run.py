@@ -297,6 +297,9 @@ class sextractor:
 
         # 1. Start by looping through the image list
         for obs in obs_list:
+            if 'header file saved' in obs:
+                print("sex.run_loop - image not saved:", obs)
+                continue
             # 2. Before preforming any analysis do a sanity check to make
             # sure the file exists
             if not os.path.exists(obs):
