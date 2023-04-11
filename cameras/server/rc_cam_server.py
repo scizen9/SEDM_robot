@@ -170,7 +170,7 @@ class CamServer:
                 jsonstr = json.dumps(response)
                 connection.sendall(jsonstr.encode('utf-8'))
             except Exception as e:
-                logger.error("Camera error:", time.gmtime())
+                logger.error("Camera error: %s" % str(time.gmtime()))
                 logger.error(str(e))
                 logger.error("Big error", exc_info=True)
                 time.sleep(60)
