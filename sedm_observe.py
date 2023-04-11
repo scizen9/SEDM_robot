@@ -254,11 +254,15 @@ def run_observing_loop(do_focus=True, do_standard=True,
         if not standard_done:
             print("Doing standard")
             ret = robot.run_standard_seq(robot.ifu)
-            std_count += 1
             print("run_standard_seq status:\n", ret)
-            with open(standard_done_file, 'w') as the_file:
-                the_file.write('Standard completed:%s' % uttime())
-            standard_done = True
+            if 'error' in ret:
+                print("Standard failed")
+            else:
+                print("Standard succeeded")
+                std_count += 1
+                with open(standard_done_file, 'w') as the_file:
+                    the_file.write('Standard completed:%s' % uttime())
+                standard_done = True
 
         # any manual commands?
         if os.path.exists(manual_dir):
@@ -336,10 +340,13 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 continue
             # If it ends before morning twilight, do observations
             ret = robot.observe_by_dict(obsdict)
-            # Add to done list
-            done_list.append(obsdict['req_id'])
             print('observe_by_dict status:\n', ret)
-            sci_count += 1
+            if 'error' in ret:
+                print('Observation failed')
+            else:
+                # Add to done list
+                done_list.append(obsdict['req_id'])
+                sci_count += 1
 
             # Update focus done file status (in case a new focus run needed)
             if not os.path.exists(focus_done_file):
@@ -360,7 +367,10 @@ def run_observing_loop(do_focus=True, do_standard=True,
             print("No observable target in queue, doing standard")
             ret = robot.run_standard_seq(robot.ifu)
             print("run_standard_seq status:\n", ret)
-            if 'data' in ret:
+            if 'error' in ret:
+                print("Standard failed")
+            elif 'data' in ret:
+                print("Standard succeeded")
                 with open(standard_done_file, 'w') as the_file:
                     the_file.write('Standard completed:%s' % uttime())
                 standard_done = True

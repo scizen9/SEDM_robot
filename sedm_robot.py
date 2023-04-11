@@ -662,8 +662,12 @@ class SEDm:
                                   is_rc=True, abpair=False)
             logger.info("take_image(BIAS) status:\n%s", ret)
 
-            if 'data' in ret:
+            if 'error' in ret:
+                logger.error("Bad image: error in return")
+            elif 'data' in ret:
                 img_list.append(ret['data'])
+            else:
+                logger.error("Bad image: no return")
 
         if generate_request_id:
             self.sky.update_target_request(req_id, status="COMPLETED")
@@ -1417,12 +1421,18 @@ class SEDm:
         logger.info(ret)
         ret = self.sky.solve_offset_new(ret['data'], return_before_done=False)
         logger.info(ret)
-        if 'data' in ret:
+        if 'error' in ret:
+            logger.error("Image not used: error in return")
+            return {'elaptime': time.time() - start, 'error': ret['error']}
+        elif 'data' in ret:
             ra = ret['data']['ra_offset']
             dec = ret['data']['dec_offset']
             ret = self.ocs.tel_offset(ra, dec)
             logger.info(ret)
             logger.info(self.ocs.tel_offset(-98.5, -111.0))
+        else:
+            logger.error("Image not used: no return")
+            return {'elaptime': time.time() - start, 'error': 'No return'}
 
         offsets = [{'ra': 0, 'dec': 0}, {'ra': -5, 'dec': 0},
                    {'ra': 10, 'dec': 0}, {'ra': -5, 'dec': -5},
@@ -1621,8 +1631,12 @@ class SEDm:
                                   is_rc=is_rc, abpair=abpair, name=name)
             logger.info("take_image(FOC) status:\n%s", ret)
 
-            if 'data' in ret:
+            if 'error' in ret:
+                logger.error("Skipping this image: error in return")
+            elif 'data' in ret:
                 img_list.append(ret['data'])
+            else:
+                logger.error("Skipping this image: no return")
 
         if do_lamp:
             ret = self.ocs.arclamp(lamp, command="OFF")
@@ -1755,11 +1769,14 @@ class SEDm:
                 logger.error("Error taking guider image", exc_info=True)
                 logger.error(str(e))
 
-            if 'data' in ret:
+            if 'error' in ret:
+                logger.error("Skipping this image: error in return")
+            elif 'data' in ret:
                 self.guider_list.append(ret['data'])
             else:
                 make_alert_call("Error setting up guiding")
-                logger.error("Error setting up guiding")
+                logger.error("Skipping this image: no return")
+
             guide_done = (datetime.datetime.utcnow() +
                           datetime.timedelta(
                               seconds=guide_exptime + readout_time))
@@ -1964,13 +1981,18 @@ class SEDm:
                                   req_id=req_id, objfilter=objfilter,
                                   imgset=imgset,
                                   is_rc=is_rc, abpair=abpair, name=name)
-            if 'data' in ret and mark_status:
+            if 'error' in ret:
+                logger.error("Bad image: error in return")
+            elif 'data' in ret and mark_status:
                 logger.info("sky.update_target_request status:\n%s",
                             self.sky.update_target_request(req_id,
                                                            status='COMPLETED'))
-        if 'data' in ret:
-            return {'elaptime': time.time() - start,
-                    'data': ret['data']}
+        if 'error' in ret:
+            return {'elaptime': time.time() - start, 'error': ret['error']}
+        elif 'data' in ret:
+            return {'elaptime': time.time() - start, 'data': ret['data']}
+        else:
+            return{'elaptime': time.time() - start, 'error': 'No return'}
 
     def _prepare_keys(self, obsdict):
         start = time.time()
@@ -2123,7 +2145,9 @@ class SEDm:
                 img_dict['rc'] = ret['data']
 
         logger.info("Observe by dictionary complete")
-        if 'data' in ret:
+        if 'error' in ret:
+            return {'elaptime': time.time() - start, 'error': ret['error']}
+        elif 'data' in ret:
             return {'elaptime': time.time() - start, 'data': img_dict}
         else:
             return {'elaptime': time.time() - start,
@@ -2236,7 +2260,10 @@ class SEDm:
                               is_rc=is_rc, abpair=abpair, name=name)
         logger.info("take_image(IFU) status:\n%s", ret)
 
-        if 'data' in ret and mark_status:
+        if 'error' in ret:
+            logger.error("Image failed to transfer")
+            self.sky.update_target_request(req_id, status='FAILURE')
+        elif 'data' in ret and mark_status:
             self.sky.update_target_request(req_id, status='COMPLETED')
             logger.info("sky.update_target_request status: %s", ret)
         else:
@@ -2354,12 +2381,16 @@ class SEDm:
                                           imgset='NA', is_rc=is_rc,
                                           abpair=abpair, name=name)
                     logger.info("take_image(RC) status:\n%s", ret)
-                    if 'data' in ret:
+                    if 'error' in ret:
+                        logger.error("Image failed: error in return")
+                    elif 'data' in ret:
                         logger.info("filter %s:\n%s", objfilter, ret)
                         if objfilter in img_dict:
                             img_dict[objfilter] += ', %s' % ret['data']
                         else:
                             img_dict[objfilter] = ret['data']
+                    else:
+                        logger.error("Image failed: no return")
         if mark_status:
             self.sky.update_target_request(req_id, status="COMPLETED")
 
@@ -2437,7 +2468,10 @@ class SEDm:
                               objfilter='r', imgset='NA',
                               is_rc=True, abpair=False)
         logger.info("take_image(ACQ) status:\n%s", ret)
-        if 'data' in ret:
+        if 'error' in ret:
+            return {'elaptime': time.time() - start,
+                    'error': 'Error acquiring acquisition image: error return'}
+        elif 'data' in ret:
             # get offset to reference RC pixel
             ret = self.sky.solve_offset_new(ret['data'],
                                             return_before_done=True)
@@ -2518,7 +2552,7 @@ class SEDm:
 
         else:
             return {'elaptime': time.time() - start,
-                    'error': 'Error acquiring acquisition image'}
+                    'error': 'Error acquiring acquisition image: no return'}
 
     def run_telx_seq(self, ra=None, dec=None, equinox=2000, exptime=30,
                      test=""):
@@ -2555,7 +2589,12 @@ class SEDm:
                               objfilter='r', imgset='NA',
                               is_rc=True, abpair=False)
         logger.info("take_image(TELX) status:\n%s", ret)
-        if 'data' in ret:
+        if 'error' in ret:
+            logger.error("Bad image: error in return")
+            return {'elaptime': time.time() - start,
+                    'error': 'Error acquiring acquisition image: '
+                             'error in return'}
+        elif 'data' in ret:
             # get offset to reference RC pixel
             ret = self.sky.solve_offset_new(ret['data'],
                                             return_before_done=True)
