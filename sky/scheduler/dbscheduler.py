@@ -1193,7 +1193,6 @@ class Scheduler:
         start = time.time()
         ret = self.ph_db.update_request({'id': request_id,
                                          'status': status})
-
         print(ret)
         if check_growth:
             ret = self.growth.get_marshal_id_from_dbhost(request_id)
@@ -1205,7 +1204,7 @@ class Scheduler:
             else:
                 return {'elaptime': time.time()-start,
                         'data': "No growth presence"}
-        return {'elaptime': time.time()-start, 'data': ret['data']}
+        return {'elaptime': time.time()-start, 'data': "DB updated"}
 
 
 if __name__ == "__main__":
