@@ -378,7 +378,7 @@ class SEDm:
                     if isinstance(sd, dict):
                         stat_dict.update(sd)
                     else:
-                        logger.warning("Bad ?POS return: %s", sd)
+                        logger.warning("Bad ?POS return(2): %s", sd)
             try:
                 stat_dict.update(self.ocs.check_weather()['data'])
                 if self.use_winter:
@@ -496,48 +496,45 @@ class SEDm:
 
         # 2. Get the TCS information for the conditions at the start of the
         # exposure
-        obsdict.update(self.get_status_dict(do_stages=do_stages,
-                                            do_lamps=do_lamps))
+        begin_tcs_dict = self.get_status_dict(do_stages=do_stages,
+                                               do_lamps=do_lamps)
+        if not is_rc:
+            logger.info("updating IFU beginning TCS keywords:\n%s" %
+                        str(begin_tcs_dict))
+        obsdict.update(begin_tcs_dict)
+
         if not object_ra or not object_dec:
             logger.info("Using TCS RA and DEC")
             try:
                 object_ra = obsdict['telescope_ra']
                 object_dec = obsdict['telescope_dec']
             except KeyError:
-                logger.warning("No TCS object coords in status!")
+                logger.warning("No TCS object coords in keywords!")
                 object_ra = 0.0
                 object_dec = 0.0
 
-        if not is_rc:
-            logger.info("updating IFU start of obs keywords")
+        project_dict = self.header.set_project_keywords(
+            test=test, imgtype=imgtype, objtype=objtype,
+            object_ra=object_ra, object_dec=object_dec,
+            email=email, name=name, p60prid=p60prid,
+            p60prpi=p60prpi, p60prnm=p60prnm, obj_id=obj_id,
+            req_id=req_id, objfilter=objfilter, imgset=imgset,
+            is_rc=is_rc, abpair=abpair)
 
-        obsdict.update(self.header.set_project_keywords(test=test,
-                                                        imgtype=imgtype,
-                                                        objtype=objtype,
-                                                        object_ra=object_ra,
-                                                        object_dec=object_dec,
-                                                        email=email, name=name,
-                                                        p60prid=p60prid,
-                                                        p60prpi=p60prpi,
-                                                        p60prnm=p60prnm,
-                                                        obj_id=obj_id,
-                                                        req_id=req_id,
-                                                        objfilter=objfilter,
-                                                        imgset=imgset,
-                                                        is_rc=is_rc,
-                                                        abpair=abpair))
+        if not is_rc:
+            logger.info("updating IFU project keywords:\n%s" %
+                        str(project_dict))
+        obsdict.update(project_dict)
 
         while datetime.datetime.utcnow() < readout_end:
             time.sleep(.01)
 
-        if not is_rc:
-            logger.info("updating IFU end of obs keywords")
-
-        end_dict = self.get_status_dict(do_lamps=False, do_stages=False)
+        end_tcs_dict = self.get_status_dict(do_lamps=False, do_stages=False)
 
         if not is_rc:
-            logger.info("updating IFU obsdict with end_dict")
-        obsdict.update(self.header.prep_end_header(end_dict))
+            logger.info("updating IFU end of obs TCS keywords:\n%s" %
+                        str(end_tcs_dict))
+        obsdict.update(self.header.prep_end_header(end_tcs_dict))
 
         # logger.info("Reconnecting now")
         try:
@@ -550,6 +547,7 @@ class SEDm:
             logger.error(str(e))
             ret = None
 
+        # TODO: add obsdict verification routine
         if isinstance(ret, dict) and 'data' in ret:
             if not is_rc:
                 logger.info("Adding the IFU header")
