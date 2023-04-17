@@ -319,10 +319,14 @@ def run_observing_loop(do_focus=True, do_standard=True,
         if 'data' in ret and isinstance(ret['data'], dict):
             obsdict = ret['data']
             # Has this request already been observed?
-            if obsdict['req_id'] in done_list:
-                robot.sky.update_target_request(obsdict['req_id'],
-                                                status='COMPLETED')
-                continue    # skip it then
+            try:
+                if obsdict['req_id'] in done_list:
+                    robot.sky.update_target_request(obsdict['req_id'],
+                                                    status='COMPLETED')
+                    continue    # skip it then
+            except KeyError:
+                print("Missing key: req_id, skipping")
+                continue
             # When will this observation end?
             end_time = datetime.datetime.utcnow() + datetime.timedelta(
                 seconds=obsdict['obs_dict']['total'])
