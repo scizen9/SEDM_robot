@@ -634,6 +634,7 @@ class SEDm:
             ret = self.sky.get_calib_request_id(camera=cam.prefix()['data'],
                                                 N=N, exptime=0,
                                                 object_id=obj_id)
+            logger.info("sky.get_calib_request_id status:\n%s", ret)
             if "data" in ret:
                 req_id = ret['data']
 
@@ -668,7 +669,8 @@ class SEDm:
                 logger.error("Bad image: no return")
 
         if generate_request_id:
-            self.sky.update_target_request(req_id, status="COMPLETED")
+            sky_ret = self.sky.update_target_request(req_id, status="COMPLETED")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
         return {'elaptime': time.time() - start, 'data': img_list}
 
@@ -711,6 +713,7 @@ class SEDm:
             ret = self.sky.get_calib_request_id(camera=cam.prefix()['data'],
                                                 N=N, exptime=0,
                                                 object_id=obj_id)
+            logger.info("sky.get_calib_request_id status:\n%s", ret)
 
             if "data" in ret:
                 req_id = ret['data']
@@ -767,7 +770,8 @@ class SEDm:
             self.ocs.halogens_off()
 
         if generate_request_id:
-            self.sky.update_target_request(req_id, status="COMPLETED")
+            sky_ret = self.sky.update_target_request(req_id, status="COMPLETED")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
     def take_arclamp(self, cam, lamp, N=1, exptime=1, readout=2.0,
                      do_lamp=True, wait=True, obj_id=None,
@@ -814,6 +818,7 @@ class SEDm:
             ret = self.sky.get_calib_request_id(camera=cam.prefix()['data'],
                                                 N=N, exptime=0,
                                                 object_id=obj_id)
+            logger.info("sky.get_calib_request_id status:\n%s", ret)
 
             if "data" in ret:
                 req_id = ret['data']
@@ -865,7 +870,8 @@ class SEDm:
             logger.info("ocs.arclamp status:\n%s", ret)
 
         if generate_request_id:
-            self.sky.update_target_request(req_id, status="COMPLETED")
+            sky_ret = self.sky.update_target_request(req_id, status="COMPLETED")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
     def take_twilight(self, cam, N=1, exptime=30, readout=0.1,
                       do_lamp=True, wait=True, obj_id=None,
@@ -926,6 +932,7 @@ class SEDm:
             ret = self.sky.get_calib_request_id(camera=cam.prefix()['data'],
                                                 N=N, exptime=0,
                                                 object_id=obj_id)
+            logger.info("sky.get_calib_request_id status:\n%s", ret)
 
             if "data" in ret:
                 req_id = ret['data']
@@ -944,7 +951,7 @@ class SEDm:
 
             if get_focus_coords:
                 ret = self.sky.get_focus_coords()
-                logger.info('coords: %s', ret)
+                logger.info('sky.get_focus_coords status: %s', ret)
                 if 'data' in ret:
                     ra = ret['data']['ra']
                     dec = ret['data']['dec']
@@ -1010,7 +1017,8 @@ class SEDm:
                 n += 1
 
         if generate_request_id:
-            self.sky.update_target_request(req_id, status="COMPLETED")
+            sky_ret = self.sky.update_target_request(req_id, status="COMPLETED")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
     def take_datacube(self, cam, cube='ifu', check_for_previous=True,
                       custom_file='', move=False, ha=None, dec=None,
@@ -1418,7 +1426,7 @@ class SEDm:
                               is_rc=False, abpair=False)
         logger.info(ret)
         ret = self.sky.solve_offset_new(ret['data'], return_before_done=False)
-        logger.info(ret)
+        logger.info("sky.solve_offset_new status:\n%s", ret)
         if 'error' in ret:
             logger.error("Image not used: error in return")
             return {'elaptime': time.time() - start, 'error': ret['error']}
@@ -1525,6 +1533,7 @@ class SEDm:
             ret = self.sky.get_calib_request_id(camera=cam.prefix()['data'],
                                                 N=1, exptime=0,
                                                 object_id=obj_id)
+            logger.info("sky.get_calib_request_id status:\n%s", ret)
             if "data" in ret:
                 req_id = ret['data']
 
@@ -1541,6 +1550,7 @@ class SEDm:
         elif move and focus_type == 'ifu_focus':
             if get_focus_coords:
                 ret = self.sky.get_focus_coords()
+                logger.info("sky.get_focus_coords status:\n%s", ret)
 
                 if 'data' in ret:
                     ra = ret['data']['ra']
@@ -1727,14 +1737,14 @@ class SEDm:
         self.guider_list = []
         logger.info("Guider log file parameters: %s, %s", save_dir, filename)
         if do_corrections:
-            self.sky.start_guider(start_time=None, end_time=None,
-                                  exptime=guide_length,
-                                  image_prefix="rc", max_move=None,
-                                  min_move=None, filename=filename,
-                                  save_dir=save_dir,
-                                  data_dir=os.path.join(self.robot_image_dir,
-                                                        self._ut_dir_date()),
-                                  debug=False, wait_time=5)
+            ret = self.sky.start_guider(
+                start_time=None, end_time=None, exptime=guide_length,
+                image_prefix="rc", max_move=None, min_move=None,
+                filename=filename, save_dir=save_dir,
+                data_dir=os.path.join(self.robot_image_dir,
+                                      self._ut_dir_date()),
+                debug=False, wait_time=5)
+            logger.info("sky.start_guider status:\n%s", ret)
 
         guide_done = (datetime.datetime.utcnow() +
                       datetime.timedelta(seconds=guide_exptime + readout_time))
@@ -1982,9 +1992,9 @@ class SEDm:
             if 'error' in ret:
                 logger.error("Bad image: error in return")
             elif 'data' in ret and mark_status:
-                logger.info("sky.update_target_request status:\n%s",
-                            self.sky.update_target_request(req_id,
-                                                           status='COMPLETED'))
+                sky_ret = self.sky.update_target_request(req_id,
+                                                         status='COMPLETED')
+                logger.info("sky.update_target_request status:\n%s", sky_ret)
         if 'error' in ret:
             return {'elaptime': time.time() - start, 'error': ret['error']}
         elif 'data' in ret:
@@ -2178,7 +2188,8 @@ class SEDm:
             pass
 
         if mark_status:
-            self.sky.update_target_request(req_id, status="ACTIVE")
+            sky_ret = self.sky.update_target_request(req_id, status="ACTIVE")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
         if move:
             if run_acquisition:
@@ -2260,12 +2271,12 @@ class SEDm:
 
         if 'error' in ret:
             logger.error("Image failed to transfer")
-            self.sky.update_target_request(req_id, status='FAILURE')
+            sky_ret = self.sky.update_target_request(req_id, status='FAILURE')
         elif 'data' in ret and mark_status:
-            self.sky.update_target_request(req_id, status='COMPLETED')
-            logger.info("sky.update_target_request status: %s", ret)
+            sky_ret = self.sky.update_target_request(req_id, status='COMPLETED')
         else:
-            self.sky.update_target_request(req_id, status='FAILURE')
+            sky_ret = self.sky.update_target_request(req_id, status='FAILURE')
+        logger.info("sky.update_target_request status: %s", sky_ret)
 
         return ret
 
@@ -2297,7 +2308,8 @@ class SEDm:
         object_dec = dec
 
         if mark_status:
-            self.sky.update_target_request(req_id, status="ACTIVE")
+            sky_ret = self.sky.update_target_request(req_id, status="ACTIVE")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
         if move:
             if run_acquisition:
@@ -2390,7 +2402,8 @@ class SEDm:
                     else:
                         logger.error("Image failed: no return")
         if mark_status:
-            self.sky.update_target_request(req_id, status="COMPLETED")
+            sky_ret = self.sky.update_target_request(req_id, status="COMPLETED")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
         return {'elaptime': time.time() - start, 'data': img_dict}
 
@@ -3258,7 +3271,6 @@ class SEDm:
                                                      typedesig="f",
                                                      allocation_id=alloc_id,
                                                      ra=RA, dec=DEC)
-                
                 logger.info("sky.get_manual_request_id status:\n%s", ret)
                 if 'data' in ret:
                     req_id = ret['data']['request_id']
@@ -3319,7 +3331,6 @@ class SEDm:
                                                  typedesig="f",
                                                  allocation_id=alloc_id,
                                                  ra=RA, dec=DEC)
-
             logger.info("sky.get_manual_request_id status:\n%s", ret)
             if 'data' in ret:
                 req_id = ret['data']['request_id']
@@ -3418,7 +3429,6 @@ class SEDm:
             ret = self.sky.get_manual_request_id(name=obsdict['target'],
                                                  allocation_id=alloc_id,
                                                  typedesig="e")
-
             logger.info("sky.get_manual_request_id status:\n%s", ret)
             if 'data' in ret:
                 req_id = ret['data']['request_id']
@@ -3525,7 +3535,6 @@ class SEDm:
             ret = self.sky.get_manual_request_id(name=obsdict['target'],
                                                  allocation_id=alloc_id,
                                                  typedesig="e")
-
             logger.info("sky.get_manual_request_id status:\n%s", ret)
             if 'data' in ret:
                 req_id = ret['data']['request_id']
