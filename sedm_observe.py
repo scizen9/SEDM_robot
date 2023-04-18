@@ -315,14 +315,20 @@ def run_observing_loop(do_focus=True, do_standard=True,
             ret = robot.sky.get_next_observable_target(return_type='json')
             print('sky.get_next_observable_target status (2):\n', ret)
 
+        if not ('data' in ret and isinstance(ret['data'], dict)):
+            # TODO: add do_fwhm=True after testing
+            ret = robot.sky.get_next_observable_target(return_type='json')
+            print('sky.get_next_observable_target status (3):\n', ret)
+
         # did we get a valid target?
         if 'data' in ret and isinstance(ret['data'], dict):
             obsdict = ret['data']
             # Has this request already been observed?
             try:
                 if obsdict['req_id'] in done_list:
-                    robot.sky.update_target_request(obsdict['req_id'],
-                                                    status='COMPLETED')
+                    sky_ret = robot.sky.update_target_request(
+                        obsdict['req_id'], status='COMPLETED')
+                    print('sky.update_target_request status:\n', sky_ret)
                     continue    # skip it then
             except KeyError:
                 print("Missing key: req_id, skipping")
