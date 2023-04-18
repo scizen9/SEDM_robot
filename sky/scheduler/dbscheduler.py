@@ -1193,7 +1193,7 @@ class Scheduler:
         start = time.time()
         ret = self.ph_db.update_request({'id': request_id,
                                          'status': status})
-        print(ret)
+        print("ph_db.update_request status:\n%s" % str(ret))
         if check_growth:
             ret = self.growth.get_marshal_id_from_dbhost(request_id)
             print(ret)
