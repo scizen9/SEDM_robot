@@ -361,24 +361,25 @@ class SEDm:
         # We ARE running the ocs
         else:
             # First try at position
-            good_pos = False
             ret = self.ocs.check_pos()
             if 'data' in ret:
                 sd = ret['data']
                 if isinstance(sd, dict):
                     stat_dict.update(sd)
-                    good_pos = True
                 else:
-                    logger.warning("Bad ?POS return: %s", sd)
-            # Second try
-            if not good_pos:
-                ret = self.ocs.check_pos()
-                if 'data' in ret:
-                    sd = ret['data']
-                    if isinstance(sd, dict):
-                        stat_dict.update(sd)
+                    logger.warning("Bad ?POS return type: %s", sd)
+                    # Second try
+                    ret = self.ocs.check_pos()
+                    if 'data' in ret:
+                        sd = ret['data']
+                        if isinstance(sd, dict):
+                            stat_dict.update(sd)
+                        else:
+                            logger.warning("Bad ?POS return(2): %s", sd)
                     else:
-                        logger.warning("Bad ?POS return(2): %s", sd)
+                        logger.error("Could not get ?POS return: %s", ret)
+            else:
+                logger.error("Bad ?POS return: %s", ret)
             try:
                 stat_dict.update(self.ocs.check_weather()['data'])
                 if self.use_winter:
@@ -398,21 +399,67 @@ class SEDm:
                         stat_dict['outside_dewpt'] = win_dict[
                             'Outside_Dewpoint']
                         stat_dict['inside_dewpt'] = win_dict['Outside_Dewpoint']
-                stat_dict.update(self.ocs.check_status()['data'])
+                sret = self.ocs.check_status()
+                if 'data' in sret:
+                    sd = sret['data']
+                    if isinstance(sd, dict):
+                        stat_dict.update(sd)
+                    else:
+                        logger.warning('Bad ocs.check_status return type:\n%s',
+                                       sd)
+                        sret = self.ocs.check_status()
+                        if 'data' in sret:
+                            sd = sret['data']
+                            if isinstance(sd, dict):
+                                stat_dict.update(sd)
+                            else:
+                                logger.warning(
+                                    'Bad ocs.check_status return(2):\n%s', sd)
+                        else:
+                            logger.error("Could not get ocs.check_status "
+                                         "return: %s", sret)
+                else:
+                    logger.error("Bad ocs.check_status return: %s", sret)
+                # stat_dict.update(self.ocs.check_status()['data'])
             except Exception as e:
                 logger.error(str(e))
                 pass
 
             if do_lamps and self.run_arclamps:
-                stat_dict['xe_lamp'] = self.ocs.arclamp(
-                    'xe', 'status', force_check=True)['data']
+
+                lret = self.ocs.arclamp('xe', 'status', force_check=True)
+                if 'data' in lret:
+                    ld = lret['data']
+                    if isinstance(ld, str):
+                        stat_dict['xe_lamp'] = ld
+                    else:
+                        stat_dict['xe_lamp'] = 'UNKNOWN'
+                else:
+                    stat_dict['xe_lamp'] = 'UNKNOWN'
                 self.lamp_dict_status['xe'] = stat_dict['xe_lamp']
-                stat_dict['cd_lamp'] = self.ocs.arclamp(
-                    'cd', 'status', force_check=True)['data']
+
+                lret = self.ocs.arclamp('cd', 'status', force_check=True)
+                if 'data' in lret:
+                    ld = lret['data']
+                    if isinstance(ld, str):
+                        stat_dict['cd_lamp'] = ld
+                    else:
+                        stat_dict['cd_lamp'] = 'UNKNOWN'
+                else:
+                    stat_dict['cd_lamp'] = 'UNKNOWN'
                 self.lamp_dict_status['cd'] = stat_dict['cd_lamp']
-                stat_dict['hg_lamp'] = self.ocs.arclamp(
-                    'hg', 'status', force_check=True)['data']
+
+                lret = self.ocs.arclamp('hg', 'status', force_check=True)
+                if 'data' in lret:
+                    ld = lret['data']
+                    if isinstance(ld, str):
+                        stat_dict['hg_lamp'] = ld
+                    else:
+                        stat_dict['hg_lamp'] = 'UNKNOWN'
+                else:
+                    stat_dict['hg_lamp'] = 'UNKNOWN'
                 self.lamp_dict_status['hg'] = stat_dict['hg_lamp']
+
             else:
                 stat_dict['xe_lamp'] = self.lamp_dict_status['xe']
                 stat_dict['cd_lamp'] = self.lamp_dict_status['cd']
@@ -497,7 +544,7 @@ class SEDm:
         # 2. Get the TCS information for the conditions at the start of the
         # exposure
         begin_tcs_dict = self.get_status_dict(do_stages=do_stages,
-                                               do_lamps=do_lamps)
+                                              do_lamps=do_lamps)
         if not is_rc:
             logger.info("updating IFU beginning TCS keywords:\n%s" %
                         str(begin_tcs_dict))
@@ -1102,12 +1149,14 @@ class SEDm:
             if check_for_previous:
                 if 'ifu' in cube_type:
                     ret = self.sanity.check_for_files(
-                            camera=cube, keywords={'imgtype': 'dome',
-                                'adcspeed': 1.0}, data_dir=data_dir)
+                            camera=cube,
+                            keywords={'imgtype': 'dome', 'adcspeed': 1.0},
+                            data_dir=data_dir)
                 else:
                     ret = self.sanity.check_for_files(
-                            camera=cube, keywords={'imgtype': 'dome',
-                                'adcspeed': 2.0}, data_dir=data_dir)
+                            camera=cube,
+                            keywords={'imgtype': 'dome', 'adcspeed': 2.0},
+                            data_dir=data_dir)
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
@@ -1918,6 +1967,7 @@ class SEDm:
                     save_as=acq_save_as,
                     offset_to_ifu=offset_to_ifu, epoch=epoch,
                     non_sid_targ=non_sid_targ)
+                logger.info("run_acquisition_seq(STD) status:\n%s", ret)
                 if 'data' not in ret:
                     make_alert_call("No Standard Star acquisition data")
                     if mark_status:
@@ -1926,19 +1976,18 @@ class SEDm:
                     return {'elaptime': time.time() - start, 'error': ret}
 
             else:
+                logger.warning("Doing a blind offset to IFU!")
                 ret = self.ocs.tel_move(name=name, ra=ra, dec=dec,
                                         equinox=equinox, ra_rate=ra_rate,
                                         dec_rate=dec_rate,
                                         motion_flag=motion_flag,
                                         epoch=epoch)
-                if 'data' in ret:
-                    pass
+                logger.info("ocs.tel_move(STD) status:\n%s", ret)
 
                 ifu_ra_offset = sedm_robot_cfg['ifu']['offset']['ra']
                 ifu_dec_offset = sedm_robot_cfg['ifu']['offset']['dec']
                 ret = self.ocs.tel_offset(ifu_ra_offset, ifu_dec_offset)
-                if 'data' in ret:
-                    pass
+                logger.info("ocs.tel_offset(STD) status:\n%s", ret)
 
         if guide:
             logger.debug("Beginning guider sequence")
@@ -2189,7 +2238,7 @@ class SEDm:
 
         if mark_status:
             sky_ret = self.sky.update_target_request(req_id, status="ACTIVE")
-            logger.info("sky.update_target_request status:\n%s", sky_ret)
+            logger.info("sky.update_target_request(IFU) status:\n%s", sky_ret)
 
         if move:
             if run_acquisition:
@@ -2209,7 +2258,7 @@ class SEDm:
                     save_as=acq_save_as,
                     offset_to_ifu=offset_to_ifu, epoch=epoch,
                     non_sid_targ=non_sid_targ)
-                logger.info("run_acquisition_seq status:\n%s", ret)
+                logger.info("run_acquisition_seq(IFU) status:\n%s", ret)
             else:
                 logger.warning("Doing a blind offset to IFU!")
                 ret = self.ocs.tel_move(name=name, ra=ra, dec=dec,
@@ -2217,10 +2266,12 @@ class SEDm:
                                         dec_rate=dec_rate,
                                         motion_flag=motion_flag,
                                         epoch=epoch)
-                logger.info("ocs.tel_move status:\n%s", ret)
+                logger.info("ocs.tel_move(IFU) status:\n%s", ret)
 
-                logger.info("ocs.tel_offset status:\n%s",
-                            self.ocs.tel_offset(-99.9, -112.0))
+                ifu_ra_offset = sedm_robot_cfg['ifu']['offset']['ra']
+                ifu_dec_offset = sedm_robot_cfg['ifu']['offset']['dec']
+                ret = self.ocs.tel_offset(ifu_ra_offset, ifu_dec_offset)
+                logger.info("ocs.tel_offset(IFU) status:\n%s", ret)
             # Short exposures are more vulnerable to settling issues
             if exptime < 30.:
                 time.sleep(3)   # give some time for the telescope to settle
@@ -2229,7 +2280,7 @@ class SEDm:
         # exptime = exptime * 1.20
 
         if guide:
-            logger.debug("Beginning guider sequence")
+            logger.debug("Beginning sequence for guiding IFU exposure")
             try:
                 t = Thread(target=self.run_guider_seq, kwargs={
                     'cam': self.rc,
@@ -2270,13 +2321,13 @@ class SEDm:
         logger.info("take_image(IFU) status:\n%s", ret)
 
         if 'error' in ret:
-            logger.error("Image failed to transfer")
+            logger.error("Image (IFU) failed to transfer")
             sky_ret = self.sky.update_target_request(req_id, status='FAILURE')
         elif 'data' in ret and mark_status:
             sky_ret = self.sky.update_target_request(req_id, status='COMPLETED')
         else:
             sky_ret = self.sky.update_target_request(req_id, status='FAILURE')
-        logger.info("sky.update_target_request status: %s", sky_ret)
+        logger.info("sky.update_target_request(IFU) status: %s", sky_ret)
 
         return ret
 
@@ -2486,7 +2537,7 @@ class SEDm:
             # get offset to reference RC pixel
             ret = self.sky.solve_offset_new(ret['data'],
                                             return_before_done=True)
-            logger.info("sky.solve_offset_new status:\n%s", ret)
+            logger.info("sky.solve_offset_new status(ACQ):\n%s", ret)
             # Move to IFU position first?
             p_ra = p_dec = None
             if move and offset_to_ifu and not tcsx:
@@ -2609,7 +2660,7 @@ class SEDm:
             # get offset to reference RC pixel
             ret = self.sky.solve_offset_new(ret['data'],
                                             return_before_done=True)
-            logger.info("sky.solve_offset_new status:\n%s", ret)
+            logger.info("sky.solve_offset_new(TELX) status:\n%s", ret)
             # read offsets from sky solver
             ret = self.sky.listen()
             logger.info("sky.listen(TELX) status:\n%s", ret)
@@ -2752,10 +2803,10 @@ class SEDm:
         return {"elaptime": time.time() - start, "ephemeris": return_dict}
 
     def get_non_sid_ephemeris_pluto(self, name, eph_time="now", eph_nsteps="1",
-                                  eph_stepsize="0.00001", eph_mpc="I41",
-                                  eph_faint="99", eph_type="0", eph_motion="2",
-                                  eph_center="-2", eph_epoch="default",
-                                  eph_resid="0"):
+                                    eph_stepsize="0.00001", eph_mpc="I41",
+                                    eph_faint="99", eph_type="0",
+                                    eph_motion="2", eph_center="-2",
+                                    eph_epoch="default", eph_resid="0"):
         """
         Use simple url to retrieve ephemeris from pluto website
 
@@ -2819,16 +2870,20 @@ class SEDm:
         else:
             return False
 
-    def get_non_sid_ephemeris_MPC(self, name, start=None, location="I41", number=1, step='1s',
+    def get_non_sid_ephemeris_MPC(self, name, start=None, location="I41",
+                                  number=1, step='1s',
                                   proper_motion='coordinate'):
         """
-                Use MPC from astroquery.mpc to create an ephemeris of a classified object
+                Use MPC from astroquery.mpc to create an ephemeris of a
+                classified object
 
                 :param name: str - target name in obsdict
                 :param start: str or Time
-                :param location: str or EarthLocation - Observatory location; typically an MPC observatory code
+                :param location: str or EarthLocation - Observatory location;
+                    typically an MPC observatory code
                 :param number: int - number of lines to output
-                :param step: str or Quantity - units of days (d), hours (h), minutes (min), or seconds (s)
+                :param step: str or Quantity - units of days (d), hours (h),
+                    minutes (min), or seconds (s)
                 :param proper_motion: str
                 :return: dict
                 """
@@ -2856,7 +2911,8 @@ class SEDm:
             return False
 
         if eph['Delta'][0] < 0.03:
-            logger.info("Woah, this object is pretty nearby. Better use JPL HORIZONS instead")
+            logger.info("Woah, this object is pretty nearby. "
+                        "Better use JPL HORIZONS instead")
             try:
                 # Returns a 1-row table at current time
                 ephjpl = Horizons(id=cname, location=location).ephemerides()
@@ -2869,9 +2925,11 @@ class SEDm:
                 return False
 
             # Fill in nonsid_dict parameters with JPL ephemeris table values
-            eph_dict = {'ISO_time': Time(ephjpl['datetime_jd'][0], format='jd').iso,
+            eph_dict = {'ISO_time': Time(ephjpl['datetime_jd'][0],
+                                         format='jd').iso,
                         'RA': ephjpl['RA'][0], 'Dec': ephjpl['DEC'][0],
-                        'RAvel': ephjpl['RA_rate'][0], 'decvel': ephjpl['DEC_rate'][0]}
+                        'RAvel': ephjpl['RA_rate'][0],
+                        'decvel': ephjpl['DEC_rate'][0]}
 
         else:
             # Fill in nonsid_dict parameters with MPC ephemeris table values
