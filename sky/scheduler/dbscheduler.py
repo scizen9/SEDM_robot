@@ -174,7 +174,7 @@ class Scheduler:
 
         obs_seq_list = row['obs_seq']
         exp_time_list = row['exptime']
-        repeat = row['seq_repeats']
+        repeat = row['seq_repeats'] if row['seq_repeats'] > 0 else 1
 
         # Prep the variables
         ifu = False
