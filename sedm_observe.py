@@ -290,6 +290,8 @@ def run_observing_loop(do_focus=True, do_standard=True,
 
                     time.sleep(10)
                 print("Manual commands completed")
+                sci_count += 1
+                loop_count += 1
                 continue
             else:
                 print("\nNo manual files found.")
@@ -346,6 +348,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
                     the_file.write('Standard completed:%s' % uttime())
                 standard_done = True
                 std_count += 1
+                loop_count += 1
                 time.sleep(600)
                 continue
             # If it ends before morning twilight, do observations
