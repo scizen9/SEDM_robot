@@ -2,7 +2,6 @@ import socket
 import os
 import sys
 from observatory.telescope import tcs
-from observatory.telescope import winter
 import paramiko
 import time
 import json
@@ -174,6 +173,7 @@ def get_camera_info(conn, cam_string='ifu'):
 
 if len(sys.argv) > 1:
     use_winter = True
+    from observatory.telescope import winter
     win = winter.Winter()
 else:
     use_winter = False
