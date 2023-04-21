@@ -36,7 +36,7 @@ class Winter:
         if logfname is None:
             lfname = os.path.join(params['abspath'], 'winter.log')
         else:
-            lfname = logfname
+            lfname = os.path.join(params['abspath'], logfname)
         log_handler = TimedRotatingFileHandler(lfname, when='midnight',
                                                utc=True, interval=1,
                                                backupCount=360)
