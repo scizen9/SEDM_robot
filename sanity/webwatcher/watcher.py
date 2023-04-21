@@ -10,7 +10,8 @@ import SEDM_robot_version as Version
 with open(os.path.join(Version.CONFIG_DIR, 'watcher.json')) as data_file:
     params = json.load(data_file)
 
-telescope = tcs.Telescope(gxnaddress=(params['gxn_ip'], params['gxn_port']))
+telescope = tcs.Telescope(gxnaddress=(params['gxn_ip'], params['gxn_port']),
+                          logfname='watcher_tcs.log')
 
 with open(os.path.join(Version.CONFIG_DIR, 'sedm_robot.json')) as data_file:
     sedm_cfg = json.load(data_file)
