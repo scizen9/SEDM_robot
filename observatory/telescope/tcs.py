@@ -10,35 +10,14 @@ import SEDM_robot_version as Version
 with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as data_file:
     params = json.load(data_file)
 
-logger = logging.getLogger("TCS Logger")
-logger.setLevel(logging.DEBUG)
-logging.Formatter.converter = time.gmtime
-logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
-                                                   'tcs.log'),
-                                      when='midnight', utc=True, interval=1,
-                                      backupCount=360)
-
-formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
-                              "%(funcName)s--%(message)s")
-logHandler.setFormatter(formatter)
-logHandler.setLevel(logging.DEBUG)
-logger.addHandler(logHandler)
-
-console_formatter = logging.Formatter("%(asctime)s--%(message)s")
-consoleHandler = logging.StreamHandler(sys.stdout)
-consoleHandler.setFormatter(console_formatter)
-logger.addHandler(consoleHandler)
-
-logger.info("Starting Logger: Logger file is %s", 'tcs.log')
-
 
 class Telescope:
     """Top level class to handle all the GXN commands and to make sure they
     are properly formatted.  Commands return True and time to complete command
-    if successful.  Otherwise False and an error message when a command fails
+    if successful.  Otherwise, False and an error message when a command fails
     """
 
-    def __init__(self, simulated=False, gxnaddress=None):
+    def __init__(self, simulated=False, gxnaddress=None, logfname=None):
 
         self.simulated = simulated
         self.dome_states = ['OPEN', 'CLOSE']
@@ -52,6 +31,30 @@ class Telescope:
         self.error_tracker = 0
         with open(os.path.join(Version.CONFIG_DIR, 'tcs.json')) as cfile:
             self.tcs_config = json.load(cfile)
+
+        self.logger = logging.getLogger("TCS Logger")
+        self.logger.setLevel(logging.DEBUG)
+        logging.Formatter.converter = time.gmtime
+        if logfname is None:
+            lfname = os.path.join(params['abspath'], 'tcs.log')
+        else:
+            lfname = logfname
+        log_handler = TimedRotatingFileHandler(lfname, when='midnight',
+                                               utc=True, interval=1,
+                                               backupCount=360)
+
+        formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
+                                      "%(funcName)s--%(message)s")
+        log_handler.setFormatter(formatter)
+        log_handler.setLevel(logging.DEBUG)
+        self.logger.addHandler(log_handler)
+
+        console_formatter = logging.Formatter("%(asctime)s--%(message)s")
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(console_formatter)
+        self.logger.addHandler(console_handler)
+
+        self.logger.info("Starting Logger: Logger file is %s", 'tcs.log')
 
         if not gxnaddress:
             self.address = (self.tcs_config['gxn_address'],
@@ -82,13 +85,13 @@ class Telescope:
         self.takecontrol()
 
     def __connect(self):
-        logger.info("Connecting to address:%s", self.address)
+        self.logger.info("Connecting to address:%s", self.address)
         try:
             self.socket = socket.socket()
             self.socket.connect(self.address)
         except Exception as e:
-            logger.error("Error connecting to the GXN:%s", str(e),
-                         exc_info=True)
+            self.logger.error("Error connecting to the GXN:%s", str(e),
+                              exc_info=True)
             self.socket = None
             pass
         return self.socket
@@ -111,7 +114,7 @@ class Telescope:
         info = False
         # Check if the socket is open
         if not self.socket:
-            logger.info("Socket not connected")
+            self.logger.info("Socket not connected")
             self.socket = self.__connect()
             if not self.socket:
                 return {"elaptime": time.time()-start,
@@ -125,13 +128,13 @@ class Telescope:
             self.socket.settimeout(60)
             if cmd in self.info_commands:
                 info = True
-            logger.info("Sending fast command with 60s timeout")
+            self.logger.info("Sending fast command with 60s timeout")
         elif cmd in self.slow_commands:
             self.socket.settimeout(300)
-            logger.info("Sending slow command with 300s timeout")
+            self.logger.info("Sending slow command with 300s timeout")
         else:
-            logger.error("Command '%s' is not a valid GXN command", cmd,
-                         exc_info=True)
+            self.logger.error("Command '%s' is not a valid GXN command", cmd,
+                              exc_info=True)
             return {"elaptime": time.time() - start,
                     "error": "Error with input commamd:%s" % cmd}
 
@@ -149,10 +152,10 @@ class Telescope:
 
         # 3. At this point we have the full command for the GXN interface
         try:
-            logger.info("Sending:%s", cmd)
+            self.logger.info("Sending:%s", cmd)
             self.socket.send(b"%s \r" % cmd.encode('utf-8'))
         except Exception as e:
-            logger.error("Error sending command: %s", str(e), exc_info=True)
+            self.logger.error("Error sending command: %s", str(e), exc_info=True)
             # These lines apparently cause trouble: JDN - 2023-Mar-38
             # self.socket.close()
             # self.socket = None
@@ -176,19 +179,19 @@ class Telescope:
 
             # If we still don't have a return then something has gone wrong.
             if not ret:
-                logger.error("No response given back from the GXN interface")
+                self.logger.error("No response given back from the GXN interface")
                 return {"elaptime": time.time() - start,
                         "error": "No response from TCS"}
 
             # Return the info product or return code
-            logger.info("Received: %s", ret)
+            self.logger.info("Received: %s", ret)
             if info:
                 ret = ret.rstrip('\0')
                 if isinstance(ret, str):
                     return {"elaptime": time.time() - start,
                             "data": ret}
                 else:
-                    logger.warning("bad return, command collision")
+                    self.logger.warning("bad return, command collision")
                     return {"elaptime": time.time() - start,
                             "error": "bad return, command collision"}
             else:
@@ -210,14 +213,14 @@ class Telescope:
                                                 self.check_return(int_code)}
 
                                     if int_code == -3:
-                                        logger.error(
+                                        self.logger.error(
                                             "%s: command can't be executed",
                                             cmd)
                                         time.sleep(5)
                                         self.error_tracker += 1
-                                        logger.info("Command can't be executed "
-                                                    "so waiting 5s and trying "
-                                                    "again")
+                                        self.logger.info("Command can't be executed "
+                                                         "so waiting 5s and trying "
+                                                         "again")
                                         ret = self.send_command(
                                             cmd=origin_command,
                                             parameters=origin_params)
@@ -233,7 +236,7 @@ class Telescope:
                                             return ret
 
                                     if int_code == -6:
-                                        logger.error(
+                                        self.logger.error(
                                             "Robot does not have control")
                                         self.error_tracker += 1
                                         ret = self.takecontrol()
@@ -254,15 +257,15 @@ class Telescope:
                                     "error": "Added output to "
                                              "TCS return string:%s" % ret}
                     else:
-                        logger.warning("Unknown TCS return")
+                        self.logger.warning("Unknown TCS return")
                         return {"elaptime": time.time()-start,
                                 "error": "Unknown TCS return value"}
                 except Exception as e:
-                    logger.error("Unbable to convert telescope return to int",
-                                 exc_info=True)
+                    self.logger.error("Unbable to convert telescope return to int",
+                                      exc_info=True)
                     return {"elaptime": time.time() - start, "error": str(e)}
         except Exception as e:
-            logger.error("Unkown error", exc_info=True)
+            self.logger.error("Unkown error", exc_info=True)
             return {"elaptime": time.time() - start, "error": str(e)}
 
     def check_return(self, int_return):
@@ -771,7 +774,7 @@ class Telescope:
                 try:
                     coords.append(round(float(epoch), 5))
                 except Exception:
-                    logger.warning("tcs.coords bad epoch: %s", epoch)
+                    self.logger.warning("tcs.coords bad epoch: %s", epoch)
                     pass
 
             if name:
@@ -797,7 +800,7 @@ class Telescope:
                 return {"elaptime": start - time.time(),
                         "error": "Invalid Dec rate"}
         except Exception as e:
-            logger.error("Unable to input coordinates")
+            self.logger.error("Unable to input coordinates")
             return {"elaptime": start - time.time(),
                     "error": str(e)}
         return self.send_command(cmd="COORDS", parameters=coords)
