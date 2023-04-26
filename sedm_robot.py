@@ -477,7 +477,7 @@ class SEDm:
 
     def take_image(self, cam, exptime=0, shutter='normal', readout=2.0,
                    start=None, save_as=None, test='', imgtype='NA',
-                   objtype='NA', object_ra="", object_dec="", email='',
+                   objtype='NA', object_ra=None, object_dec=None, email='',
                    p60prid='NA', p60prpi='SEDm', p60prnm='',
                    obj_id=-999, req_id=-999, objfilter='NA', imgset='NA',
                    is_rc=True, abpair=False, name='Unknown', do_lamps=True,
@@ -2428,7 +2428,8 @@ class SEDm:
                     if 'data' not in ret:
                         continue
                 for k in range(int(obs_repeat_filter[j])):
-                    ret = self.take_image(cam, exptime=float(obs_exptime[j]),
+                    ret = self.take_image(cam,
+                                          exptime=int(float(obs_exptime[j])),
                                           shutter=shutter, readout=readout,
                                           start=start, save_as=save_as,
                                           test=test,
@@ -3424,9 +3425,9 @@ class SEDm:
                 equinox=2000, p60prid=p60prid, p60prpi=p60prpi,
                 email='', p60prnm=p60prnm, obj_id=obj_id,
                 objfilter='RC%s' % (obsdict['rcfilter']), imgset='NA',
-                is_rc=True, run_acquisition=True, req_id=req_id, acq_readout=2.0,
-                objtype='Transient', obs_order=obsdict['rcfilter'],
-                obs_exptime=obsdict['exptime'],
+                is_rc=True, run_acquisition=True, req_id=req_id,
+                acq_readout=2.0, objtype='Transient',
+                obs_order=obsdict['rcfilter'], obs_exptime=obsdict['exptime'],
                 obs_repeat_filter=repeat_filter, repeat=n_sets,
                 non_sid_targ=False, move_during_readout=True, abpair=False,
                 move=True, retry_on_failed_astrometry=False, mark_status=True,
