@@ -52,7 +52,7 @@ class Winter:
         console_handler.setFormatter(console_formatter)
         self.logger.addHandler(console_handler)
 
-        self.logger.info("Starting Logger: Logger file is %s", 'winter.log')
+        self.logger.info("Starting Logger: Logger file is %s", lfname)
 
         if not wntaddress:
             self.address = (self.wnt_config['winter_address'],

@@ -54,7 +54,7 @@ class Telescope:
         console_handler.setFormatter(console_formatter)
         self.logger.addHandler(console_handler)
 
-        self.logger.info("Starting Logger: Logger file is %s", 'tcs.log')
+        self.logger.info("Starting Logger: Logger file is %s", lfname)
 
         if not gxnaddress:
             self.address = (self.tcs_config['gxn_address'],
