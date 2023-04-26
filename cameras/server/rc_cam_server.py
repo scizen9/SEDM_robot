@@ -197,20 +197,14 @@ class CamServer:
 
 
 if __name__ == "__main__":
-    # server = CamServer("10.200.155.4", 5002)
+    #
     rc_ip = cam_cfg['rc_ip']
     rc_port = cam_cfg['rc_port']
     server = CamServer(rc_ip, rc_port)
-    # try:
     logger.info("Starting RC Server")
     # server.cam = pixis.Controller(serial_number="", cam_prefix="rc",
     #                               send_to_remote=True, output_dir="C:/images")
     # server.cam.initialize()
     # server.cam.serialNumber = "04001312"
     server.start()
-    # except Exception as e:
-    #    print(str(e))
-    #    logging.exception("Unexpected exception %s", str(e))
-    # finally:
-    #    logging.info("Shutting down IFU server")
     logger.info("All done")

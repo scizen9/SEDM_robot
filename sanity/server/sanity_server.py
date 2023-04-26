@@ -87,23 +87,21 @@ class SanityServer:
         self.socket.bind((self.hostname, self.port))
         self.socket.listen(5)
 
-        while True:
-            conn, address = self.socket.accept()
-            logger.debug("Got connection from %s:%s" % (conn, address))
-            new_thread = threading.Thread(target=self.handle, args=(conn,
-                                                                    address))
-            new_thread.start()
-            logger.debug("Started process")
+        try:
+            while True:
+                conn, address = self.socket.accept()
+                logger.debug("Got connection from %s:%s" % (conn, address))
+                new_thread = threading.Thread(target=self.handle,
+                                              args=(conn, address))
+                new_thread.start()
+                logger.debug("Started process")
+        except KeyboardInterrupt:
+            logger.info("Exiting sanity_server")
 
 
 if __name__ == "__main__":
+    #
     server = SanityServer("localhost", 5005)
-    # try:
     logger.info("Starting Sanity Server")
     server.start()
-    # except Exception as e:
-    #    print(str(e))
-    #    logging.exception("Unexpected exception %s", str(e))
-    # finally:
-    #    logging.info("Shutting down IFU server")
     logger.info("All done")
