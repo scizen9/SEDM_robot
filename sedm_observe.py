@@ -541,6 +541,9 @@ if __name__ == "__main__":
                     del_manual = True
                     time.sleep(60)
 
+        except KeyboardInterrupt:
+            print("Exiting sedm_observe")
+            print("All done")
         except Exception as e:
             tb_str = traceback.format_exception(etype=type(e), value=e,
                                                 tb=e.__traceback__)
