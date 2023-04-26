@@ -214,10 +214,14 @@ class Sky:
         return self.__send_command(cmd="ADDOBJECT",
                                    parameters=parameters)
 
-    def get_manual_request_id(self, name="", exptime=90):
+    def get_manual_request_id(self, name="", typedesig="f", allocation_id=None,
+                              ra=None, dec=None):
         parameters = {
             'name': name,
-            'exptime': exptime
+            'typedesig': typedesig,
+            'allocation_id': allocation_id,
+            'ra': ra,
+            'dec': dec
         }
         return self.__send_command(cmd="GETMANUALREQUESTID",
                                        parameters=parameters)
