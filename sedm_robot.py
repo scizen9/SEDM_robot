@@ -3485,24 +3485,6 @@ class SEDm:
             else:
                 alloc_id = None
 
-            ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                                                 allocation_id=alloc_id,
-                                                 typedesig="e")
-            logger.info("sky.get_manual_request_id status:\n%s", ret)
-            if 'data' in ret:
-                req_id = ret['data']['request_id']
-                obj_id = ret['data']['object_id']
-                p60prid = ret['data']['p60prid']
-                p60prnm = ret['data']['p60prnm']
-                p60prpi = ret['data']['p60prpi']
-            else:
-                req_id = -999
-                obj_id = -999
-                p60prid = '2022B-Asteroids'
-                p60prnm = 'Near-Earth Asteroid'
-                p60prpi = 'SEDm'
-                logger.warning("Unable to obtain request data")
-
             if 'ephemeris' not in ephret:
 
                 return {"elaptime": time.time() - start,
@@ -3520,6 +3502,26 @@ class SEDm:
                     logger.warning('ISO_time not found, '
                                    'using default value (now) for epoch')
             logger.info("Using epoch: %f", nonsid_dict['epoch'])
+
+            ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                 allocation_id=alloc_id,
+                                                 ra=nonsid_dict['RA'],
+                                                 dec=nonsid_dict['Dec'],
+                                                 typedesig="e")
+            logger.info("sky.get_manual_request_id status:\n%s", ret)
+            if 'data' in ret:
+                req_id = ret['data']['request_id']
+                obj_id = ret['data']['object_id']
+                p60prid = ret['data']['p60prid']
+                p60prnm = ret['data']['p60prnm']
+                p60prpi = ret['data']['p60prpi']
+            else:
+                req_id = -999
+                obj_id = -999
+                p60prid = '2022B-Asteroids'
+                p60prnm = 'Near-Earth Asteroid'
+                p60prpi = 'SEDm'
+                logger.warning("Unable to obtain request data")
 
             ret = self.run_ifu_science_seq(
                 self.ifu, name=obsdict['target'], imgtype='Science',
@@ -3591,24 +3593,6 @@ class SEDm:
             else:
                 alloc_id = None
 
-            ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                                                 allocation_id=alloc_id,
-                                                 typedesig="e")
-            logger.info("sky.get_manual_request_id status:\n%s", ret)
-            if 'data' in ret:
-                req_id = ret['data']['request_id']
-                obj_id = ret['data']['object_id']
-                p60prid = ret['data']['p60prid']
-                p60prnm = ret['data']['p60prnm']
-                p60prpi = ret['data']['p60prpi']
-            else:
-                req_id = -999
-                obj_id = -999
-                p60prid = '2022B-Asteroids'
-                p60prnm = 'Near-Earth Asteroid'
-                p60prpi = 'SEDm'
-                logger.warning("Unable to obtain request data")
-
             if 'ephemeris' not in ephret:
 
                 return {"elaptime": time.time() - start,
@@ -3626,6 +3610,26 @@ class SEDm:
                     logger.warning('ISO_time not found, '
                                    'using default value (now) for epoch')
             logger.info("Using epoch: %f", nonsid_dict['epoch'])
+
+            ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                 allocation_id=alloc_id,
+                                                 ra=nonsid_dict['RA'],
+                                                 dec=nonsid_dict['Dec'],
+                                                 typedesig="e")
+            logger.info("sky.get_manual_request_id status:\n%s", ret)
+            if 'data' in ret:
+                req_id = ret['data']['request_id']
+                obj_id = ret['data']['object_id']
+                p60prid = ret['data']['p60prid']
+                p60prnm = ret['data']['p60prnm']
+                p60prpi = ret['data']['p60prpi']
+            else:
+                req_id = -999
+                obj_id = -999
+                p60prid = '2022B-Asteroids'
+                p60prnm = 'Near-Earth Asteroid'
+                p60prpi = 'SEDm'
+                logger.warning("Unable to obtain request data")
 
             if 'repeat_filter' in obsdict:
                 repeat_filter = obsdict['repeat_filter']

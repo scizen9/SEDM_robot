@@ -1003,15 +1003,9 @@ class Scheduler:
             return object_id[0][0]
         else:
             # Required
-            pardict = {
-                'name': name,
-                'typedesig': typedesig
-            }
+            pardict = {'name': name, 'typedesig': typedesig, 'ra': ra, 'dec': dec,
+                       'epoch': epoch}
             # Optional
-            if typedesig == 'f':
-                pardict['ra'] = ra
-                pardict['dec'] = dec
-                pardict['epoch'] = epoch
             if magnitude:
                 pardict['magnitude'] = magnitude
             if iauname:
