@@ -14,7 +14,9 @@ with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as data_file:
 class Telescope:
     """Top level class to handle all the GXN commands and to make sure they
     are properly formatted.  Commands return True and time to complete command
-    if successful.  Otherwise, False and an error message when a command fails
+    if successful.  Otherwise, False and an error message when a command fails.
+
+    GXN is the server and the Telescope class connects as a client.
     """
 
     def __init__(self, simulated=False, gxnaddress=None, logfname=None):
@@ -93,7 +95,7 @@ class Telescope:
             self.logger.error("Error connecting to the GXN:%s", str(e),
                               exc_info=True)
             self.socket = None
-            pass
+
         return self.socket
     
     # CONTROL COMMANDS:
@@ -155,10 +157,9 @@ class Telescope:
             self.logger.info("Sending:%s", cmd)
             self.socket.send(b"%s \r" % cmd.encode('utf-8'))
         except Exception as e:
-            self.logger.error("Error sending command: %s", str(e), exc_info=True)
-            # These lines apparently cause trouble: JDN - 2023-Mar-38
-            # self.socket.close()
-            # self.socket = None
+            self.logger.error("Error sending command: %s", str(e),
+                              exc_info=True)
+            self.socket = None
             return {"elaptime": time.time() - start,
                     "error": "Error commamd:%s failed" % cmd}
 
@@ -176,10 +177,13 @@ class Telescope:
             else:
                 # Try one more time to get a return
                 ret = self.socket.recv(2048)
+                if ret:
+                    ret = ret.decode('utf-8')
 
             # If we still don't have a return then something has gone wrong.
             if not ret:
-                self.logger.error("No response given back from the GXN interface")
+                self.logger.error(
+                    "No response given back from the GXN interface")
                 return {"elaptime": time.time() - start,
                         "error": "No response from TCS"}
 
@@ -216,11 +220,11 @@ class Telescope:
                                         self.logger.error(
                                             "%s: command can't be executed",
                                             cmd)
-                                        time.sleep(5)
                                         self.error_tracker += 1
-                                        self.logger.info("Command can't be executed "
-                                                         "so waiting 5s and trying "
-                                                         "again")
+                                        self.logger.info(
+                                            "Command can't be executed so "
+                                            "waiting 5s and trying again")
+                                        time.sleep(5)
                                         ret = self.send_command(
                                             cmd=origin_command,
                                             parameters=origin_params)
@@ -261,11 +265,17 @@ class Telescope:
                         return {"elaptime": time.time()-start,
                                 "error": "Unknown TCS return value"}
                 except Exception as e:
-                    self.logger.error("Unbable to convert telescope return to int",
-                                      exc_info=True)
+                    self.logger.error(
+                        "Unbable to convert telescope return to int",
+                        exc_info=True)
                     return {"elaptime": time.time() - start, "error": str(e)}
+        except ConnectionResetError as e:
+            self.logger.error("ConnectionResetError", exc_info=True)
+            self.socket = None
+            return {"elaptime": time.time() - start, "error": str(e)}
         except Exception as e:
-            self.logger.error("Unkown error", exc_info=True)
+            self.logger.error("Unknown error", exc_info=True)
+            self.socket = None
             return {"elaptime": time.time() - start, "error": str(e)}
 
     def check_return(self, int_return):
