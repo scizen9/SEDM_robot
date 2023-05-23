@@ -51,10 +51,15 @@ class Telescope:
         log_handler.setLevel(logging.DEBUG)
         self.logger.addHandler(log_handler)
 
-        console_formatter = logging.Formatter("%(asctime)s--%(message)s")
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setFormatter(console_formatter)
-        self.logger.addHandler(console_handler)
+        no_stream_handler = True
+        for handler in self.logger.handlers:
+            if isinstance(handler, logging.StreamHandler):
+                no_stream_handler = False
+        if no_stream_handler:
+            console_formatter = logging.Formatter("%(asctime)s--%(message)s")
+            console_handler = logging.StreamHandler(sys.stdout)
+            console_handler.setFormatter(console_formatter)
+            self.logger.addHandler(console_handler)
 
         self.logger.info("Starting Logger: Logger file is %s", lfname)
 
