@@ -55,13 +55,17 @@ class Telescope:
         for handler in self.logger.handlers:
             if isinstance(handler, logging.StreamHandler):
                 no_stream_handler = False
+
         if no_stream_handler:
             console_formatter = logging.Formatter("%(asctime)s--%(message)s")
             console_handler = logging.StreamHandler(sys.stdout)
             console_handler.setFormatter(console_formatter)
             self.logger.addHandler(console_handler)
+            self.logger.info("Started new Console Logger")
+        else:
+            self.logger.info("Console Logger already exists")
 
-        self.logger.info("Starting Logger: Logger file is %s", lfname)
+        self.logger.info("Starting File Logger: Logger file is %s", lfname)
 
         if not gxnaddress:
             self.address = (self.tcs_config['gxn_address'],
