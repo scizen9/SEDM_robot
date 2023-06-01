@@ -42,24 +42,19 @@ class Checker:
 
         nfiles = 0
         for f in files:
-            add = False
+            key_there = 0
+            n_keys = 0
             header = fits.getheader(f)
             for k, v in keywords.items():
+                n_keys += 1
                 if k.upper() in header:
                     if isinstance(v, str):
                         if v.lower() in header[k.upper()]:
-                            add = True
-                        else:
-                            add = False
+                            key_there += 1
                     elif isinstance(v, float) or isinstance(v, int):
                         if v == header[k.upper()]:
-                            add = True
-                        else:
-                            add = False
-                else:
-                    add = False
-
-            if add:
+                            key_there += 1
+            if key_there == n_keys:
                 img_list.append(f)
                 nfiles += 1
 
