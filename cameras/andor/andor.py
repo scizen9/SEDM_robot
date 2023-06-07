@@ -332,16 +332,23 @@ class Controller:
         """Simple function to return camera information that can be displayed
          on the website"""
         try:
+            exargs = self.opt.GetAcquisitionTimings()
+            camexptime = exargs[0]
+            logger.info("Got camexptime")
+            tmpargs = self.opt.GetTemperature()
+            camtemp = tmpargs[1]
+            logger.info("Got camtemp")
+            camspeed = self.opt.GetHSSpeed(0, self.AdcQuality_States[self.AdcQuality],
+                                           self.AdcSpeed_States[self.AdcSpeed])
+            logger.info("Got camspeed")
+            sttargs = self.opt.GetTemperatureRange()
+            state = sttargs[0]
+            logger.info("Got state")
             status = {
-                'camexptime': self.opt.GetAcquisitionTimings()[0],
-
-                'camtemp': self.opt.GetTemperature()[1],
-
-                'camspeed': self.opt.GetHSSpeed(
-                    0, self.AdcQuality_States[self.AdcQuality],
-                    self.AdcSpeed_States[self.AdcSpeed]),
-
-                'state': self.opt.GetTemperatureRange()[0]
+                'camexptime': camexptime,
+                'camtemp': camtemp,
+                'camspeed': camspeed,
+                'state': state
             }
             logger.info(status)
             return status
@@ -357,8 +364,9 @@ class Controller:
         locked = False
         temp = 0.
         try:
-            temp = self.opt.GetTemperature()[1]
-            lock = self.opt.GetTemperature()[0]
+            retargs = self.opt.GetTemperature()
+            lock = retargs[0]
+            temp = retargs[1]
             logger.info("status: %s", lock)
             locked = (lock == 'DRV_TEMP_STABILIZED')
             return {'camtemp': temp, 'templock': locked}
@@ -375,8 +383,7 @@ class Controller:
             return {'elaptime': time.time() - s,
                     'error': "Error setting shutter state"}
 
-        # 2. Convert exposure time to milliseconds (ms)
-        # Andor exposure times are in seconds
+        # 2. Andor exposure times are in seconds
         try:
             self.opt.SetExposureTime(exptime)
         except Exception as e:
