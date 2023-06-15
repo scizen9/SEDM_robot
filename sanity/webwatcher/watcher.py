@@ -266,6 +266,7 @@ try:
             status_dict['ifu_cameraTime'] = time.strftime('%H:%M:%S',
                                                           time.gmtime())
             status_dict.update(get_camera_info(ifu, 'ifu'))
+
             status_dict['rc_cameraTime'] = time.strftime('%H:%M:%S',
                                                          time.gmtime())
             status_dict.update(get_camera_info(rc, 'rc'))
