@@ -285,9 +285,9 @@ class addHeader():
                    "Telescope Control Status")
         prihdr.set("LAMPSTAT", obsdict["lamp_status"], "Lamp Status")
         prihdr.set("LAMPCUR", obsdict["lamp_current"], "Lamp Current")
-        prihdr.set("HG_LAMP", obsdict["hg_lamp"], "")
-        prihdr.set("XE_LAMP", obsdict["xe_lamp"], "")
-        prihdr.set("CD_LAMP", obsdict["cd_lamp"], "")
+        prihdr.set("HG_LAMP", obsdict["hg_lamp"], "Hg Arc Lamp Status")
+        prihdr.set("XE_LAMP", obsdict["xe_lamp"], "Xe Arc Lamp Status")
+        prihdr.set("CD_LAMP", obsdict["cd_lamp"], "Cd Arc Lamp Status")
         prihdr.set("TELPOWST", obsdict["telescope_power_status"],
                    "Telescope Power Status")
         prihdr.set("OILSTAT", obsdict["oil_pad_status"], "Oil Pad Status")
