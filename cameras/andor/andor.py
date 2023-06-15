@@ -414,6 +414,7 @@ class Controller:
             self.opt.StartAcquisition()
             acq_status = self.opt.GetStatus()
             while 'DRV_ACQUIRING' in acq_status:
+                logger.warning("Still acquiring, wait 1s")
                 time.sleep(1)
                 acq_status = self.opt.GetStatus()
             imdata = []
