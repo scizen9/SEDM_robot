@@ -430,6 +430,12 @@ class Andor:
         circ_buffer_size = index.value
         return circ_buffer_size
 
+    def GetStatus(self):
+        ret_status = c_int()
+        check_call(self.lib.GetStatus(byref(ret_status)))
+        cur_status = ERROR_STRING[ret_status.value]
+        return cur_status
+
     def GetTemperature(self):
         temperature = c_int()
         status = self.lib.GetTemperature(byref(temperature))
