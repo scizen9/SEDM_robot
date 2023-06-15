@@ -328,6 +328,10 @@ class Controller:
             self.gain = 0.9
         return True
 
+    def get_acq_status(self):
+        status = self.opt.GetStatus()
+        return status
+
     def get_status(self):
         """Simple function to return camera information that can be displayed
          on the website"""
@@ -408,6 +412,10 @@ class Controller:
                     {'camPrefix': self.camPrefix})
         try:
             self.opt.StartAcquisition()
+            acq_status = self.opt.GetStatus()
+            while 'DRV_ACQUIRING' in acq_status:
+                time.sleep(1)
+                acq_status = self.opt.GetStatus()
             imdata = []
             self.opt.GetAcquiredData16(imdata, width=self.ROI[3],
                                        height=self.ROI[5])
@@ -415,6 +423,12 @@ class Controller:
         except Exception as e:
             self.lastError = str(e)
             logger.error("Unable to get camera data", exc_info=True)
+            return {'elaptime': -1 * (time.time() - s),
+                    'error': "Failed to gather data from camera",
+                    'send_alert': True}
+        if len(imdata) <= 0:
+            logger.error("GetAcquiredData16 produced empty array!",
+                         exc_info=True)
             return {'elaptime': -1 * (time.time() - s),
                     'error': "Failed to gather data from camera",
                     'send_alert': True}
