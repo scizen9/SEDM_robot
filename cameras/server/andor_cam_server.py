@@ -142,6 +142,9 @@ class CamServer:
                     elif data['command'].upper() == 'GETTEMPSTATUS':
                         response = self.cam.get_temp_status()
                         logger.info(str(response))
+                    elif data['command'].upper() == 'ACQSTATUS':
+                        response = self.cam.get_acq_status()
+                        logger.info(str(response))
                     elif data['command'].upper() == 'PING':
                         response = {'data': 'PONG'}
                     elif data['command'].upper() == 'GETPRESSURE':

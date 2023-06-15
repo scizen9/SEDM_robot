@@ -74,6 +74,9 @@ class Camera:
     def status(self):
         return self.__send_command(cmd="STATUS")
 
+    def acq_status(self):
+        return self.__send_command(cmd="ACQSTATUS")
+
     def get_temp_status(self):
         return self.__send_command(cmd="GETTEMPSTATUS")
 
@@ -103,10 +106,11 @@ class Camera:
 if __name__ == '__main__':
     ifu = Camera(address=cam_cfg['ifu_ip'], port=cam_cfg['ifu_port'])
     print(ifu.initialize())
+    print(ifu.acq_status())
     # print(ifu.status())
-    print(ifu.take_image(exptime=0, save_as='', readout=1.0,
-                         return_before_done=False))
-    ifu.shutdown()
+    # print(ifu.take_image(exptime=0, save_as='', readout=1.0,
+    #                      return_before_done=False))
+    # ifu.shutdown()
     # print(ifu.status())
     # print(ifu.status())
     # print(ifu.shutdown())
