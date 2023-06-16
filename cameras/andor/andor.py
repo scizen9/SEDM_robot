@@ -417,6 +417,7 @@ class Controller:
                 logger.warning("Still acquiring, wait 1s")
                 time.sleep(1)
                 acq_status = self.opt.GetStatus()
+            logger.info("Ready to get data: ", acq_status)
             imdata = []
             self.opt.GetAcquiredData16(imdata, width=self.ROI[3],
                                        height=self.ROI[5])
