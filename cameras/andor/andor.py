@@ -347,6 +347,7 @@ class Controller:
                       'camspeed': self.camspeed,
                       'state': 'exp'
                       }
+            logger.info(status)
             return status
         else:
             try:
