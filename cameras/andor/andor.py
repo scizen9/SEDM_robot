@@ -86,13 +86,19 @@ class Controller:
         self.ctype1 = 'RA---TAN'
         self.ctype2 = 'DEC--TAN'
         self.send_to_remote = send_to_remote
+        # status variables
+        self.exposip = False
+        self.camexptime = 0.
+        self.camspeed = 0.
+        self.camtemp = 0
+        # what to do with images
         if self.send_to_remote:
             with open(os.path.join(SITE_ROOT, 'config',
                                    remote_config)) as conf_data_file:
                 tparams = json.load(conf_data_file)
                 print(tparams, "params")
             self.transfer = transfer(**tparams)
-
+        # possible values
         self.shutter_dict = {
             'normal': 0,  # Values are index as per andor SDK documentation
             'open': 1,  # Values are index as per andor SDK documentation
@@ -335,33 +341,44 @@ class Controller:
     def get_status(self):
         """Simple function to return camera information that can be displayed
          on the website"""
-        try:
-            exargs = self.opt.GetAcquisitionTimings()
-            camexptime = exargs[0]
-            logger.info("Got camexptime")
-            tmpargs = self.opt.GetTemperature()
-            camtemp = tmpargs[1]
-            logger.info("Got camtemp")
-            camspeed = self.opt.GetHSSpeed(0, self.AdcQuality_States[self.AdcQuality],
-                                           self.AdcSpeed_States[self.AdcSpeed])
-            logger.info("Got camspeed")
-            sttargs = self.opt.GetTemperatureRange()
-            state = sttargs[0]
-            logger.info("Got state")
-            status = {
-                'camexptime': camexptime,
-                'camtemp': camtemp,
-                'camspeed': camspeed,
-                'state': state
-            }
-            logger.info(status)
+        if self.exposip:
+            status = {'camexptime': self.camexptime,
+                      'camtemp': self.camtemp,
+                      'camspeed': self.camspeed,
+                      'state': 'exp'
+                      }
             return status
-        except Exception as e:
-            logger.error("Error getting the camera status", exc_info=True)
-            return {
-                "error": str(e), "camexptime": -9999,
-                "camtemp": -9999, "camspeed": -999
-            }
+        else:
+            try:
+                exargs = self.opt.GetAcquisitionTimings()
+                camexptime = exargs[0]
+                self.camexptime = camexptime
+                logger.info("Got camexptime")
+                tmpargs = self.opt.GetTemperature()
+                camtemp = tmpargs[1]
+                self.camtemp = camtemp
+                logger.info("Got camtemp")
+                camspeed = self.opt.GetHSSpeed(0, self.AdcQuality_States[self.AdcQuality],
+                                               self.AdcSpeed_States[self.AdcSpeed])
+                self.camspeed = camspeed
+                logger.info("Got camspeed")
+                sttargs = self.opt.GetTemperatureRange()
+                state = sttargs[0]
+                logger.info("Got state")
+                status = {
+                    'camexptime': camexptime,
+                    'camtemp': camtemp,
+                    'camspeed': camspeed,
+                    'state': 'idl'
+                }
+                logger.info(status)
+                return status
+            except Exception as e:
+                logger.error("Error getting the camera status", exc_info=True)
+                return {
+                    "error": str(e), "camexptime": -9999,
+                    "camtemp": -9999, "camspeed": -999
+                }
 
     def get_temp_status(self):
         """Return temperature and lock status"""
@@ -380,10 +397,14 @@ class Controller:
     def take_image(self, shutter='normal', exptime=0.0,
                    readout=1.0, save_as="", timeout=None):
         s = time.time()
+        self.exposip = True
+        self.camexptime = exptime
+        self.camspeed = readout
 
         # 1. Set the shutter state
         shutter_return = self._set_shutter(shutter)
         if not shutter_return:
+            self.exposip = False
             return {'elaptime': time.time() - s,
                     'error': "Error setting shutter state"}
 
@@ -398,6 +419,7 @@ class Controller:
         logger.info("Setting readout speed to: %s", readout)
         if readout not in self.AdcSpeed_States:
             logger.error("Readout speed '%s' is not valid", readout)
+            self.exposip = False
             return {'elaptime': time.time() - s,
                     'error': "%s not in AdcSpeed states" % readout}
         self.opt.SetPreAmpGain(self.AdcAnalogGain_States[self.AdcAnalogGain])
@@ -426,17 +448,21 @@ class Controller:
         except Exception as e:
             self.lastError = str(e)
             logger.error("Unable to get camera data", exc_info=True)
+            self.exposip = False
             return {'elaptime': -1 * (time.time() - s),
                     'error': "Failed to gather data from camera",
                     'send_alert': True}
         if len(imdata) <= 0:
             logger.error("GetAcquiredData16 produced empty array!",
                          exc_info=True)
+            self.exposip = False
             return {'elaptime': -1 * (time.time() - s),
                     'error': "Failed to gather data from camera",
                     'send_alert': True}
         logger.info("Readout completed")
         logger.debug("Took: %s", time.time() - s)
+
+        self.exposip = False
 
         if not save_as:
             start_exp_time = start_time.strftime("%Y%m%d_%H_%M_%S")
