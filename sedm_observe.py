@@ -485,6 +485,8 @@ if __name__ == "__main__":
                         help='Open dome')
     parser.add_argument('-t', '--temperature', type=float, default=None,
                         help='Temperature estimate (for focus)')
+    parser.add_argument('-f', '--focus', type=float, default=None,
+                        help='Focus position in mm')
     parser.add_argument('-w', '--winter', action="store_true", default=False,
                         help='Use WINTER for weather data')
     parser.add_argument('-n', '--noclean', action="store_true", default=False,
@@ -503,7 +505,12 @@ if __name__ == "__main__":
         # close dome
         tret = trobot.ocs.dome('close')
         print('ocs.dome status:', tret)
-
+    elif args.focus:
+        trobot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
+                      run_sanity=False)
+        trobot.initialize()
+        trobot.ocs.goto_focus(pos=args.focus)
+        print("Set telescope focus to:", args.focus)
     elif args.open:     # open dome
         trobot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
                       run_sanity=False)
