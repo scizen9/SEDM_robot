@@ -31,6 +31,11 @@ logHandler.setLevel(logging.DEBUG)
 logger.addHandler(logHandler)
 logger.info("Starting Logger: Logger file is %s", 'rc_camera_controller.log')
 
+console_formatter = logging.Formatter("%(asctime)s: %(message)s")
+consoleHandler = logging.StreamHandler(sys.stdout)
+consoleHandler.setFormatter(console_formatter)
+logger.addHandler(consoleHandler)
+
 exp_start_file = os.path.join(cam_log_dir, "rc_exposure_start.txt")
 
 
@@ -40,8 +45,8 @@ class CamServer:
         self.port = port
         self.socket = ""
         self.cam = None
-        print("Starting up cam server on %s port %s" % (self.hostname,
-                                                        self.port))
+        logger.info("Starting up cam server on %s port %s" % (self.hostname,
+                                                              self.port))
 
     def handle(self, connection, address):
 
@@ -55,8 +60,7 @@ class CamServer:
                 data = connection.recv(2048)
 
                 data = data.decode("utf8")
-                logger.info("Received: %s", data)
-                print(data)
+                logger.info("Received: %s", str(data))
 
                 if not data:
                     break
@@ -103,8 +107,9 @@ class CamServer:
                                 # Initialize the camera
                                 ret = self.cam.initialize()
                                 # And now we check the correct serial number
-                                print("Do these match?", self.cam.serialNumber,
-                                      cam_ser_no)
+                                logger.info("Do these match? %s %s" %
+                                            (str(self.cam.serialNumber),
+                                             str(cam_ser_no)))
                                 if ret:
                                     response = {'elaptime': time.time()-start,
                                                 'data': "Camera started"}
@@ -125,23 +130,23 @@ class CamServer:
                             file.write(time.strftime('%Y-%m-%d %H:%M:%S.%d',
                                                      time.gmtime()))
                         response = self.cam.take_image(**data['parameters'])
-                        print(response)
+                        logger.info(str(response))
                     elif data['command'].upper() == 'LOGROLLOVER':
                         logger.removeHandler(logHandler)
                         logHandler.doRollover()
                         logger.addHandler(logHandler)
                         logger.info("New RC log")
-                        print("Log rollover")
+                        logger.info("Log rollover")
                     elif data['command'].upper() == 'STATUS':
                         response = self.cam.get_status()
                     elif data['command'].upper() == 'GETTEMPSTATUS':
                         response = self.cam.get_temp_status()
-                        print(response)
+                        logger.info(str(response))
                     elif data['command'].upper() == 'PING':
                         response = {'data': 'PONG'}
                     elif data['command'].upper() == "LASTERROR":
                         response = self.cam.lastError
-                        print(response)
+                        logger.info(str(response))
                     elif data['command'].upper() == "LASTEXPOSED":
                         obs_time = open(exp_start_file).readlines()[0]
                         response = {'elaptime': time.time()-start,
@@ -151,22 +156,22 @@ class CamServer:
                                     'data': self.cam.camPrefix}
                     elif data['command'].upper() == "REINIT":
                         response = self.cam.opt.disconnect()
-                        print(response)
+                        logger.info(str(response))
                     elif data['command'].upper() == "SHUTDOWN":
                         _ = self.cam.opt.disconnect()
                         # ret = self.cam.opt.unloadLibrary()
                         self.cam = None
                         response = {'elaptime': time.time()-start,
                                     'data': "Camera shutdown"}
-                        print(response)
+                        logger.info(str(response))
                 else:
                     response = {'elaptime': time.time()-start,
                                 'error': "Command not found"}
                 jsonstr = json.dumps(response)
                 connection.sendall(jsonstr.encode('utf-8'))
             except Exception as e:
-                print("Camera error:", time.gmtime())
-                print(str(e))
+                logger.error("Camera error: %s" % str(time.gmtime()))
+                logger.error(str(e))
                 logger.error("Big error", exc_info=True)
                 time.sleep(60)
 
@@ -192,20 +197,14 @@ class CamServer:
 
 
 if __name__ == "__main__":
-    # server = CamServer("10.200.155.4", 5002)
+    #
     rc_ip = cam_cfg['rc_ip']
     rc_port = cam_cfg['rc_port']
     server = CamServer(rc_ip, rc_port)
-    # try:
     logger.info("Starting RC Server")
     # server.cam = pixis.Controller(serial_number="", cam_prefix="rc",
     #                               send_to_remote=True, output_dir="C:/images")
     # server.cam.initialize()
     # server.cam.serialNumber = "04001312"
     server.start()
-    # except Exception as e:
-    #    print(str(e))
-    #    logging.exception("Unexpected exception %s", str(e))
-    # finally:
-    #    logging.info("Shutting down IFU server")
     logger.info("All done")

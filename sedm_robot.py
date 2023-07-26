@@ -69,6 +69,7 @@ logger.info("Starting Logger: Logger file is %s", 'sedm_robot.log')
 
 
 def make_alert_call(body):
+    """
     account_sid = twi_cfg['account_sid']
     auth_token = twi_cfg['auth_token']
     to_number = twi_cfg['to_number']
@@ -79,6 +80,9 @@ def make_alert_call(body):
     message = client.messages.create(to=to_number, from_=from_number, body=body)
 
     logger.info(message.sid)
+    """
+    print("Twilio alert: ", body)
+    logger.info(body)
 
 
 def iso_to_epoch(iso_time, epoch_year=False):
@@ -357,24 +361,25 @@ class SEDm:
         # We ARE running the ocs
         else:
             # First try at position
-            good_pos = False
             ret = self.ocs.check_pos()
             if 'data' in ret:
                 sd = ret['data']
                 if isinstance(sd, dict):
                     stat_dict.update(sd)
-                    good_pos = True
                 else:
-                    logger.warning("Bad ?POS return: %s", sd)
-            # Second try
-            if not good_pos:
-                ret = self.ocs.check_pos()
-                if 'data' in ret:
-                    sd = ret['data']
-                    if isinstance(sd, dict):
-                        stat_dict.update(sd)
+                    logger.warning("Bad ?POS return type: %s", sd)
+                    # Second try
+                    ret = self.ocs.check_pos()
+                    if 'data' in ret:
+                        sd = ret['data']
+                        if isinstance(sd, dict):
+                            stat_dict.update(sd)
+                        else:
+                            logger.warning("Bad ?POS return(2): %s", sd)
                     else:
-                        logger.warning("Bad ?POS return: %s", sd)
+                        logger.error("Could not get ?POS return: %s", ret)
+            else:
+                logger.error("Bad ?POS return: %s", ret)
             try:
                 stat_dict.update(self.ocs.check_weather()['data'])
                 if self.use_winter:
@@ -394,21 +399,67 @@ class SEDm:
                         stat_dict['outside_dewpt'] = win_dict[
                             'Outside_Dewpoint']
                         stat_dict['inside_dewpt'] = win_dict['Outside_Dewpoint']
-                stat_dict.update(self.ocs.check_status()['data'])
+                sret = self.ocs.check_status()
+                if 'data' in sret:
+                    sd = sret['data']
+                    if isinstance(sd, dict):
+                        stat_dict.update(sd)
+                    else:
+                        logger.warning('Bad ocs.check_status return type:\n%s',
+                                       sd)
+                        sret = self.ocs.check_status()
+                        if 'data' in sret:
+                            sd = sret['data']
+                            if isinstance(sd, dict):
+                                stat_dict.update(sd)
+                            else:
+                                logger.warning(
+                                    'Bad ocs.check_status return(2):\n%s', sd)
+                        else:
+                            logger.error("Could not get ocs.check_status "
+                                         "return: %s", sret)
+                else:
+                    logger.error("Bad ocs.check_status return: %s", sret)
+                # stat_dict.update(self.ocs.check_status()['data'])
             except Exception as e:
                 logger.error(str(e))
                 pass
 
             if do_lamps and self.run_arclamps:
-                stat_dict['xe_lamp'] = self.ocs.arclamp(
-                    'xe', 'status', force_check=True)['data']
+
+                lret = self.ocs.arclamp('xe', 'status', force_check=True)
+                if 'data' in lret:
+                    ld = lret['data']
+                    if isinstance(ld, str):
+                        stat_dict['xe_lamp'] = ld
+                    else:
+                        stat_dict['xe_lamp'] = 'UNKNOWN'
+                else:
+                    stat_dict['xe_lamp'] = 'UNKNOWN'
                 self.lamp_dict_status['xe'] = stat_dict['xe_lamp']
-                stat_dict['cd_lamp'] = self.ocs.arclamp(
-                    'cd', 'status', force_check=True)['data']
+
+                lret = self.ocs.arclamp('cd', 'status', force_check=True)
+                if 'data' in lret:
+                    ld = lret['data']
+                    if isinstance(ld, str):
+                        stat_dict['cd_lamp'] = ld
+                    else:
+                        stat_dict['cd_lamp'] = 'UNKNOWN'
+                else:
+                    stat_dict['cd_lamp'] = 'UNKNOWN'
                 self.lamp_dict_status['cd'] = stat_dict['cd_lamp']
-                stat_dict['hg_lamp'] = self.ocs.arclamp(
-                    'hg', 'status', force_check=True)['data']
+
+                lret = self.ocs.arclamp('hg', 'status', force_check=True)
+                if 'data' in lret:
+                    ld = lret['data']
+                    if isinstance(ld, str):
+                        stat_dict['hg_lamp'] = ld
+                    else:
+                        stat_dict['hg_lamp'] = 'UNKNOWN'
+                else:
+                    stat_dict['hg_lamp'] = 'UNKNOWN'
                 self.lamp_dict_status['hg'] = stat_dict['hg_lamp']
+
             else:
                 stat_dict['xe_lamp'] = self.lamp_dict_status['xe']
                 stat_dict['cd_lamp'] = self.lamp_dict_status['cd']
@@ -426,7 +477,7 @@ class SEDm:
 
     def take_image(self, cam, exptime=0, shutter='normal', readout=2.0,
                    start=None, save_as=None, test='', imgtype='NA',
-                   objtype='NA', object_ra="", object_dec="", email='',
+                   objtype='NA', object_ra=None, object_dec=None, email='',
                    p60prid='NA', p60prpi='SEDm', p60prnm='',
                    obj_id=-999, req_id=-999, objfilter='NA', imgset='NA',
                    is_rc=True, abpair=False, name='Unknown', do_lamps=True,
@@ -492,48 +543,45 @@ class SEDm:
 
         # 2. Get the TCS information for the conditions at the start of the
         # exposure
-        obsdict.update(self.get_status_dict(do_stages=do_stages,
-                                            do_lamps=do_lamps))
+        begin_tcs_dict = self.get_status_dict(do_stages=do_stages,
+                                              do_lamps=do_lamps)
+        if not is_rc:
+            logger.info("updating IFU beginning TCS keywords:\n%s" %
+                        str(begin_tcs_dict))
+        obsdict.update(begin_tcs_dict)
+
         if not object_ra or not object_dec:
             logger.info("Using TCS RA and DEC")
             try:
                 object_ra = obsdict['telescope_ra']
                 object_dec = obsdict['telescope_dec']
             except KeyError:
-                logger.warning("No TCS object coords in status!")
+                logger.warning("No TCS object coords in keywords!")
                 object_ra = 0.0
                 object_dec = 0.0
 
-        if not is_rc:
-            logger.info("updating IFU start of obs keywords")
+        project_dict = self.header.set_project_keywords(
+            test=test, imgtype=imgtype, objtype=objtype,
+            object_ra=object_ra, object_dec=object_dec,
+            email=email, name=name, p60prid=p60prid,
+            p60prpi=p60prpi, p60prnm=p60prnm, obj_id=obj_id,
+            req_id=req_id, objfilter=objfilter, imgset=imgset,
+            is_rc=is_rc, abpair=abpair)
 
-        obsdict.update(self.header.set_project_keywords(test=test,
-                                                        imgtype=imgtype,
-                                                        objtype=objtype,
-                                                        object_ra=object_ra,
-                                                        object_dec=object_dec,
-                                                        email=email, name=name,
-                                                        p60prid=p60prid,
-                                                        p60prpi=p60prpi,
-                                                        p60prnm=p60prnm,
-                                                        obj_id=obj_id,
-                                                        req_id=req_id,
-                                                        objfilter=objfilter,
-                                                        imgset=imgset,
-                                                        is_rc=is_rc,
-                                                        abpair=abpair))
+        if not is_rc:
+            logger.info("updating IFU project keywords:\n%s" %
+                        str(project_dict))
+        obsdict.update(project_dict)
 
         while datetime.datetime.utcnow() < readout_end:
             time.sleep(.01)
 
-        if not is_rc:
-            logger.info("updating IFU end of obs keywords")
-
-        end_dict = self.get_status_dict(do_lamps=False, do_stages=False)
+        end_tcs_dict = self.get_status_dict(do_lamps=False, do_stages=False)
 
         if not is_rc:
-            logger.info("updating IFU obsdict with end_dict")
-        obsdict.update(self.header.prep_end_header(end_dict))
+            logger.info("updating IFU end of obs TCS keywords:\n%s" %
+                        str(end_tcs_dict))
+        obsdict.update(self.header.prep_end_header(end_tcs_dict))
 
         # logger.info("Reconnecting now")
         try:
@@ -546,6 +594,7 @@ class SEDm:
             logger.error(str(e))
             ret = None
 
+        # TODO: add obsdict verification routine
         if isinstance(ret, dict) and 'data' in ret:
             if not is_rc:
                 logger.info("Adding the IFU header")
@@ -562,7 +611,7 @@ class SEDm:
                                           "%Y%m%d"))
             latest_file = max(list_of_files, key=os.path.getctime)
 
-            logger.info(latest_file)
+            logger.info('Checking latest file: %s' % latest_file)
             base_file = os.path.basename(latest_file)
             if 'ifu' in base_file:
                 fdate = datetime.datetime.strptime(base_file,
@@ -632,6 +681,7 @@ class SEDm:
             ret = self.sky.get_calib_request_id(camera=cam.prefix()['data'],
                                                 N=N, exptime=0,
                                                 object_id=obj_id)
+            logger.info("sky.get_calib_request_id status:\n%s", ret)
             if "data" in ret:
                 req_id = ret['data']
 
@@ -658,11 +708,16 @@ class SEDm:
                                   is_rc=True, abpair=False)
             logger.info("take_image(BIAS) status:\n%s", ret)
 
-            if 'data' in ret:
+            if 'error' in ret:
+                logger.error("Bad image: error in return")
+            elif 'data' in ret:
                 img_list.append(ret['data'])
+            else:
+                logger.error("Bad image: no return")
 
         if generate_request_id:
-            self.sky.update_target_request(req_id, status="COMPLETED")
+            sky_ret = self.sky.update_target_request(req_id, status="COMPLETED")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
         return {'elaptime': time.time() - start, 'data': img_list}
 
@@ -705,6 +760,7 @@ class SEDm:
             ret = self.sky.get_calib_request_id(camera=cam.prefix()['data'],
                                                 N=N, exptime=0,
                                                 object_id=obj_id)
+            logger.info("sky.get_calib_request_id status:\n%s", ret)
 
             if "data" in ret:
                 req_id = ret['data']
@@ -761,7 +817,8 @@ class SEDm:
             self.ocs.halogens_off()
 
         if generate_request_id:
-            self.sky.update_target_request(req_id, status="COMPLETED")
+            sky_ret = self.sky.update_target_request(req_id, status="COMPLETED")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
     def take_arclamp(self, cam, lamp, N=1, exptime=1, readout=2.0,
                      do_lamp=True, wait=True, obj_id=None,
@@ -808,6 +865,7 @@ class SEDm:
             ret = self.sky.get_calib_request_id(camera=cam.prefix()['data'],
                                                 N=N, exptime=0,
                                                 object_id=obj_id)
+            logger.info("sky.get_calib_request_id status:\n%s", ret)
 
             if "data" in ret:
                 req_id = ret['data']
@@ -859,7 +917,8 @@ class SEDm:
             logger.info("ocs.arclamp status:\n%s", ret)
 
         if generate_request_id:
-            self.sky.update_target_request(req_id, status="COMPLETED")
+            sky_ret = self.sky.update_target_request(req_id, status="COMPLETED")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
     def take_twilight(self, cam, N=1, exptime=30, readout=0.1,
                       do_lamp=True, wait=True, obj_id=None,
@@ -920,6 +979,7 @@ class SEDm:
             ret = self.sky.get_calib_request_id(camera=cam.prefix()['data'],
                                                 N=N, exptime=0,
                                                 object_id=obj_id)
+            logger.info("sky.get_calib_request_id status:\n%s", ret)
 
             if "data" in ret:
                 req_id = ret['data']
@@ -938,7 +998,7 @@ class SEDm:
 
             if get_focus_coords:
                 ret = self.sky.get_focus_coords()
-                logger.info('coords: %s', ret)
+                logger.info('sky.get_focus_coords status: %s', ret)
                 if 'data' in ret:
                     ra = ret['data']['ra']
                     dec = ret['data']['dec']
@@ -1004,7 +1064,8 @@ class SEDm:
                 n += 1
 
         if generate_request_id:
-            self.sky.update_target_request(req_id, status="COMPLETED")
+            sky_ret = self.sky.update_target_request(req_id, status="COMPLETED")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
     def take_datacube(self, cam, cube='ifu', check_for_previous=True,
                       custom_file='', move=False, ha=None, dec=None,
@@ -1045,11 +1106,12 @@ class SEDm:
 
         if 'fast_bias' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['fast_bias']['N']
+            rdo = cube_params[cube_type]['fast_bias']['readout']
             files_completed = 0
             if check_for_previous:
                 ret = self.sanity.check_for_files(camera=cube,
                                                   keywords={'imgtype': 'bias',
-                                                            'adcspeed': 2.0},
+                                                            'adcspeed': rdo},
                                                   data_dir=data_dir)
                 if 'data' in ret:
                     files_completed = int(ret['data'])
@@ -1059,15 +1121,16 @@ class SEDm:
             else:
                 N = N - files_completed
                 logger.info("Taking %d fast biases for %s", N, cube)
-                self.take_bias(cam, N=N, readout=2.0)
+                self.take_bias(cam, N=N, readout=rdo)
 
         if 'slow_bias' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['slow_bias']['N']
+            rdo = cube_params[cube_type]['slow_bias']['readout']
             files_completed = 0
             if check_for_previous:
                 ret = self.sanity.check_for_files(camera=cube,
                                                   keywords={'imgtype': 'bias',
-                                                            'adcspeed': 0.1},
+                                                            'adcspeed': rdo},
                                                   data_dir=data_dir)
                 if 'data' in ret:
                     files_completed = int(ret['data'])
@@ -1077,17 +1140,23 @@ class SEDm:
             else:
                 N = N - files_completed
                 logger.info("Taking %d slow biases for %s", N, cube)
-                self.take_bias(cam, N=N, readout=0.1)
+                self.take_bias(cam, N=N, readout=rdo)
 
         if 'dome' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['dome']['N']
             files_completed = 0
             check_for_previous = False
             if check_for_previous:
-                ret = self.sanity.check_for_files(camera=cube,
-                                                  keywords={'imgtype': 'dome',
-                                                            'adcspeed': 2.0},
-                                                  data_dir=data_dir)
+                if 'ifu' in cube_type:
+                    ret = self.sanity.check_for_files(
+                            camera=cube,
+                            keywords={'imgtype': 'dome', 'adcspeed': 1.0},
+                            data_dir=data_dir)
+                else:
+                    ret = self.sanity.check_for_files(
+                            camera=cube,
+                            keywords={'imgtype': 'dome', 'adcspeed': 2.0},
+                            data_dir=data_dir)
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
@@ -1112,11 +1181,12 @@ class SEDm:
         for lamp in ['hg', 'xe', 'cd']:
             if lamp in cube_params[cube_type]['order']:
                 N = cube_params[cube_type][lamp]['N']
+                rdo = cube_params[cube_type][lamp]['readout']
                 if check_for_previous:
                     pass
                 exptime = cube_params[cube_type][lamp]['exptime']
                 logger.info("Taking %d %s arcs for %s", N, lamp, cube)
-                self.take_arclamp(cam, lamp, N=N, readout=2.0, move=False,
+                self.take_arclamp(cam, lamp, N=N, readout=rdo, move=False,
                                   exptime=exptime)
         return {'elaptime': time.time() - start, 'data': '%s complete' %
                                                          cube_type}
@@ -1186,7 +1256,7 @@ class SEDm:
         # Wait 5s to start the IFU calibrations so they finish last
         time.sleep(5)
         N_ifu = cube_params['ifu']['fast_bias']['N']
-        self.take_bias(self.ifu, N=N_ifu, readout=2.0)
+        self.take_bias(self.ifu, N=N_ifu, readout=1.0)
 
         # Start the RC biases in the background
         N_rc = cube_params['rc']['fast_bias']['N']
@@ -1198,9 +1268,9 @@ class SEDm:
         t.start()
 
         # Wait 5s to start the IFU calibrations so they finish last
-        time.sleep(5)
-        N_ifu = cube_params['ifu']['fast_bias']['N']
-        self.take_bias(self.ifu, N=N_ifu, readout=.1)
+        # time.sleep(5)
+        # N_ifu = cube_params['ifu']['fast_bias']['N']
+        # self.take_bias(self.ifu, N=N_ifu, readout=.1)
 
         # Make sure that we have waited long enough for the 'Cd' lamp to warm
         while time.time() - lamp_start < self.lamp_wait_time['cd']:
@@ -1211,7 +1281,7 @@ class SEDm:
             N_cd = cube_params['ifu']['cd']['N']
             exptime = cube_params['ifu']['cd']['exptime']
             self.take_arclamp(self.ifu, 'cd', wait=False, do_lamp=False, N=N_cd,
-                              readout=2.0, move=False, exptime=exptime)
+                              readout=1.0, move=False, exptime=exptime)
 
             # Turn the lamps off
             ret = self.ocs.arclamp('cd', command="OFF")
@@ -1259,7 +1329,7 @@ class SEDm:
             if lamp in cube_params['ifu']['order']:
                 N = cube_params['ifu'][lamp]['N']
                 exptime = cube_params['ifu'][lamp]['exptime']
-                self.take_arclamp(self.ifu, lamp, N=N, readout=2.0, move=False,
+                self.take_arclamp(self.ifu, lamp, N=N, readout=1.0, move=False,
                                   exptime=exptime)
 
         return {'elaptime': time.time() - start,
@@ -1326,7 +1396,7 @@ class SEDm:
 
     def run_acquisition_ifumap(self, cam=None, ra=200.8974, dec=36.133,
                                equinox=2000, ra_rate=0.0, dec_rate=0.0,
-                               motion_flag="", exptime=120, readout=2.0,
+                               motion_flag="", exptime=120, readout=1.0,
                                shutter='normal', move=True,
                                name='HZ44_IFU_MAPPING', obj_id=24, req_id=-50,
                                retry_on_failed_astrometry=False, tcsx=False,
@@ -1405,13 +1475,19 @@ class SEDm:
                               is_rc=False, abpair=False)
         logger.info(ret)
         ret = self.sky.solve_offset_new(ret['data'], return_before_done=False)
-        logger.info(ret)
-        if 'data' in ret:
+        logger.info("sky.solve_offset_new status:\n%s", ret)
+        if 'error' in ret:
+            logger.error("Image not used: error in return")
+            return {'elaptime': time.time() - start, 'error': ret['error']}
+        elif 'data' in ret:
             ra = ret['data']['ra_offset']
             dec = ret['data']['dec_offset']
             ret = self.ocs.tel_offset(ra, dec)
             logger.info(ret)
             logger.info(self.ocs.tel_offset(-98.5, -111.0))
+        else:
+            logger.error("Image not used: no return")
+            return {'elaptime': time.time() - start, 'error': 'No return'}
 
         offsets = [{'ra': 0, 'dec': 0}, {'ra': -5, 'dec': 0},
                    {'ra': 10, 'dec': 0}, {'ra': -5, 'dec': -5},
@@ -1506,6 +1582,7 @@ class SEDm:
             ret = self.sky.get_calib_request_id(camera=cam.prefix()['data'],
                                                 N=1, exptime=0,
                                                 object_id=obj_id)
+            logger.info("sky.get_calib_request_id status:\n%s", ret)
             if "data" in ret:
                 req_id = ret['data']
 
@@ -1522,6 +1599,7 @@ class SEDm:
         elif move and focus_type == 'ifu_focus':
             if get_focus_coords:
                 ret = self.sky.get_focus_coords()
+                logger.info("sky.get_focus_coords status:\n%s", ret)
 
                 if 'data' in ret:
                     ra = ret['data']['ra']
@@ -1610,8 +1688,12 @@ class SEDm:
                                   is_rc=is_rc, abpair=abpair, name=name)
             logger.info("take_image(FOC) status:\n%s", ret)
 
-            if 'data' in ret:
+            if 'error' in ret:
+                logger.error("Skipping this image: error in return")
+            elif 'data' in ret:
                 img_list.append(ret['data'])
+            else:
+                logger.error("Skipping this image: no return")
 
         if do_lamp:
             ret = self.ocs.arclamp(lamp, command="OFF")
@@ -1704,14 +1786,14 @@ class SEDm:
         self.guider_list = []
         logger.info("Guider log file parameters: %s, %s", save_dir, filename)
         if do_corrections:
-            self.sky.start_guider(start_time=None, end_time=None,
-                                  exptime=guide_length,
-                                  image_prefix="rc", max_move=None,
-                                  min_move=None, filename=filename,
-                                  save_dir=save_dir,
-                                  data_dir=os.path.join(self.robot_image_dir,
-                                                        self._ut_dir_date()),
-                                  debug=False, wait_time=5)
+            ret = self.sky.start_guider(
+                start_time=None, end_time=None, exptime=guide_length,
+                image_prefix="rc", max_move=None, min_move=None,
+                filename=filename, save_dir=save_dir,
+                data_dir=os.path.join(self.robot_image_dir,
+                                      self._ut_dir_date()),
+                debug=False, wait_time=5)
+            logger.info("sky.start_guider status:\n%s", ret)
 
         guide_done = (datetime.datetime.utcnow() +
                       datetime.timedelta(seconds=guide_exptime + readout_time))
@@ -1744,11 +1826,14 @@ class SEDm:
                 logger.error("Error taking guider image", exc_info=True)
                 logger.error(str(e))
 
-            if 'data' in ret:
+            if 'error' in ret:
+                logger.error("Skipping this image: error in return")
+            elif 'data' in ret:
                 self.guider_list.append(ret['data'])
             else:
                 make_alert_call("Error setting up guiding")
-                logger.error("Error setting up guiding")
+                logger.error("Skipping this image: no return")
+
             guide_done = (datetime.datetime.utcnow() +
                           datetime.timedelta(
                               seconds=guide_exptime + readout_time))
@@ -1770,7 +1855,7 @@ class SEDm:
         logger.debug("Finished guider sequence for %s" % name)
 
     def run_standard_seq(self, cam, shutter="normal",
-                         readout=.1, name="", get_standard=True,
+                         readout=1.0, name="", get_standard=True,
                          test="", save_as=None, imgtype='Standard',
                          exptime=90, ra=0, dec=0, equinox=2000,
                          epoch="", ra_rate=0, dec_rate=0, motion_flag="",
@@ -1799,10 +1884,15 @@ class SEDm:
             logger.info("sky.get_standard status:\n%s", ret)
 
             if 'data' in ret:
-                name = ret['data']['name']
-                ra = ret['data']['ra']
-                dec = ret['data']['dec']
-                exptime = ret['data']['exptime']
+                try:
+                    name = ret['data']['name']
+                    ra = ret['data']['ra']
+                    dec = ret['data']['dec']
+                    exptime = ret['data']['exptime']
+                except KeyError:
+                    logger.error("Invalid STD record, missing keyword")
+                    return {'elaptime': time.time() - start,
+                            'error': 'Invalid standard record'}
 
         if get_request_id:
 
@@ -1845,7 +1935,7 @@ class SEDm:
                     else:
                         rc_exptime = 10
                     ret = self.take_image(self.rc, exptime=rc_exptime,
-                                          shutter='normal', readout=2.0,
+                                          shutter='normal', readout=1.0,
                                           start=start, save_as=save_as,
                                           test=test,
                                           imgtype=imgtype, objtype=objtype,
@@ -1877,6 +1967,7 @@ class SEDm:
                     save_as=acq_save_as,
                     offset_to_ifu=offset_to_ifu, epoch=epoch,
                     non_sid_targ=non_sid_targ)
+                logger.info("run_acquisition_seq(STD) status:\n%s", ret)
                 if 'data' not in ret:
                     make_alert_call("No Standard Star acquisition data")
                     if mark_status:
@@ -1885,19 +1976,18 @@ class SEDm:
                     return {'elaptime': time.time() - start, 'error': ret}
 
             else:
+                logger.warning("Doing a blind offset to IFU!")
                 ret = self.ocs.tel_move(name=name, ra=ra, dec=dec,
                                         equinox=equinox, ra_rate=ra_rate,
                                         dec_rate=dec_rate,
                                         motion_flag=motion_flag,
                                         epoch=epoch)
-                if 'data' in ret:
-                    pass
+                logger.info("ocs.tel_move(STD) status:\n%s", ret)
 
                 ifu_ra_offset = sedm_robot_cfg['ifu']['offset']['ra']
                 ifu_dec_offset = sedm_robot_cfg['ifu']['offset']['dec']
                 ret = self.ocs.tel_offset(ifu_ra_offset, ifu_dec_offset)
-                if 'data' in ret:
-                    pass
+                logger.info("ocs.tel_offset(STD) status:\n%s", ret)
 
         if guide:
             logger.debug("Beginning guider sequence")
@@ -1948,13 +2038,18 @@ class SEDm:
                                   req_id=req_id, objfilter=objfilter,
                                   imgset=imgset,
                                   is_rc=is_rc, abpair=abpair, name=name)
-            if 'data' in ret and mark_status:
-                logger.info("sky.update_target_request status:\n%s",
-                            self.sky.update_target_request(req_id,
-                                                           status='COMPLETED'))
-        if 'data' in ret:
-            return {'elaptime': time.time() - start,
-                    'data': ret['data']}
+            if 'error' in ret:
+                logger.error("Bad image: error in return")
+            elif 'data' in ret and mark_status:
+                sky_ret = self.sky.update_target_request(req_id,
+                                                         status='COMPLETED')
+                logger.info("sky.update_target_request status:\n%s", sky_ret)
+        if 'error' in ret:
+            return {'elaptime': time.time() - start, 'error': ret['error']}
+        elif 'data' in ret:
+            return {'elaptime': time.time() - start, 'data': ret['data']}
+        else:
+            return{'elaptime': time.time() - start, 'error': 'No return'}
 
     def _prepare_keys(self, obsdict):
         start = time.time()
@@ -2080,7 +2175,7 @@ class SEDm:
         if obsdict['obs_dict']['ifu'] and self.run_ifu:
             ret = self.run_ifu_science_seq(
                 self.ifu, name=obsdict['name'], test=test,
-                ra=obsdict['ra'], dec=obsdict['dec'], readout=.1,
+                ra=obsdict['ra'], dec=obsdict['dec'], readout=1.0,
                 exptime=obsdict['obs_dict']['ifu_exptime'],
                 run_acquisition=run_acquisition_ifu, objtype='Transient',
                 move_during_readout=True, abpair=False, guide=guide, move=move,
@@ -2107,13 +2202,15 @@ class SEDm:
                 img_dict['rc'] = ret['data']
 
         logger.info("Observe by dictionary complete")
-        if 'data' in ret:
+        if 'error' in ret:
+            return {'elaptime': time.time() - start, 'error': ret['error']}
+        elif 'data' in ret:
             return {'elaptime': time.time() - start, 'data': img_dict}
         else:
             return {'elaptime': time.time() - start,
                     'error': 'Image not acquired'}
 
-    def run_ifu_science_seq(self, cam, shutter="normal", readout=.1, name="",
+    def run_ifu_science_seq(self, cam, shutter="normal", readout=1.0, name="",
                             test="", save_as=None, imgtype='Science',
                             exptime=90, ra=0, dec=0, equinox=2000,
                             epoch="", ra_rate=0, dec_rate=0, motion_flag="",
@@ -2140,8 +2237,8 @@ class SEDm:
             pass
 
         if mark_status:
-            self.sky.update_target_request(req_id, status="ACTIVE",
-                                           check_growth=True)
+            sky_ret = self.sky.update_target_request(req_id, status="ACTIVE")
+            logger.info("sky.update_target_request(IFU) status:\n%s", sky_ret)
 
         if move:
             if run_acquisition:
@@ -2161,7 +2258,7 @@ class SEDm:
                     save_as=acq_save_as,
                     offset_to_ifu=offset_to_ifu, epoch=epoch,
                     non_sid_targ=non_sid_targ)
-                logger.info("run_acquisition_seq status:\n%s", ret)
+                logger.info("run_acquisition_seq(IFU) status:\n%s", ret)
             else:
                 logger.warning("Doing a blind offset to IFU!")
                 ret = self.ocs.tel_move(name=name, ra=ra, dec=dec,
@@ -2169,10 +2266,12 @@ class SEDm:
                                         dec_rate=dec_rate,
                                         motion_flag=motion_flag,
                                         epoch=epoch)
-                logger.info("ocs.tel_move status:\n%s", ret)
+                logger.info("ocs.tel_move(IFU) status:\n%s", ret)
 
-                logger.info("ocs.tel_offset status:\n%s",
-                            self.ocs.tel_offset(-99.9, -112.0))
+                ifu_ra_offset = sedm_robot_cfg['ifu']['offset']['ra']
+                ifu_dec_offset = sedm_robot_cfg['ifu']['offset']['dec']
+                ret = self.ocs.tel_offset(ifu_ra_offset, ifu_dec_offset)
+                logger.info("ocs.tel_offset(IFU) status:\n%s", ret)
             # Short exposures are more vulnerable to settling issues
             if exptime < 30.:
                 time.sleep(3)   # give some time for the telescope to settle
@@ -2181,7 +2280,7 @@ class SEDm:
         # exptime = exptime * 1.20
 
         if guide:
-            logger.debug("Beginning guider sequence")
+            logger.debug("Beginning sequence for guiding IFU exposure")
             try:
                 t = Thread(target=self.run_guider_seq, kwargs={
                     'cam': self.rc,
@@ -2221,13 +2320,14 @@ class SEDm:
                               is_rc=is_rc, abpair=abpair, name=name)
         logger.info("take_image(IFU) status:\n%s", ret)
 
-        if 'data' in ret and mark_status:
-            self.sky.update_target_request(req_id, status='COMPLETED',
-                                           check_growth=True)
-            logger.info("sky.update_target_request status: %s", ret)
+        if 'error' in ret:
+            logger.error("Image (IFU) failed to transfer")
+            sky_ret = self.sky.update_target_request(req_id, status='FAILURE')
+        elif 'data' in ret and mark_status:
+            sky_ret = self.sky.update_target_request(req_id, status='COMPLETED')
         else:
-            self.sky.update_target_request(req_id, status='FAILURE',
-                                           check_growth=True)
+            sky_ret = self.sky.update_target_request(req_id, status='FAILURE')
+        logger.info("sky.update_target_request(IFU) status: %s", sky_ret)
 
         return ret
 
@@ -2259,8 +2359,8 @@ class SEDm:
         object_dec = dec
 
         if mark_status:
-            self.sky.update_target_request(req_id, status="ACTIVE",
-                                           check_growth=True)
+            sky_ret = self.sky.update_target_request(req_id, status="ACTIVE")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
         if move:
             if run_acquisition:
@@ -2328,7 +2428,8 @@ class SEDm:
                     if 'data' not in ret:
                         continue
                 for k in range(int(obs_repeat_filter[j])):
-                    ret = self.take_image(cam, exptime=float(obs_exptime[j]),
+                    ret = self.take_image(cam,
+                                          exptime=int(float(obs_exptime[j])),
                                           shutter=shutter, readout=readout,
                                           start=start, save_as=save_as,
                                           test=test,
@@ -2342,15 +2443,19 @@ class SEDm:
                                           imgset='NA', is_rc=is_rc,
                                           abpair=abpair, name=name)
                     logger.info("take_image(RC) status:\n%s", ret)
-                    if 'data' in ret:
+                    if 'error' in ret:
+                        logger.error("Image failed: error in return")
+                    elif 'data' in ret:
                         logger.info("filter %s:\n%s", objfilter, ret)
                         if objfilter in img_dict:
                             img_dict[objfilter] += ', %s' % ret['data']
                         else:
                             img_dict[objfilter] = ret['data']
+                    else:
+                        logger.error("Image failed: no return")
         if mark_status:
-            self.sky.update_target_request(req_id, status="COMPLETED",
-                                           check_growth=True)
+            sky_ret = self.sky.update_target_request(req_id, status="COMPLETED")
+            logger.info("sky.update_target_request status:\n%s", sky_ret)
 
         return {'elaptime': time.time() - start, 'data': img_dict}
 
@@ -2426,11 +2531,14 @@ class SEDm:
                               objfilter='r', imgset='NA',
                               is_rc=True, abpair=False)
         logger.info("take_image(ACQ) status:\n%s", ret)
-        if 'data' in ret:
+        if 'error' in ret:
+            return {'elaptime': time.time() - start,
+                    'error': 'Error acquiring acquisition image: error return'}
+        elif 'data' in ret:
             # get offset to reference RC pixel
             ret = self.sky.solve_offset_new(ret['data'],
                                             return_before_done=True)
-            logger.info("sky.solve_offset_new status:\n%s", ret)
+            logger.info("sky.solve_offset_new status(ACQ):\n%s", ret)
             # Move to IFU position first?
             p_ra = p_dec = None
             if move and offset_to_ifu and not tcsx:
@@ -2507,7 +2615,7 @@ class SEDm:
 
         else:
             return {'elaptime': time.time() - start,
-                    'error': 'Error acquiring acquisition image'}
+                    'error': 'Error acquiring acquisition image: no return'}
 
     def run_telx_seq(self, ra=None, dec=None, equinox=2000, exptime=30,
                      test=""):
@@ -2544,11 +2652,16 @@ class SEDm:
                               objfilter='r', imgset='NA',
                               is_rc=True, abpair=False)
         logger.info("take_image(TELX) status:\n%s", ret)
-        if 'data' in ret:
+        if 'error' in ret:
+            logger.error("Bad image: error in return")
+            return {'elaptime': time.time() - start,
+                    'error': 'Error acquiring acquisition image: '
+                             'error in return'}
+        elif 'data' in ret:
             # get offset to reference RC pixel
             ret = self.sky.solve_offset_new(ret['data'],
                                             return_before_done=True)
-            logger.info("sky.solve_offset_new status:\n%s", ret)
+            logger.info("sky.solve_offset_new(TELX) status:\n%s", ret)
             # read offsets from sky solver
             ret = self.sky.listen()
             logger.info("sky.listen(TELX) status:\n%s", ret)
@@ -2691,10 +2804,10 @@ class SEDm:
         return {"elaptime": time.time() - start, "ephemeris": return_dict}
 
     def get_non_sid_ephemeris_pluto(self, name, eph_time="now", eph_nsteps="1",
-                                  eph_stepsize="0.00001", eph_mpc="I41",
-                                  eph_faint="99", eph_type="0", eph_motion="2",
-                                  eph_center="-2", eph_epoch="default",
-                                  eph_resid="0"):
+                                    eph_stepsize="0.00001", eph_mpc="I41",
+                                    eph_faint="99", eph_type="0",
+                                    eph_motion="2", eph_center="-2",
+                                    eph_epoch="default", eph_resid="0"):
         """
         Use simple url to retrieve ephemeris from pluto website
 
@@ -2758,16 +2871,20 @@ class SEDm:
         else:
             return False
 
-    def get_non_sid_ephemeris_MPC(self, name, start=None, location="I41", number=1, step='1s',
+    def get_non_sid_ephemeris_MPC(self, name, start=None, location="I41",
+                                  number=1, step='1s',
                                   proper_motion='coordinate'):
         """
-                Use MPC from astroquery.mpc to create an ephemeris of a classified object
+                Use MPC from astroquery.mpc to create an ephemeris of a
+                classified object
 
                 :param name: str - target name in obsdict
                 :param start: str or Time
-                :param location: str or EarthLocation - Observatory location; typically an MPC observatory code
+                :param location: str or EarthLocation - Observatory location;
+                    typically an MPC observatory code
                 :param number: int - number of lines to output
-                :param step: str or Quantity - units of days (d), hours (h), minutes (min), or seconds (s)
+                :param step: str or Quantity - units of days (d), hours (h),
+                    minutes (min), or seconds (s)
                 :param proper_motion: str
                 :return: dict
                 """
@@ -2795,7 +2912,8 @@ class SEDm:
             return False
 
         if eph['Delta'][0] < 0.03:
-            logger.info("Woah, this object is pretty nearby. Better use JPL HORIZONS instead")
+            logger.info("Woah, this object is pretty nearby. "
+                        "Better use JPL HORIZONS instead")
             try:
                 # Returns a 1-row table at current time
                 ephjpl = Horizons(id=cname, location=location).ephemerides()
@@ -2808,9 +2926,11 @@ class SEDm:
                 return False
 
             # Fill in nonsid_dict parameters with JPL ephemeris table values
-            eph_dict = {'ISO_time': Time(ephjpl['datetime_jd'][0], format='jd').iso,
+            eph_dict = {'ISO_time': Time(ephjpl['datetime_jd'][0],
+                                         format='jd').iso,
                         'RA': ephjpl['RA'][0], 'Dec': ephjpl['DEC'][0],
-                        'RAvel': ephjpl['RA_rate'][0], 'decvel': ephjpl['DEC_rate'][0]}
+                        'RAvel': ephjpl['RA_rate'][0],
+                        'decvel': ephjpl['DEC_rate'][0]}
 
         else:
             # Fill in nonsid_dict parameters with MPC ephemeris table values
@@ -3210,7 +3330,6 @@ class SEDm:
                                                      typedesig="f",
                                                      allocation_id=alloc_id,
                                                      ra=RA, dec=DEC)
-                
                 logger.info("sky.get_manual_request_id status:\n%s", ret)
                 if 'data' in ret:
                     req_id = ret['data']['request_id']
@@ -3232,7 +3351,7 @@ class SEDm:
 
             ret = self.run_ifu_science_seq(
                 self.ifu, name=obsdict['target'], imgtype='Science',
-                exptime=obsdict['exptime'], ra=RA, dec=DEC, readout=.1,
+                exptime=obsdict['exptime'], ra=RA, dec=DEC, readout=1.0,
                 p60prid=p60prid, p60prpi=p60prpi, email='',
                 p60prnm=p60prnm, req_id=req_id,
                 obj_id=obj_id, objfilter='ifu',
@@ -3271,7 +3390,6 @@ class SEDm:
                                                  typedesig="f",
                                                  allocation_id=alloc_id,
                                                  ra=RA, dec=DEC)
-
             logger.info("sky.get_manual_request_id status:\n%s", ret)
             if 'data' in ret:
                 req_id = ret['data']['request_id']
@@ -3307,9 +3425,9 @@ class SEDm:
                 equinox=2000, p60prid=p60prid, p60prpi=p60prpi,
                 email='', p60prnm=p60prnm, obj_id=obj_id,
                 objfilter='RC%s' % (obsdict['rcfilter']), imgset='NA',
-                is_rc=True, run_acquisition=True, req_id=req_id, acq_readout=2.0,
-                objtype='Transient', obs_order=obsdict['rcfilter'],
-                obs_exptime=obsdict['exptime'],
+                is_rc=True, run_acquisition=True, req_id=req_id,
+                acq_readout=2.0, objtype='Transient',
+                obs_order=obsdict['rcfilter'], obs_exptime=obsdict['exptime'],
                 obs_repeat_filter=repeat_filter, repeat=n_sets,
                 non_sid_targ=False, move_during_readout=True, abpair=False,
                 move=True, retry_on_failed_astrometry=False, mark_status=True,
@@ -3367,25 +3485,6 @@ class SEDm:
             else:
                 alloc_id = None
 
-            ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                                                 allocation_id=alloc_id,
-                                                 typedesig="e")
-
-            logger.info("sky.get_manual_request_id status:\n%s", ret)
-            if 'data' in ret:
-                req_id = ret['data']['request_id']
-                obj_id = ret['data']['object_id']
-                p60prid = ret['data']['p60prid']
-                p60prnm = ret['data']['p60prnm']
-                p60prpi = ret['data']['p60prpi']
-            else:
-                req_id = -999
-                obj_id = -999
-                p60prid = '2022B-Asteroids'
-                p60prnm = 'Near-Earth Asteroid'
-                p60prpi = 'SEDm'
-                logger.warning("Unable to obtain request data")
-
             if 'ephemeris' not in ephret:
 
                 return {"elaptime": time.time() - start,
@@ -3403,6 +3502,26 @@ class SEDm:
                     logger.warning('ISO_time not found, '
                                    'using default value (now) for epoch')
             logger.info("Using epoch: %f", nonsid_dict['epoch'])
+
+            ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                 allocation_id=alloc_id,
+                                                 ra=nonsid_dict['RA'],
+                                                 dec=nonsid_dict['Dec'],
+                                                 typedesig="e")
+            logger.info("sky.get_manual_request_id status:\n%s", ret)
+            if 'data' in ret:
+                req_id = ret['data']['request_id']
+                obj_id = ret['data']['object_id']
+                p60prid = ret['data']['p60prid']
+                p60prnm = ret['data']['p60prnm']
+                p60prpi = ret['data']['p60prpi']
+            else:
+                req_id = -999
+                obj_id = -999
+                p60prid = '2022B-Asteroids'
+                p60prnm = 'Near-Earth Asteroid'
+                p60prpi = 'SEDm'
+                logger.warning("Unable to obtain request data")
 
             ret = self.run_ifu_science_seq(
                 self.ifu, name=obsdict['target'], imgtype='Science',
@@ -3474,25 +3593,6 @@ class SEDm:
             else:
                 alloc_id = None
 
-            ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                                                 allocation_id=alloc_id,
-                                                 typedesig="e")
-
-            logger.info("sky.get_manual_request_id status:\n%s", ret)
-            if 'data' in ret:
-                req_id = ret['data']['request_id']
-                obj_id = ret['data']['object_id']
-                p60prid = ret['data']['p60prid']
-                p60prnm = ret['data']['p60prnm']
-                p60prpi = ret['data']['p60prpi']
-            else:
-                req_id = -999
-                obj_id = -999
-                p60prid = '2022B-Asteroids'
-                p60prnm = 'Near-Earth Asteroid'
-                p60prpi = 'SEDm'
-                logger.warning("Unable to obtain request data")
-
             if 'ephemeris' not in ephret:
 
                 return {"elaptime": time.time() - start,
@@ -3510,6 +3610,26 @@ class SEDm:
                     logger.warning('ISO_time not found, '
                                    'using default value (now) for epoch')
             logger.info("Using epoch: %f", nonsid_dict['epoch'])
+
+            ret = self.sky.get_manual_request_id(name=obsdict['target'],
+                                                 allocation_id=alloc_id,
+                                                 ra=nonsid_dict['RA'],
+                                                 dec=nonsid_dict['Dec'],
+                                                 typedesig="e")
+            logger.info("sky.get_manual_request_id status:\n%s", ret)
+            if 'data' in ret:
+                req_id = ret['data']['request_id']
+                obj_id = ret['data']['object_id']
+                p60prid = ret['data']['p60prid']
+                p60prnm = ret['data']['p60prnm']
+                p60prpi = ret['data']['p60prpi']
+            else:
+                req_id = -999
+                obj_id = -999
+                p60prid = '2022B-Asteroids'
+                p60prnm = 'Near-Earth Asteroid'
+                p60prpi = 'SEDm'
+                logger.warning("Unable to obtain request data")
 
             if 'repeat_filter' in obsdict:
                 repeat_filter = obsdict['repeat_filter']

@@ -254,11 +254,15 @@ def run_observing_loop(do_focus=True, do_standard=True,
         if not standard_done:
             print("Doing standard")
             ret = robot.run_standard_seq(robot.ifu)
-            std_count += 1
             print("run_standard_seq status:\n", ret)
-            with open(standard_done_file, 'w') as the_file:
-                the_file.write('Standard completed:%s' % uttime())
-            standard_done = True
+            if 'error' in ret:
+                print("Standard failed")
+            else:
+                print("Standard succeeded")
+                std_count += 1
+                with open(standard_done_file, 'w') as the_file:
+                    the_file.write('Standard completed:%s' % uttime())
+                standard_done = True
 
         # any manual commands?
         if os.path.exists(manual_dir):
@@ -286,6 +290,8 @@ def run_observing_loop(do_focus=True, do_standard=True,
 
                     time.sleep(10)
                 print("Manual commands completed")
+                sci_count += 1
+                loop_count += 1
                 continue
             else:
                 print("\nNo manual files found.")
@@ -311,15 +317,24 @@ def run_observing_loop(do_focus=True, do_standard=True,
             ret = robot.sky.get_next_observable_target(return_type='json')
             print('sky.get_next_observable_target status (2):\n', ret)
 
+        if not ('data' in ret and isinstance(ret['data'], dict)):
+            # TODO: add do_fwhm=True after testing
+            ret = robot.sky.get_next_observable_target(return_type='json')
+            print('sky.get_next_observable_target status (3):\n', ret)
+
         # did we get a valid target?
         if 'data' in ret and isinstance(ret['data'], dict):
             obsdict = ret['data']
             # Has this request already been observed?
-            if obsdict['req_id'] in done_list:
-                robot.sky.update_target_request(obsdict['req_id'],
-                                                status='COMPLETED',
-                                                check_growth=True)
-                continue    # skip it then
+            try:
+                if obsdict['req_id'] in done_list:
+                    sky_ret = robot.sky.update_target_request(
+                        obsdict['req_id'], status='COMPLETED')
+                    print('sky.update_target_request status:\n', sky_ret)
+                    continue    # skip it then
+            except KeyError:
+                print("Missing key: req_id, skipping")
+                continue
             # When will this observation end?
             end_time = datetime.datetime.utcnow() + datetime.timedelta(
                 seconds=obsdict['obs_dict']['total'])
@@ -333,14 +348,18 @@ def run_observing_loop(do_focus=True, do_standard=True,
                     the_file.write('Standard completed:%s' % uttime())
                 standard_done = True
                 std_count += 1
+                loop_count += 1
                 time.sleep(600)
                 continue
             # If it ends before morning twilight, do observations
             ret = robot.observe_by_dict(obsdict)
-            # Add to done list
-            done_list.append(obsdict['req_id'])
             print('observe_by_dict status:\n', ret)
-            sci_count += 1
+            if 'error' in ret:
+                print('Observation failed')
+            else:
+                # Add to done list
+                done_list.append(obsdict['req_id'])
+                sci_count += 1
 
             # Update focus done file status (in case a new focus run needed)
             if not os.path.exists(focus_done_file):
@@ -361,10 +380,16 @@ def run_observing_loop(do_focus=True, do_standard=True,
             print("No observable target in queue, doing standard")
             ret = robot.run_standard_seq(robot.ifu)
             print("run_standard_seq status:\n", ret)
-            with open(standard_done_file, 'w') as the_file:
-                the_file.write('Standard completed:%s' % uttime())
-            standard_done = True
-            std_count += 1
+            if 'error' in ret:
+                print("Standard failed")
+            elif 'data' in ret:
+                print("Standard succeeded")
+                with open(standard_done_file, 'w') as the_file:
+                    the_file.write('Standard completed:%s' % uttime())
+                standard_done = True
+                std_count += 1
+            else:
+                print("Skipping standard, new loop")
 
         # check standard status
         if not os.path.exists(standard_done_file):
@@ -460,6 +485,8 @@ if __name__ == "__main__":
                         help='Open dome')
     parser.add_argument('-t', '--temperature', type=float, default=None,
                         help='Temperature estimate (for focus)')
+    parser.add_argument('-f', '--focus', type=float, default=None,
+                        help='Focus position in mm')
     parser.add_argument('-w', '--winter', action="store_true", default=False,
                         help='Use WINTER for weather data')
     parser.add_argument('-n', '--noclean', action="store_true", default=False,
@@ -478,7 +505,12 @@ if __name__ == "__main__":
         # close dome
         tret = trobot.ocs.dome('close')
         print('ocs.dome status:', tret)
-
+    elif args.focus:
+        trobot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
+                      run_sanity=False)
+        trobot.initialize()
+        trobot.ocs.goto_focus(pos=args.focus)
+        print("Set telescope focus to:", args.focus)
     elif args.open:     # open dome
         trobot = SEDm(run_ifu=False, run_rc=False, run_sky=False,
                       run_sanity=False)
@@ -516,6 +548,9 @@ if __name__ == "__main__":
                     del_manual = True
                     time.sleep(60)
 
+        except KeyboardInterrupt:
+            print("Exiting sedm_observe")
+            print("All done")
         except Exception as e:
             tb_str = traceback.format_exception(etype=type(e), value=e,
                                                 tb=e.__traceback__)

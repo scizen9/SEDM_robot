@@ -84,22 +84,35 @@ class addHeader():
             n[i] = "NA"
         # print(n)
 
-    def prep_end_header(self, endStatus):
+    def prep_end_header(self, end_status):
         """
         Go through and make all adjustments needed to standardize the
         header for SEDm format
-        :param endStatus:
-        :return:
+        :param end_status:
+        :return: (dict)
         """
         try:
-            end_dict = {'enddome': endStatus['dome_shutter_status'],
-                        'end_ra': endStatus['telescope_ra'],
-                        'end_dec': endStatus['telescope_dec'],
-                        'end_pa': float(endStatus['telescope_parallactic']),
-                        'endair': float(endStatus['telescope_airmass']),
-                        'endsecpr': float(endStatus['sec_vacuum']),
-                        'endbarpr': float(endStatus['bar_pressure']),
-                       }
+            end_dict = {'enddome': end_status['dome_shutter_status'],
+                        'end_ra': end_status['telescope_ra'],
+                        'end_dec': end_status['telescope_dec'],
+                        'end_pa': float(end_status['telescope_parallactic']),
+                        'endair': float(end_status['telescope_airmass']),
+                        'endsecpr': float(end_status['sec_vacuum']),
+                        'endbarpr': float(end_status['bar_pressure']),
+                        }
+            # update arc lamps, if not UNKNOWN
+            if 'xe_lamp' in end_status:
+                if isinstance(end_status['xe_lamp'], str):
+                    if 'UNKNOWN' not in end_status['xe_lamp']:
+                        end_dict['xe_lamp'] = end_status['xe_lamp']
+            if 'cd_lamp' in end_status:
+                if isinstance(end_status['cd_lamp'], str):
+                    if 'UNKNOWN' not in end_status['cd_lamp']:
+                        end_dict['xe_lamp'] = end_status['cd_lamp']
+            if 'hg_lamp' in end_status:
+                if isinstance(end_status['hg_lamp'], str):
+                    if 'UNKNOWN' not in end_status['hg_lamp']:
+                        end_dict['xe_lamp'] = end_status['hg_lamp']
         except Exception as e:
             print(str(e))
             end_dict = {'enddome': "NA",
@@ -272,9 +285,9 @@ class addHeader():
                    "Telescope Control Status")
         prihdr.set("LAMPSTAT", obsdict["lamp_status"], "Lamp Status")
         prihdr.set("LAMPCUR", obsdict["lamp_current"], "Lamp Current")
-        prihdr.set("HG_LAMP", obsdict["hg_lamp"], "")
-        prihdr.set("XE_LAMP", obsdict["xe_lamp"], "")
-        prihdr.set("CD_LAMP", obsdict["cd_lamp"], "")
+        prihdr.set("HG_LAMP", obsdict["hg_lamp"], "Hg Arc Lamp Status")
+        prihdr.set("XE_LAMP", obsdict["xe_lamp"], "Xe Arc Lamp Status")
+        prihdr.set("CD_LAMP", obsdict["cd_lamp"], "Cd Arc Lamp Status")
         prihdr.set("TELPOWST", obsdict["telescope_power_status"],
                    "Telescope Power Status")
         prihdr.set("OILSTAT", obsdict["oil_pad_status"], "Oil Pad Status")

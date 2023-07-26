@@ -10,35 +10,14 @@ import SEDM_robot_version as Version
 with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as data_file:
     params = json.load(data_file)
 
-logger = logging.getLogger("Winter Logger")
-logger.setLevel(logging.DEBUG)
-logging.Formatter.converter = time.gmtime
-logHandler = TimedRotatingFileHandler(os.path.join(params['abspath'],
-                                                   'winter.log'),
-                                      when='midnight', utc=True, interval=1,
-                                      backupCount=360)
-
-formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
-                              "%(funcName)s--%(message)s")
-logHandler.setFormatter(formatter)
-logHandler.setLevel(logging.DEBUG)
-logger.addHandler(logHandler)
-
-console_formatter = logging.Formatter("%(asctime)s--%(message)s")
-consoleHandler = logging.StreamHandler(sys.stdout)
-consoleHandler.setFormatter(console_formatter)
-logger.addHandler(consoleHandler)
-
-logger.info("Starting Logger: Logger file is %s", 'winter.log')
-
 
 class Winter:
     """Top level class to handle all the WINTER commands and to make sure they
     are properly formatted.  Commands return True and time to complete command
-    if successful.  Otherwise False and an error message when a command fails
+    if successful.  Otherwise, False and an error message when a command fails
     """
 
-    def __init__(self, simulated=False, wntaddress=None):
+    def __init__(self, simulated=False, wntaddress=None, logfname=None):
 
         self.simulated = simulated
         self.dome_states = ['OPEN', 'CLOSE']
@@ -51,6 +30,30 @@ class Winter:
         with open(os.path.join(Version.CONFIG_DIR, 'winter.json')) as cfile:
             self.wnt_config = json.load(cfile)
 
+        self.logger = logging.getLogger("Winter Logger")
+        self.logger.setLevel(logging.DEBUG)
+        logging.Formatter.converter = time.gmtime
+        if logfname is None:
+            lfname = os.path.join(params['abspath'], 'winter.log')
+        else:
+            lfname = os.path.join(params['abspath'], logfname)
+        log_handler = TimedRotatingFileHandler(lfname, when='midnight',
+                                               utc=True, interval=1,
+                                               backupCount=360)
+
+        formatter = logging.Formatter("%(asctime)s--%(levelname)s--%(module)s--"
+                                      "%(funcName)s--%(message)s")
+        log_handler.setFormatter(formatter)
+        log_handler.setLevel(logging.DEBUG)
+        self.logger.addHandler(log_handler)
+
+        console_formatter = logging.Formatter("%(asctime)s--%(message)s")
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(console_formatter)
+        self.logger.addHandler(console_handler)
+
+        self.logger.info("Starting Logger: Logger file is %s", lfname)
+
         if not wntaddress:
             self.address = (self.wnt_config['winter_address'],
                             self.wnt_config['winter_port'])
@@ -58,13 +61,13 @@ class Winter:
             self.address = wntaddress
 
     def __connect(self):
-        logger.info("Connecting to address:%s", self.address)
+        self.logger.info("Connecting to address:%s", self.address)
         try:
             self.socket = socket.socket()
             self.socket.connect(self.address)
         except Exception as e:
-            logger.error("Error connecting to WINTER:%s", str(e),
-                         exc_info=True)
+            self.logger.error("Error connecting to WINTER:%s", str(e),
+                              exc_info=True)
             self.socket = None
             pass
         return self.socket
@@ -81,7 +84,7 @@ class Winter:
 
         # Check if the socket is open
         if not self.socket:
-            logger.info("Socket not connected")
+            self.logger.info("Socket not connected")
             self.socket = self.__connect()
             if not self.socket:
                 return {"elaptime": time.time()-start,
@@ -99,7 +102,7 @@ class Winter:
             # logger.info("Sending:%s", cmd)
             self.socket.send(b"%s \n" % cmd.encode('utf-8'))
         except Exception as e:
-            logger.error("Error sending command: %s", str(e), exc_info=True)
+            self.logger.error("Error sending command: %s", str(e), exc_info=True)
             return {"elaptime": time.time() - start,
                     "error": "Error commamd:%s failed" % cmd}
 
@@ -119,7 +122,7 @@ class Winter:
 
             # If we still don't have a return then something has gone wrong.
             if not ret:
-                logger.error("No response given back from the WINTER interface")
+                self.logger.error("No response given back from the WINTER interface")
                 return {"elaptime": time.time() - start,
                         "error": "No response from WINTER"}
 
@@ -133,11 +136,11 @@ class Winter:
                 return {"elaptime": time.time() - start,
                         "data": ret}
             else:
-                logger.warning("bad return, command collision")
+                self.logger.warning("bad return, command collision")
                 return {"elaptime": time.time() - start,
                         "error": "bad return, command collision"}
         except Exception as e:
-            logger.error("Unkown error", exc_info=True)
+            self.logger.error("Unkown error", exc_info=True)
             return {"elaptime": time.time() - start, "error": str(e)}
 
     def get_weather(self):

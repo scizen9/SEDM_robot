@@ -2,7 +2,6 @@ import socket
 import os
 import sys
 from observatory.telescope import tcs
-from observatory.telescope import winter
 import paramiko
 import time
 import json
@@ -11,7 +10,8 @@ import SEDM_robot_version as Version
 with open(os.path.join(Version.CONFIG_DIR, 'watcher.json')) as data_file:
     params = json.load(data_file)
 
-telescope = tcs.Telescope(gxnaddress=(params['gxn_ip'], params['gxn_port']))
+telescope = tcs.Telescope(gxnaddress=(params['gxn_ip'], params['gxn_port']),
+                          logfname='watcher_tcs.log')
 
 with open(os.path.join(Version.CONFIG_DIR, 'sedm_robot.json')) as data_file:
     sedm_cfg = json.load(data_file)
@@ -122,8 +122,11 @@ def get_camera_info(conn, cam_string='ifu'):
 
     try:
         cam_dict = json.loads(ret.decode('utf-8'))
-        info_dict['%s_ExposureTime' % cam_string] = \
-            str(cam_dict['camexptime'] / 1000)
+        if 'ifu' in cam_string:
+            expt = "%.1f" % cam_dict['camexptime']
+        else:
+            expt = "%.1f" % (cam_dict['camexptime'] / 1000)
+        info_dict['%s_ExposureTime' % cam_string] = expt
         info_dict['%s_Temperature' % cam_string] = str(cam_dict['camtemp'])
         info_dict['%s_SetPoint' % cam_string] = str(cam_dict['state'])
     except Exception as ex:
@@ -171,6 +174,7 @@ def get_camera_info(conn, cam_string='ifu'):
 
 if len(sys.argv) > 1:
     use_winter = True
+    from observatory.telescope import winter
     win = winter.Winter()
 else:
     use_winter = False
@@ -184,112 +188,119 @@ except Exception as e:
     rc = False
     pass
 
-while True:
-    # 1. Start by getting information
-    status_dict = {}
-    try:
-        pos = telescope.get_pos()
-        status = telescope.get_status()
-        weather = telescope.get_weather()
-        faults = telescope.get_faults()
-        if use_winter:
-            wret = win.get_weather()
-        else:
-            wret = None
-
-        print(faults)
-        print(type(pos))
-        print(weather)
-
-        if 'data' in pos:
-            status_dict.update(pos['data'])
-        if 'data' in status:
-            status_dict.update(status['data'])
-        if 'data' in weather:
-            status_dict.update(weather['data'])
-        if 'data' in faults:
-            f = faults['data']
-            f = f.split(':')
-            if len(f) == 2:
-                flist = f[1].rstrip().lstrip()
-                fdict = {'faults': flist.replace('\n', '<br>')}
+try:
+    while True:
+        # 1. Start by getting information
+        status_dict = {}
+        try:
+            pos = telescope.get_pos()
+            status = telescope.get_status()
+            weather = telescope.get_weather()
+            faults = telescope.get_faults()
+            if use_winter:
+                wret = win.get_weather()
             else:
-                fdict = {'faults': 'None'}
-            status_dict.update(fdict)
-        if use_winter and 'data' in wret:
-            win_dict = wret['data']
-            status_dict[
-                'windspeed_average'] = str(win_dict['Average_Wind_Speed'])
-            status_dict['wind_dir_current'] = str(win_dict['Wind_Direction'])
-            status_dict['outside_air_temp'] = str(win_dict['Outside_Temp'])
-            status_dict['outside_rel_hum'] = str(win_dict['Outside_RH'])
-            status_dict['outside_dewpt'] = str(win_dict['Outside_Dewpoint'])
+                wret = None
 
-        print(type(status_dict), 'status_dict')
+            print(faults)
+            print(type(pos))
+            print(weather)
 
-        if 'utc' in status_dict:
-            status_dict['utc2'] = status_dict['utc'][9:]
-        if 'telescope_ra' in status_dict:
-            s = list(status_dict['telescope_ra'])
-            s[3:] = '??'
+            if 'data' in pos:
+                status_dict.update(pos['data'])
+            if 'data' in status:
+                status_dict.update(status['data'])
+            if 'data' in weather:
+                status_dict.update(weather['data'])
+            if 'data' in faults:
+                f = faults['data']
+                f = f.split(':')
+                if len(f) == 2:
+                    flist = f[1].rstrip().lstrip()
+                    fdict = {'faults': flist.replace('\n', '<br>')}
+                else:
+                    fdict = {'faults': 'None'}
+                status_dict.update(fdict)
+            if use_winter and 'data' in wret:
+                win_dict = wret['data']
+                status_dict[
+                    'windspeed_average'] = str(win_dict['Average_Wind_Speed'])
+                status_dict[
+                    'wind_dir_current'] = str(win_dict['Wind_Direction'])
+                status_dict['outside_air_temp'] = str(win_dict['Outside_Temp'])
+                status_dict['outside_rel_hum'] = str(win_dict['Outside_RH'])
+                status_dict['outside_dewpt'] = str(win_dict['Outside_Dewpoint'])
 
-            status_dict['telescope_ra'] = ''.join(s)
-        if 'telescope_dec' in status_dict:
-            s = list(status_dict['telescope_dec'])
-            s[4:] = '??'
-            status_dict['telescope_dec'] = ''.join(s)
-        if 'dec_axis_hard_limit_status' in status_dict and \
-                'dec_axis_soft_limit_status' in status_dict:
-            status_dict['dec_limit_status'] = \
-                status_dict['dec_axis_hard_limit_status'] + '<br>' + \
-                status_dict['dec_axis_soft_limit_status']
+            print(type(status_dict), 'status_dict')
 
-        if 'ha_axis_hard_limit_status' in status_dict and \
-                'ha_axis_soft_limit_status' in status_dict:
-            status_dict['ha_limit_status'] = \
-                status_dict['ha_axis_hard_limit_status'] + '<br>' + \
-                status_dict['ha_axis_soft_limit_status']
-    except Exception as e:
-        print(str(e), 'error in getting a value')
-        time.sleep(1)
+            if 'utc' in status_dict:
+                status_dict['utc2'] = status_dict['utc'][9:]
+            if 'telescope_ra' in status_dict:
+                s = list(status_dict['telescope_ra'])
+                s[3:] = '??'
 
-    try:
-        if not ifu or not rc:
-            ifu, rc = connect()
+                status_dict['telescope_ra'] = ''.join(s)
+            if 'telescope_dec' in status_dict:
+                s = list(status_dict['telescope_dec'])
+                s[4:] = '??'
+                status_dict['telescope_dec'] = ''.join(s)
+            if 'dec_axis_hard_limit_status' in status_dict and \
+                    'dec_axis_soft_limit_status' in status_dict:
+                status_dict['dec_limit_status'] = \
+                    status_dict['dec_axis_hard_limit_status'] + '<br>' + \
+                    status_dict['dec_axis_soft_limit_status']
 
-        status_dict['ifu_cameraTime'] = time.strftime('%H:%M:%S', time.gmtime())
-        status_dict.update(get_camera_info(ifu, 'ifu'))
-        status_dict['rc_cameraTime'] = time.strftime('%H:%M:%S', time.gmtime())
-        status_dict.update(get_camera_info(rc, 'rc'))
-
-        jsonstr = json.dumps(status_dict)
-        print(jsonstr)
-        f = open(params['local_path'], "w")
-        f.write(jsonstr)
-        f.close()
-
-        put_remote_file(local_path=params['local_path'],
-                        remote_path=params['remote_path'],
-                        remote_computer=params['remote_computer'])
-        time.sleep(5)
-    except Exception as e:
-        print(str(e))
-        if '32' in str(e):
-            ifu, rc = connect()
-
-        jsonstr = json.dumps(status_dict)
-        f = open(params['local_path'], "w")
-        f.write(jsonstr)
-        f.close()
+            if 'ha_axis_hard_limit_status' in status_dict and \
+                    'ha_axis_soft_limit_status' in status_dict:
+                status_dict['ha_limit_status'] = \
+                    status_dict['ha_axis_hard_limit_status'] + '<br>' + \
+                    status_dict['ha_axis_soft_limit_status']
+        except Exception as e:
+            print(str(e), 'error in getting a value')
+            time.sleep(1)
 
         try:
+            if not ifu or not rc:
+                ifu, rc = connect()
+
+            status_dict['ifu_cameraTime'] = time.strftime('%H:%M:%S',
+                                                          time.gmtime())
+            status_dict.update(get_camera_info(ifu, 'ifu'))
+
+            status_dict['rc_cameraTime'] = time.strftime('%H:%M:%S',
+                                                         time.gmtime())
+            status_dict.update(get_camera_info(rc, 'rc'))
+
+            jsonstr = json.dumps(status_dict)
+            print(jsonstr)
+            f = open(params['local_path'], "w")
+            f.write(jsonstr)
+            f.close()
+
             put_remote_file(local_path=params['local_path'],
                             remote_path=params['remote_path'],
                             remote_computer=params['remote_computer'])
-        except ConnectionResetError as err:
-            print(str(err))
-            pass
-        pass
-        time.sleep(5)
+            time.sleep(5)
+        except Exception as e:
+            print(str(e))
+            if '32' in str(e):
+                ifu, rc = connect()
 
+            jsonstr = json.dumps(status_dict)
+            f = open(params['local_path'], "w")
+            f.write(jsonstr)
+            f.close()
+
+            try:
+                put_remote_file(local_path=params['local_path'],
+                                remote_path=params['remote_path'],
+                                remote_computer=params['remote_computer'])
+            except ConnectionResetError as err:
+                print(str(err))
+                pass
+            pass
+            time.sleep(5)
+except KeyboardInterrupt:
+    print("Exiting watcher")
+    print("All done")
 # telescope.close_connection()

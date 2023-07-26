@@ -20,7 +20,7 @@ class Camera:
 
         self.address = address
         self.port = port
-        print(self.address, self.port)
+        print("andor_cam_client.__init__", self.address, self.port)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # print(self.socket)
         self.socket.connect((self.address, self.port))
@@ -74,13 +74,16 @@ class Camera:
     def status(self):
         return self.__send_command(cmd="STATUS")
 
+    def acq_status(self):
+        return self.__send_command(cmd="ACQSTATUS")
+
     def get_temp_status(self):
         return self.__send_command(cmd="GETTEMPSTATUS")
 
     def prefix(self):
         return self.__send_command(cmd="PREFIX")
 
-    def take_image(self, shutter='normal', exptime=0.0, readout=2.0,
+    def take_image(self, shutter='normal', exptime=0.0, readout=1.0,
                    save_as="", return_before_done=False):
 
         parameters = {'shutter': shutter, "exptime": exptime,

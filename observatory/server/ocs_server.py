@@ -185,22 +185,21 @@ class ocsServer:
         self.socket.bind((self.hostname, self.port))
         self.socket.listen(5)
 
-        while True:
-            conn, address = self.socket.accept()
-            logger.debug("Got connection from %s:%s" % (conn, address))
-            new_thread = threading.Thread(target=self.handle, args=(conn,
-                                                                    address))
-            new_thread.start()
-            logger.debug("Started process")
+        try:
+            while True:
+                conn, address = self.socket.accept()
+                logger.debug("Got connection from %s:%s" % (conn, address))
+                new_thread = threading.Thread(target=self.handle,
+                                              args=(conn, address))
+                new_thread.start()
+                logger.debug("Started process")
+        except KeyboardInterrupt:
+            logger.info("Exiting ocs_server")
 
 
 if __name__ == "__main__":
+    #
     server = ocsServer("localhost", 5003)
-    # try:
     logger.info("Starting ocsServer")
     server.start()
-    # except Exception as e:
-    #    logging.exception("Unexpected exception %s", str(e))
-    # finally:
-    #    logging.info("Shutting down OCS server")
     logger.info("All done")

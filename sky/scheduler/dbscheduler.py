@@ -174,7 +174,7 @@ class Scheduler:
 
         obs_seq_list = row['obs_seq']
         exp_time_list = row['exptime']
-        repeat = row['seq_repeats']
+        repeat = row['seq_repeats'] if row['seq_repeats'] > 0 else 1
 
         # Prep the variables
         ifu = False
@@ -1003,15 +1003,9 @@ class Scheduler:
             return object_id[0][0]
         else:
             # Required
-            pardict = {
-                'name': name,
-                'typedesig': typedesig
-            }
+            pardict = {'name': name, 'typedesig': typedesig, 'ra': ra, 'dec': dec,
+                       'epoch': epoch}
             # Optional
-            if typedesig == 'f':
-                pardict['ra'] = ra
-                pardict['dec'] = dec
-                pardict['epoch'] = epoch
             if magnitude:
                 pardict['magnitude'] = magnitude
             if iauname:
@@ -1193,8 +1187,7 @@ class Scheduler:
         start = time.time()
         ret = self.ph_db.update_request({'id': request_id,
                                          'status': status})
-
-        print(ret)
+        print("ph_db.update_request status:\n%s" % str(ret))
         if check_growth:
             ret = self.growth.get_marshal_id_from_dbhost(request_id)
             print(ret)
@@ -1205,7 +1198,7 @@ class Scheduler:
             else:
                 return {'elaptime': time.time()-start,
                         'data': "No growth presence"}
-        return {'elaptime': time.time()-start, 'data': ret['data']}
+        return {'elaptime': time.time()-start, 'data': "DB updated"}
 
 
 if __name__ == "__main__":

@@ -288,7 +288,7 @@ class Andor:
         kinetic = c_float()
         check_call(self.lib.GetAcquisitionTimings(byref(exposure), byref(accumulate), byref(kinetic)))
         self.acquisition_timings = [exposure.value, accumulate.value, kinetic.value]
-        status_msg(f'Acquisition Timings: {self.acquisition_timings}')
+        # status_msg(f'Acquisition Timings: {self.acquisition_timings}')
         return self.acquisition_timings
 
     def GetAvailableCameras(self):
@@ -429,6 +429,12 @@ class Andor:
         check_call(self.lib.GetSizeOfCircularBuffer(byref(index)))
         circ_buffer_size = index.value
         return circ_buffer_size
+
+    def GetStatus(self):
+        ret_status = c_int()
+        check_call(self.lib.GetStatus(byref(ret_status)))
+        cur_status = ERROR_STRING[ret_status.value]
+        return cur_status
 
     def GetTemperature(self):
         temperature = c_int()

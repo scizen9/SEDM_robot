@@ -477,13 +477,33 @@ class Controller:
                 ret = self.transfer.send(save_as)
                 if 'data' in ret:
                     save_as = ret['data']
+                elif 'error' in ret:
+                    retries = 1
+                    transfer_worked = False
+                    while retries < 5 and not transfer_worked:
+                        print(ret)
+                        print("Transfer ERROR: wait 5s, try again")
+                        time.sleep(5)
+                        ret = self.transfer.send(save_as)
+                        if 'error' in ret:
+                            print("Transfer retry %d failed" % retries)
+                            retries += 1
+                        else:
+                            save_as = ret['data']
+                            print("Transfer succeeded after %d retries"
+                                  % retries)
+                            transfer_worked = True
+                    if not transfer_worked:
+                        print("Unable to transfer pixis file to remote")
+                else:
+                    print("Error transferring pixis file to remote: no return")
             return {'elaptime': time.time()-s, 'data': save_as}
         except Exception as e:
             self.lastError = str(e)
             if self.logging:
-                self.logger.error("Error writing data to disk", exc_info=True)
+                self.logger.error("Error transferring pixis data to remote: %s" % save_as, exc_info=True)
             return {'elaptime': time.time()-s,
-                    'error': 'Error writing file to disk'}
+                    'error': 'Error transferring pixis file to remote: %s' % save_as}
 
 
 if __name__ == "__main__":
