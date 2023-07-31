@@ -395,6 +395,10 @@ def run_observing_loop(do_focus=True, do_standard=True,
         if not os.path.exists(standard_done_file):
             standard_done = False
 
+        # Update focus done file status (in case a new focus run needed)
+        if not os.path.exists(focus_done_file):
+            focus_done = False
+
         loop_count += 1
     # end of main observing loop
 
