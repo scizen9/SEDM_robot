@@ -1701,6 +1701,7 @@ class SEDm:
 
         logger.debug("Finished %s sequence", focus_type)
         logger.info("focus image list:\n%s", img_list)
+        make_alert_call("Focus sequence finished")
         if solve:
             if focus_type == 'rc_focus':
                 ret = self.sky.get_focus(img_list,
