@@ -369,12 +369,19 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 # get nominal rc focus based on current temperature
                 current_temp = float(
                     robot.ocs.check_weather()['data']['inside_air_temp'])
-                if abs(robot.focus_temp - current_temp) > 1.0:
-                    nominal_rc_focus = rc_focus.temp_to_focus(current_temp)
-                    print("Focus %.2f at Temp of %.2f may have changed."
-                          % (robot.focus_pos, robot.focus_temp))
-                    print("Model focus of %.2f recommended based on current"
-                          " Temp of %.2f" % (nominal_rc_focus, current_temp))
+                nominal_rc_focus = rc_focus.temp_to_focus(current_temp) + \
+                    robot.params['rc_focus_offset']
+                print("Current focus %.2f achieved at  Temp of %.2f."
+                      % (robot.focus_pos, robot.focus_temp))
+                print("Modeled focus %.2f from current Temp of %.2f"
+                      % (nominal_rc_focus, current_temp))
+                # if abs(nominal_rc_focus - robot.focus_pos) > 0.2:
+                #     print("Moving to Modeled focus")
+                #     robot.ocs.goto_focus(nominal_rc_focus)
+                #     robot.focus_pos = nominal_rc_focus
+                #     robot.focus_temp = current_temp
+                # else:
+                #     print("Staying at Current focus")
         # No good next target at this time, so just do a standard
         else:
             print("No observable target in queue, doing standard")
