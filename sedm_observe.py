@@ -205,6 +205,14 @@ def run_observing_loop(do_focus=True, do_standard=True,
         print("number of focus sequences taken: %d" % foc_count)
         print("number of standard observations taken: %d\n" % std_count)
 
+        # check standard status
+        if not os.path.exists(standard_done_file):
+            standard_done = False
+
+        # Update focus done file status (in case a new focus run needed)
+        if not os.path.exists(focus_done_file):
+            focus_done = False
+
         # are we cleared to observe?
         while not robot.conditions_cleared():
             print("Faults cleared?", robot.conditions_cleared())
@@ -245,10 +253,31 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 robot.focus_temp = focus_data['focus_temp']
                 robot.focus_pos = focus_data['focus_pos']
                 robot.focus_time = focus_data['focus_time']
-                print("Focus pos of %.2f at temperature of %.2f achieved at %s"
+                print("Current focus %.2f achieved at  Temp of %.2f at %s."
                       % (robot.focus_pos, robot.focus_temp, robot.focus_time))
             else:
                 print("No focus data!  Recommend re-focusing!")
+
+            # get nominal rc focus based on current temperature
+            current_temp = float(
+                robot.ocs.check_weather()['data']['inside_air_temp'])
+            nominal_rc_focus = rc_focus.temp_to_focus(current_temp) + \
+                robot.params['rc_focus_offset']
+            print("Modeled focus %.2f from current Temp of %.2f"
+                  % (nominal_rc_focus, current_temp))
+            # if abs(nominal_rc_focus - robot.focus_pos) > 0.2:
+            #     print("Moving to Modeled focus")
+            #     robot.ocs.goto_focus(nominal_rc_focus)
+            #     robot.focus_pos = nominal_rc_focus
+            #     robot.focus_temp = current_temp
+            #     robot.focus_time = Time(datetime.datetime.utcnow()).iso
+            #     focus_data = {'focus_temp': robot.focus_temp,
+            #                   'focus_pos': robot.focus_pos,
+            #                   'focus_time': robot.focus_time}
+            #     with open(focus_done_file, 'w') as the_file:
+            #         the_file.write(json.dumps(focus_data))
+            # else:
+            #     print("Staying at Current focus")
 
         # grab a standard
         if not standard_done:
@@ -361,27 +390,6 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 done_list.append(obsdict['req_id'])
                 sci_count += 1
 
-            # Update focus done file status (in case a new focus run needed)
-            if not os.path.exists(focus_done_file):
-                focus_done = False
-            # Check focus status based on temperature
-            else:
-                # get nominal rc focus based on current temperature
-                current_temp = float(
-                    robot.ocs.check_weather()['data']['inside_air_temp'])
-                nominal_rc_focus = rc_focus.temp_to_focus(current_temp) + \
-                    robot.params['rc_focus_offset']
-                print("Current focus %.2f achieved at  Temp of %.2f."
-                      % (robot.focus_pos, robot.focus_temp))
-                print("Modeled focus %.2f from current Temp of %.2f"
-                      % (nominal_rc_focus, current_temp))
-                # if abs(nominal_rc_focus - robot.focus_pos) > 0.2:
-                #     print("Moving to Modeled focus")
-                #     robot.ocs.goto_focus(nominal_rc_focus)
-                #     robot.focus_pos = nominal_rc_focus
-                #     robot.focus_temp = current_temp
-                # else:
-                #     print("Staying at Current focus")
         # No good next target at this time, so just do a standard
         else:
             print("No observable target in queue, doing standard")
@@ -397,14 +405,6 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 std_count += 1
             else:
                 print("Skipping standard, new loop")
-
-        # check standard status
-        if not os.path.exists(standard_done_file):
-            standard_done = False
-
-        # Update focus done file status (in case a new focus run needed)
-        if not os.path.exists(focus_done_file):
-            focus_done = False
 
         loop_count += 1
     # end of main observing loop
