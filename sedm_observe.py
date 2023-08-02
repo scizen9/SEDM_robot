@@ -308,7 +308,9 @@ def run_observing_loop(do_focus=True, do_standard=True,
                         if 'command' in obsdict:
                             if obsdict['command'] == 'standard':
                                 std_count += 1
-                            elif obsdict['command'] != 'focus':
+                            elif obsdict['command'] == 'focus':
+                                foc_count += 1
+                            else:
                                 sci_count += 1
                         else:
                             print("no command in manual file?")
@@ -319,8 +321,6 @@ def run_observing_loop(do_focus=True, do_standard=True,
 
                     time.sleep(10)
                 print("Manual commands completed")
-                sci_count += 1
-                loop_count += 1
                 continue
             else:
                 print("\nNo manual files found.")
