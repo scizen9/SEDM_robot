@@ -265,19 +265,19 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 robot.params['rc_focus_offset']
             print("Modeled focus %.2f from current Temp of %.2f"
                   % (nominal_rc_focus, current_temp))
-            # if abs(nominal_rc_focus - robot.focus_pos) > 0.2:
-            #     print("Moving to Modeled focus")
-            #     robot.ocs.goto_focus(nominal_rc_focus)
-            #     robot.focus_pos = nominal_rc_focus
-            #     robot.focus_temp = current_temp
-            #     robot.focus_time = Time(datetime.datetime.utcnow()).iso
-            #     focus_data = {'focus_temp': robot.focus_temp,
-            #                   'focus_pos': robot.focus_pos,
-            #                   'focus_time': robot.focus_time}
-            #     with open(focus_done_file, 'w') as the_file:
-            #         the_file.write(json.dumps(focus_data))
-            # else:
-            #     print("Staying at Current focus")
+            if abs(nominal_rc_focus - robot.focus_pos) > 0.2:
+                print("Moving to Modeled focus")
+                robot.ocs.goto_focus(nominal_rc_focus)
+                robot.focus_pos = nominal_rc_focus
+                robot.focus_temp = current_temp
+                robot.focus_time = Time(datetime.datetime.utcnow()).iso
+                focus_data = {'focus_temp': robot.focus_temp,
+                              'focus_pos': robot.focus_pos,
+                              'focus_time': robot.focus_time}
+                with open(focus_done_file, 'w') as the_file:
+                    the_file.write(json.dumps(focus_data))
+            else:
+                print("Staying at Current focus")
 
         # grab a standard
         if not standard_done:
