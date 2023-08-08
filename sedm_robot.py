@@ -294,7 +294,7 @@ class SEDm:
             if self.run_ifu:
                 ifu_get_temp_status = self.ifu.get_temp_status()
                 if "error" in ifu_get_temp_status:
-                    logger.error('error: ', ifu_get_temp_status['error'])
+                    logger.error('error: %s', ifu_get_temp_status['error'])
                     ifu_lock = False
                     ifu_temp = 0.
                 else:
@@ -1145,7 +1145,6 @@ class SEDm:
         if 'dome' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['dome']['N']
             files_completed = 0
-            check_for_previous = False
             if check_for_previous:
                 if 'ifu' in cube_type:
                     ret = self.sanity.check_for_files(
