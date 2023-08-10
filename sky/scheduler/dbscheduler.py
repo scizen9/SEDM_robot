@@ -1058,7 +1058,7 @@ class Scheduler:
             p60prpi = "SEDm"
         else:
             db_ret = self.ph_db.get_from_allocation(
-                ['designator, program_id'],
+                ['designator', 'program_id'],
                 where_dict={'id': allocation_id})[0]
             p60prid = db_ret[0]
             prog_id = db_ret[1]
