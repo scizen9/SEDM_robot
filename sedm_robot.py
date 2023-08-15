@@ -1,3 +1,4 @@
+import smtplib
 import urllib.error
 from observatory.server import ocs_client
 from sky.server import sky_client
@@ -19,8 +20,8 @@ import glob
 import pandas as pd
 import random
 import subprocess
-from twilio.rest import Client
-from astropy.time import Time
+# from astropy.time import Time
+from email.message import EmailMessage
 from astropy.coordinates import SkyCoord
 from astroquery.mpc import MPC
 from astroquery.jplhorizons import Horizons
@@ -34,8 +35,8 @@ import SEDM_robot_version as Version
 
 DEF_PROG = '2022B-calib'
 
-with open(os.path.join(Version.CONFIG_DIR, 'twilio.config.json')) as cfg_file:
-    twi_cfg = json.load(cfg_file)
+with open(os.path.join(Version.CONFIG_DIR, 'alertemail.config.json')) as cfg_file:
+    alert_cfg = json.load(cfg_file)
 
 with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as cfg_file:
     log_cfg = json.load(cfg_file)
@@ -70,17 +71,32 @@ logger.info("Starting Logger: Logger file is %s", 'sedm_robot.log')
 
 def make_alert_call(body):
     """
-    account_sid = twi_cfg['account_sid']
-    auth_token = twi_cfg['auth_token']
-    to_number = twi_cfg['to_number']
-    from_number = twi_cfg['from_number']
-
-    client = Client(account_sid, auth_token)
-
-    message = client.messages.create(to=to_number, from_=from_number, body=body)
-
-    logger.info(message.sid)
+    :param body: str
     """
+    """
+    OLD TWILIO INSTRUCTIONS:
+        account_sid = twi_cfg['account_sid']
+        auth_token = twi_cfg['auth_token']
+        to_number = twi_cfg['to_number']
+        from_number = twi_cfg['from_number']
+    
+        client = Client(account_sid, auth_token)
+    
+        message = client.messages.create(to=to_number, from_=from_number, body=body)
+    
+        logger.info(message.sid)
+    """
+    # With EmailMessage send alert email
+    msg = EmailMessage()
+    msg['To'] = alert_cfg['mail_list']
+    msg['Subject'] = "SEDM-P60 ALERT!"
+    msg['From'] = alert_cfg['nemea_email']
+    msg.set_content(body)
+
+    # local SMTP server
+    with smtplib.SMTP("smtp-server.astro.caltech.edu") as send:
+        send.send_message(msg)
+
     print("Twilio alert: ", body)
     logger.info(body)
 
