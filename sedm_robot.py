@@ -20,7 +20,7 @@ import glob
 import pandas as pd
 import random
 import subprocess
-# from astropy.time import Time
+from astropy.time import Time
 from email.message import EmailMessage
 from astropy.coordinates import SkyCoord
 from astroquery.mpc import MPC
@@ -69,22 +69,12 @@ logger.addHandler(consoleHandler)
 logger.info("Starting Logger: Logger file is %s", 'sedm_robot.log')
 
 
-def make_alert_call(body):
+def send_alert_email(body):
     """
-    :param body: str
-    """
-    """
-    OLD TWILIO INSTRUCTIONS:
-        account_sid = twi_cfg['account_sid']
-        auth_token = twi_cfg['auth_token']
-        to_number = twi_cfg['to_number']
-        from_number = twi_cfg['from_number']
-    
-        client = Client(account_sid, auth_token)
-    
-        message = client.messages.create(to=to_number, from_=from_number, body=body)
-    
-        logger.info(message.sid)
+    Send an alert via email to addresses in alertemail.config.json"
+
+    :param body: str - the message to send
+
     """
     # With EmailMessage send alert email
     msg = EmailMessage()
@@ -97,7 +87,7 @@ def make_alert_call(body):
     with smtplib.SMTP("smtp-server.astro.caltech.edu") as send:
         send.send_message(msg)
 
-    print("Twilio alert: ", body)
+    print("Email alert: ", body)
     logger.info(body)
 
 
@@ -241,8 +231,8 @@ class SEDm:
                 self.rc = cam_driver.Camera(self.rc_ip, self.rc_port)
                 logger.info('rc return: %s', self.rc.initialize())
             except Exception as e:
-                make_alert_call("RC client not set up. "
-                                "Check on Pylos if server is running")
+                send_alert_email("RC client not set up. "
+                                 "Check on Pylos if server is running")
                 logger.error("Error setting up RC client")
                 logger.error(str(e))
 
@@ -259,8 +249,8 @@ class SEDm:
                 self.ifu = cam_driver.Camera(self.ifu_ip, self.ifu_port)
                 logger.info('ifu return: %s', self.ifu.initialize())
             except Exception as e:
-                make_alert_call("IFU client not set up. "
-                                "Check on Pylos to see if server is running")
+                send_alert_email("IFU client not set up. "
+                                 "Check on Pylos to see if server is running")
                 logger.error("Error setting up IFU client")
                 logger.error(str(e))
 
@@ -649,7 +639,7 @@ class SEDm:
                 logger.info(self.header.set_header(latest_file, obsdict))
                 return {'elaptime': time.time()-start, 'data': latest_file}
             else:
-                make_alert_call("Last Image failed to write")
+                send_alert_email("Last Image failed to write")
                 logger.warning("File not a match saving header info")
                 save_path = os.path.join(
                     self.obs_dir, "header_dict_" +
@@ -787,7 +777,7 @@ class SEDm:
             # 3a. Check that we made it to the calibration stow position
             # TODO: Implement return checking of OCS returns
             if not ret:
-                make_alert_call("Unable to move telescope to stow position")
+                send_alert_email("Unable to move telescope to stow position")
                 return "Unable to move telescope to stow position"
 
         # 3. Turn on the lamps and wait for them to stabilize
@@ -1222,7 +1212,7 @@ class SEDm:
         skip_next = False
 
         if not self.run_rc and not self.run_ifu:
-            make_alert_call("1 or Both cameras not active")
+            send_alert_email("One or Both cameras not active")
             logger.error("Both cameras have to be active")
             return {'elaptime': time.time() - start,
                     'error': 'Efficiency cube mode can only '
@@ -1337,7 +1327,7 @@ class SEDm:
             ret = self.ocs.halogens_off()
             logger.info(ret)
         else:
-            make_alert_call("Halogens not turned on")
+            send_alert_email("Halogens not turned on")
 
         logger.info("Starting other Lamps")
         for lamp in ['hg', 'xe']:
@@ -1716,7 +1706,7 @@ class SEDm:
 
         logger.debug("Finished %s sequence", focus_type)
         logger.info("focus image list:\n%s", img_list)
-        make_alert_call("Focus sequence finished")
+        send_alert_email("Focus sequence finished")
         if solve:
             if focus_type == 'rc_focus':
                 ret = self.sky.get_focus(img_list,
@@ -1847,7 +1837,7 @@ class SEDm:
             elif 'data' in ret:
                 self.guider_list.append(ret['data'])
             else:
-                make_alert_call("Error setting up guiding")
+                send_alert_email("Error setting up guiding")
                 logger.error("Skipping this image: no return")
 
             guide_done = (datetime.datetime.utcnow() +
@@ -1929,7 +1919,7 @@ class SEDm:
                 if 'data' in ret:
                     obs_coords = ret['data']
                 else:
-                    make_alert_call("No Standard Star obs_coords")
+                    send_alert_email("No Standard Star obs_coords")
                     logger.error("ERROR")
                     obs_coords = None
 
@@ -1985,7 +1975,7 @@ class SEDm:
                     non_sid_targ=non_sid_targ)
                 logger.info("run_acquisition_seq(STD) status:\n%s", ret)
                 if 'data' not in ret:
-                    make_alert_call("No Standard Star acquisition data")
+                    send_alert_email("No Standard Star acquisition data")
                     if mark_status:
                         # Update stuff
                         pass
@@ -3253,7 +3243,7 @@ class SEDm:
                         'data': "Dome already open"}
 
         else:
-            make_alert_call("Unable to check dome status")
+            send_alert_email("Unable to check dome status")
             return {'elaptime': time.time() - start,
                     'error': stat}
 
@@ -3283,7 +3273,7 @@ class SEDm:
                 obsdict = json.load(data_file)
 
         elif not isinstance(manual, dict):
-            make_alert_call("Manual: input not json file or dictionary")
+            send_alert_email("Manual: input not json file or dictionary")
             return {'elaptime': time.time() - start,
                     'error': 'Input is neither json file or dictionary'}
 
@@ -3296,7 +3286,7 @@ class SEDm:
         if 'command' in obsdict:
             command = obsdict['command']
         else:
-            make_alert_call("MANUAL: No command in file")
+            send_alert_email("MANUAL: No command in file")
 
             return {'elaptime': time.time() - start,
                     'error': 'Command not found in manual dict'}
@@ -3492,7 +3482,7 @@ class SEDm:
                 logger.info("Returned ephemeris:\n%s", ephret)
 
             else:
-                make_alert_call("MANUAL: cannot find 'target' in JSON file")
+                send_alert_email("MANUAL: cannot find 'target' in JSON file")
                 return {'elaptime': time.time() - start,
                         'error': "nonsid_ifu 'target' in manual dict not found"}
 
@@ -3600,7 +3590,7 @@ class SEDm:
                 logger.info("get_non_sid_ephemeris return:\n%s", ephret)
 
             else:
-                make_alert_call("Manual: cannot find 'target' in JSON file")
+                send_alert_email("Manual: cannot find 'target' in JSON file")
                 return {'elaptime': time.time() - start,
                         'error': "nonsid_rc 'target' in manual dict not found"}
 
@@ -3690,7 +3680,7 @@ class SEDm:
                                         self._ut_dir_date())
             ob_dir = self.obs_dir
             if not os.path.exists(ob_dir):
-                make_alert_call("Cannot gzip images; ob_dir does not exist")
+                send_alert_email("Cannot gzip images; ob_dir does not exist")
                 logger.error("Error: ob_dir %s does not exist!", ob_dir)
                 return
 
