@@ -87,7 +87,7 @@ def send_alert_email(body):
     with smtplib.SMTP("smtp-server.astro.caltech.edu") as send:
         send.send_message(msg)
 
-    logger.info("Email alert!: %s" % body)
+    logger.info("Email alert!: %s", body)
 
 
 def iso_to_epoch(iso_time, epoch_year=False):
