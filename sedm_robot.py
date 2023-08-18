@@ -35,9 +35,6 @@ import SEDM_robot_version as Version
 
 DEF_PROG = '2022B-calib'
 
-with open(os.path.join(Version.CONFIG_DIR, 'alertemail.config.json')) as cfg_file:
-    alert_cfg = json.load(cfg_file)
-
 with open(os.path.join(Version.CONFIG_DIR, 'logging.json')) as cfg_file:
     log_cfg = json.load(cfg_file)
 
@@ -76,12 +73,18 @@ def send_alert_email(body):
     :param body: str - the message to send
 
     """
+    # Read in config file
+    with open(os.path.join(Version.CONFIG_DIR, 'alertemail.config.json')) as file:
+        alert_cfg = json.load(file)
+
     # With EmailMessage send alert email
+    dt = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
     msg = EmailMessage()
     msg['To'] = alert_cfg['mail_list']
     msg['Subject'] = "SEDM-P60 ALERT!"
     msg['From'] = alert_cfg['nemea_email']
-    msg.set_content(body)
+    msg.set_content(dt + ":  " + body)
 
     # local SMTP server
     with smtplib.SMTP("smtp-server.astro.caltech.edu") as send:
