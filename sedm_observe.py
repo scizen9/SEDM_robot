@@ -205,6 +205,19 @@ def run_observing_loop(do_focus=True, do_standard=True,
         print("number of focus sequences taken: %d" % foc_count)
         print("number of standard observations taken: %d\n" % std_count)
 
+        # are the cameras connected and enabled?
+        while not robot.run_rc or not robot.run_ifu:
+            if not robot.run_rc:
+                print("RC camera disabled, unable to observe")
+            if not robot.run_ifu:
+                print("IFU camera disabled, unable to observe")
+
+            # break loop if night is over
+            if uttime() > night_obs_times['morning_nautical']:
+                break
+            print("Waiting 10 minutes, please restart robot!")
+            time.sleep(600)
+
         # check standard status
         if not os.path.exists(standard_done_file):
             standard_done = False
@@ -426,6 +439,15 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 if uttime() > night_obs_times['morning_civil']:
                     break
                 time.sleep(60)
+
+            # is the RC camera connected and enabled?
+            while not robot.run_rc:
+                print("RC camera disabled, unable to take twilights!")
+
+                if uttime() > night_obs_times['morning_civil']:
+                    break
+                print("Waiting 10 minutes, please restart robot!")
+                time.sleep(600)
 
             # conditions cleared, so ready for twilights
             print("Faults cleared?", robot.conditions_cleared())
