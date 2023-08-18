@@ -95,7 +95,11 @@ class Camera:
             counter += 1
             if counter > 100:
                 break
-        return json.loads(data.decode('utf-8'))
+        try:
+            ret = json.loads(data.decode('utf-8'))
+        except json.decoder.JSONDecodeError:
+            ret = {'error': 'socket disconnect'}
+        return ret
 
 
 if __name__ == '__main__':
