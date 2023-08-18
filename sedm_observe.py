@@ -206,6 +206,10 @@ def run_observing_loop(do_focus=True, do_standard=True,
         print("number of standard observations taken: %d\n" % std_count)
 
         # are the cameras connected and enabled?
+        if not robot.run_rc or not robot.run_ifu:
+            ret = robot.ocs.stow(ha=0, dec=109, domeaz=220)
+            print("One or more cameras disabled, stowing telescope")
+            print('ocs.stow status:', ret)
         while not robot.run_rc or not robot.run_ifu:
             if not robot.run_rc:
                 print("RC camera disabled, unable to observe")
