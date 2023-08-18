@@ -463,8 +463,6 @@ class Controller:
         logger.info("Readout completed")
         logger.debug("Took: %s", time.time() - s)
 
-        self.exposip = False
-
         if not save_as:
             start_exp_time = start_time.strftime("%Y%m%d_%H_%M_%S")
             # Now make sure the utdate directory exists
@@ -548,10 +546,13 @@ class Controller:
                         print("Unable to transfer andor file to remote")
                 else:
                     print("Error transferring andor file to remote")
+            self.exposip = False
             return {'elaptime': time.time() - s, 'data': save_as}
         except Exception as e:
             self.lastError = str(e)
-            logger.error("Error transferring andor data to remote: %s" % save_as, exc_info=True)
+            logger.error("Error transferring andor data to remote: %s"
+                         % save_as, exc_info=True)
+            self.exposip = False
             return {'elaptime': time.time() - s,
                     'error': 'Error transferring andor file to remote: %s' % save_as}
 
