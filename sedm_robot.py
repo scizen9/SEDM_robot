@@ -87,8 +87,7 @@ def send_alert_email(body):
     with smtplib.SMTP("smtp-server.astro.caltech.edu") as send:
         send.send_message(msg)
 
-    print("Email alert: ", body)
-    logger.info(body)
+    logger.info("Email alert!: %s" % body)
 
 
 def iso_to_epoch(iso_time, epoch_year=False):
@@ -233,8 +232,9 @@ class SEDm:
             except Exception as e:
                 send_alert_email("RC client not set up. "
                                  "Check on Pylos if server is running")
-                logger.error("Error setting up RC client")
+                logger.error("Error setting up RC client, disabling")
                 logger.error(str(e))
+                self.run_rc = False
 
         logger.info("run_ifu = %s", self.run_ifu)
         if self.run_ifu:
@@ -251,8 +251,9 @@ class SEDm:
             except Exception as e:
                 send_alert_email("IFU client not set up. "
                                  "Check on Pylos to see if server is running")
-                logger.error("Error setting up IFU client")
+                logger.error("Error setting up IFU client, disabling")
                 logger.error(str(e))
+                self.run_ifu = False
 
         logger.info("Wait 5 sec")
         time.sleep(5)
