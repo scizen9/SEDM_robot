@@ -294,7 +294,9 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 with open(focus_done_file, 'w') as the_file:
                     the_file.write(json.dumps(focus_data))
             else:
-                print("Staying at Current focus")
+                print("Commanding current focus position of %.2f" %
+                      robot.focus_pos)
+                robot.ocs.goto_focus(robot.focus_pos)
 
         # grab a standard
         if not standard_done:
