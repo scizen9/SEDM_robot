@@ -1059,7 +1059,7 @@ class Scheduler:
         else:
             db_ret = self.ph_db.get_from_allocation(
                 ['designator', 'program_id'],
-                where_dict={'id': allocation_id})[0]
+                where_dict={'id': int(allocation_id)})[0]
             p60prid = db_ret[0]
             prog_id = db_ret[1]
             db_ret = self.ph_db.get_from_program(['name', 'PI'],
