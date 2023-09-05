@@ -3397,7 +3397,7 @@ class SEDm:
             else:
                 alloc_id = None
             ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                                                 typedesig="f",
+                                                 typedesig="f", exptime=obsdict['exptime'],
                                                  allocation_id=alloc_id,
                                                  ra=RA, dec=DEC)
             logger.info("sky.get_manual_request_id status:\n%s", ret)
@@ -3515,6 +3515,7 @@ class SEDm:
 
             ret = self.sky.get_manual_request_id(name=obsdict['target'],
                                                  allocation_id=alloc_id,
+                                                 exptime=obsdict['exptime'],
                                                  ra=nonsid_dict['RA'],
                                                  dec=nonsid_dict['Dec'],
                                                  typedesig="e")
@@ -3623,6 +3624,7 @@ class SEDm:
 
             ret = self.sky.get_manual_request_id(name=obsdict['target'],
                                                  allocation_id=alloc_id,
+                                                 exptime=obsdict['exptime'],
                                                  ra=nonsid_dict['RA'],
                                                  dec=nonsid_dict['Dec'],
                                                  typedesig="e")
