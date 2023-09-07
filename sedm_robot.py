@@ -3533,6 +3533,20 @@ class SEDm:
                 p60prpi = 'SEDm'
                 logger.warning("Unable to obtain request data")
 
+            # offset target position from ephemeris coordinates
+            if 'RA_offset' in obsdict:
+                offset = obsdict['RA_offset']
+                # convert to decimal degrees if not already
+                if ':' in offset:
+                    offset = SkyCoord(ra=offset, dec="0:0:0", unit=(u.hourangle, u.deg)).ra.deg
+                nonsid_dict['RA'] += offset
+            if 'Dec_offset' in obsdict:
+                offset = obsdict['Dec_offset']
+                # convert to decimal degrees if not already
+                if ':' in offset:
+                    offset = SkyCoord(ra='0:0:0', dec=offset, unit=(u.hourangle, u.deg)).dec.deg
+                nonsid_dict['Dec'] += offset
+
             ret = self.run_ifu_science_seq(
                 self.ifu, name=obsdict['target'], imgtype='Science',
                 exptime=obsdict['exptime'],
@@ -3654,6 +3668,20 @@ class SEDm:
                 n_sets = int(obsdict['n_sets'])
             else:
                 n_sets = 1
+
+            # offset target position from ephemeris coordinates
+            if 'RA_offset' in obsdict:
+                offset = obsdict['RA_offset']
+                # convert to decimal degrees if not already
+                if ':' in offset:
+                    offset = SkyCoord(ra=offset, dec="0:0:0", unit=(u.hourangle, u.deg)).ra.deg
+                nonsid_dict['RA'] += offset
+            if 'Dec_offset' in obsdict:
+                offset = obsdict['Dec_offset']
+                # convert to decimal degrees if not already
+                if ':' in offset:
+                    offset = SkyCoord(ra='0:0:0', dec=offset, unit=(u.hourangle, u.deg)).dec.deg
+                nonsid_dict['Dec'] += offset
 
             ret = self.run_rc_science_seq(
                 self.rc, shutter="normal", readout=.1, name=obsdict['target'],
