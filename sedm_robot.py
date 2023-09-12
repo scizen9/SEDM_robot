@@ -23,6 +23,7 @@ import subprocess
 from astropy.time import Time
 from email.message import EmailMessage
 from astropy.coordinates import SkyCoord
+import astropy.units as u
 from astroquery.mpc import MPC
 from astroquery.jplhorizons import Horizons
 import astroquery.exceptions
@@ -82,12 +83,14 @@ lamps_done_file = os.path.join(os.path.join(status_file_dir, "lamps_done.txt"))
 status_dict['lamps'] = lamps_done_file
 logger.info("Starting Logger: Logger file is %s", 'sedm_robot.log')
 
+
 def uttime(offset=0):
     if not offset:
         return Time(datetime.datetime.utcnow())
     else:
         return Time(datetime.datetime.utcnow() +
                     datetime.timedelta(seconds=offset))
+
 
 def send_alert_email(body):
     """
@@ -1150,8 +1153,8 @@ class SEDm:
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
-            if files_completed >= N  or os.path.exists(status_dict['%s_fastbias' % cube]):
-                logger.info("%s Fast biases already done" %s cube.upper())
+            if files_completed >= N or os.path.exists(status_dict['%s_fastbias' % cube]):
+                logger.info("%s Fast biases already done" % cube.upper())
             else:
                 N = N - files_completed
                 logger.info("Taking %d fast biases for %s", N, cube)
@@ -1199,7 +1202,7 @@ class SEDm:
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
-            if files_completed >= N if files_completed >= N or os.path.exists(status_dict['%s_domes' % cube]):
+            if files_completed >= N or os.path.exists(status_dict['%s_domes' % cube]):
                 logger.info("%s Domes already taken" % cube.upper())
             else:
                 N = N - files_completed
