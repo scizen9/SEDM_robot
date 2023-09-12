@@ -44,6 +44,9 @@ with open(os.path.join(Version.CONFIG_DIR, 'sedm_robot.json')) as cfg_file:
 with open(os.path.join(Version.CONFIG_DIR, 'cameras.json')) as cfg_file:
     cam_cfg = json.load(cfg_file)
 
+with open(os.path.join(Version.CONFIG_DIR, 'sedm_observe.json')) as cfg_file:
+    sedm_observe_cfg = json.load(cfg_file)
+
 logger = logging.getLogger("sedmLogger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
@@ -63,8 +66,28 @@ consoleHandler = logging.StreamHandler(sys.stdout)
 consoleHandler.setFormatter(console_formatter)
 logger.addHandler(consoleHandler)
 
+status_file_dir = sedm_observe_cfg['status_dir']
+status_dict = {}
+rc_fastbias_done_file = os.path.join(os.path.join(status_file_dir, "rc_fastbias_done.txt"))
+status_dict['rc_fastbias'] = rc_fastbias_done_file
+rc_slowbias_done_file = os.path.join(os.path.join(status_file_dir, "rc_slowbias_done.txt"))
+status_dict['rc_slowbias'] = rc_slowbias_done_file
+ifu_slowbias_done_file = os.path.join(os.path.join(status_file_dir, "ifu_slowbias_done.txt"))
+status_dict['ifu_slowbias'] = ifu_slowbias_done_file
+rc_domes_done_file = os.path.join(os.path.join(status_file_dir, "rc_domes_done.txt"))
+status_dict['rc_domes'] = rc_domes_done_file
+ifu_domes_done_file = os.path.join(os.path.join(status_file_dir, "ifu_domes_done.txt"))
+status_dict['ifu_domes'] = ifu_domes_done_file
+lamps_done_file = os.path.join(os.path.join(status_file_dir, "lamps_done.txt"))
+status_dict['lamps'] = lamps_done_file
 logger.info("Starting Logger: Logger file is %s", 'sedm_robot.log')
 
+def uttime(offset=0):
+    if not offset:
+        return Time(datetime.datetime.utcnow())
+    else:
+        return Time(datetime.datetime.utcnow() +
+                    datetime.timedelta(seconds=offset))
 
 def send_alert_email(body):
     """
@@ -1079,7 +1102,7 @@ class SEDm:
 
     def take_datacube(self, cam, cube='ifu', check_for_previous=True,
                       custom_file='', move=False, ha=None, dec=None,
-                      domeaz=None):
+                      domeaz=None, make_files=False):
         """
 
         :param move:
@@ -1090,6 +1113,7 @@ class SEDm:
         :param custom_file:
         :param cam:
         :param cube:
+        :param make_files:
         :return:
         """
         start = time.time()
@@ -1126,12 +1150,15 @@ class SEDm:
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
-            if files_completed >= N:
-                logger.info("Fast biases already done")
+            if files_completed >= N  or os.path.exists(status_dict['%s_fastbias' % cube]):
+                logger.info("%s Fast biases already done" %s cube.upper())
             else:
                 N = N - files_completed
                 logger.info("Taking %d fast biases for %s", N, cube)
                 self.take_bias(cam, N=N, readout=rdo)
+                if make_files:
+                    with open(status_dict['%s_fastbias' % cube], 'w') as file:
+                        file.write('%s fast biases completed:%s' % (cube.upper(), uttime()))
 
         if 'slow_bias' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['slow_bias']['N']
@@ -1145,12 +1172,15 @@ class SEDm:
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
-            if files_completed >= N:
-                logger.info("Slow biases already done")
+            if files_completed >= N or os.path.exists(status_dict['%s_slowbias' % cube]):
+                logger.info("%s Slow biases already done" % cube.upper())
             else:
                 N = N - files_completed
                 logger.info("Taking %d slow biases for %s", N, cube)
                 self.take_bias(cam, N=N, readout=rdo)
+                if make_files:
+                    with open(status_dict['%s_slowbias' % cube], 'w') as file:
+                        file.write('%s slow biases completed:%s' % (cube.upper(), uttime()))
 
         if 'dome' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['dome']['N']
@@ -1169,8 +1199,8 @@ class SEDm:
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
-            if files_completed >= N:
-                logger.info("Domes already taken")
+            if files_completed >= N if files_completed >= N or os.path.exists(status_dict['%s_domes' % cube]):
+                logger.info("%s Domes already taken" % cube.upper())
             else:
                 N = N - files_completed
                 logger.info("Taking %d %s dome flats in each set", N, cube)
@@ -1184,6 +1214,9 @@ class SEDm:
                                     N, j)
                         self.take_dome(cam, N=N, readout=i, do_lamp=False,
                                        wait=False, exptime=j, move=False)
+                if make_files:
+                    with open(status_dict['%s_domes' % cube], 'w') as file:
+                        file.write('%s domes completed:%s' % (cube.upper(), uttime()))
                 logger.info("Turning off Halogens")
                 self.ocs.halogens_off()
 
@@ -1197,6 +1230,9 @@ class SEDm:
                 logger.info("Taking %d %s arcs for %s", N, lamp, cube)
                 self.take_arclamp(cam, lamp, N=N, readout=rdo, move=False,
                                   exptime=exptime)
+                if make_files:
+                    with open(status_dict['lamps'], 'w') as file:
+                        file.write('%s arclamps completed:%s \n' % (lamp.capitalize(), uttime()))
         return {'elaptime': time.time() - start, 'data': '%s complete' %
                                                          cube_type}
 
