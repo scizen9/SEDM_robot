@@ -519,20 +519,20 @@ class Scheduler:
 
         return {"data": df, "elaptime": time.time() - start}
 
-    def initialize_targets(self, target_df, obstime=''):
+    def initialize_targets(self, target_df_in, obstime=''):
         start = time.time()
-        mask = (target_df['typedesig'] == 'f')
-        target_df_valid = target_df[mask]
+        # filter out all non-fixed typedesig objects
+        target_df = target_df_in[target_df_in['typedesig'] == 'f']
 
         target_df['SkyCoords'] = False
-        target_df.loc[mask, 'SkyCoords'] = SkyCoord(ra=target_df_valid['ra'],
-                                                    dec=target_df_valid['dec'],
-                                                    unit="deg")
+        target_df['SkyCoords'] = SkyCoord(ra=target_df['ra'],
+                                          dec=target_df['dec'],
+                                          unit="deg")
         target_df['start_obs'] = False
         if not obstime:
             obstime = datetime.datetime.utcnow()
 
-        target_df.loc[mask, 'start_obs'] = Time(obstime)
+        target_df['start_obs'] = Time(obstime)
 
         target_df['obs_seq'] = target_df.apply(self._set_obs_seq, axis=1)
         target_df['end_obs'] = target_df.apply(self._set_end_time, axis=1)
