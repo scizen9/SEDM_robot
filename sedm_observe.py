@@ -30,7 +30,7 @@ standard_done_file = os.path.join(os.path.join(status_file_dir,
                                                "standard_done.txt"))
 
 status_files = [calib_done_file, rc_slowbias_done_file, rc_fastbias_done_file,
-                ifu_domes_done_file, ifu_domes_done_file, lamps_done_file, focus_done_file,
+                ifu_slowbias_done_file, ifu_domes_done_file, lamps_done_file, focus_done_file,
                 standard_done_file, twilights_done_file]
 
 
