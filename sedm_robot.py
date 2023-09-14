@@ -1223,21 +1223,22 @@ class SEDm:
                 logger.info("Turning off Halogens")
                 self.ocs.halogens_off()
 
-        for lamp in ['hg', 'xe', 'cd']:
-            if lamp in cube_params[cube_type]['order']:
-                N = cube_params[cube_type][lamp]['N']
-                rdo = cube_params[cube_type][lamp]['readout']
-                if check_for_previous:
-                    pass
-                exptime = cube_params[cube_type][lamp]['exptime']
-                logger.info("Taking %d %s arcs for %s", N, lamp, cube)
-                self.take_arclamp(cam, lamp, N=N, readout=rdo, move=False,
-                                  exptime=exptime)
+        if os.path.exists(status_dict['lamps']):
+            logger.info("Arc Lamps already taken")
+        else:
+            for lamp in ['hg', 'xe', 'cd']:
+                if lamp in cube_params[cube_type]['order']:
+                    N = cube_params[cube_type][lamp]['N']
+                    rdo = cube_params[cube_type][lamp]['readout']
+                    exptime = cube_params[cube_type][lamp]['exptime']
+                    logger.info("Taking %d %s arcs for %s", N, lamp, cube)
+                    self.take_arclamp(cam, lamp, N=N, readout=rdo, move=False,
+                                      exptime=exptime)
                 if make_files:
-                    with open(status_dict['lamps'], 'w') as file:
-                        file.write('%s arclamps completed:%s \n' % (lamp.capitalize(), uttime()))
-        return {'elaptime': time.time() - start, 'data': '%s complete' %
-                                                         cube_type}
+                    with open(status_dict['lamps'], 'a') as file:
+                        file.write('%s arclamps completed:%s\n' % (lamp.capitalize(), uttime()))
+
+        return {'elaptime': time.time() - start, 'data': '%s complete' % cube_type}
 
     def take_datacube_eff(self, custom_file='', move=True,
                           ha=None, dec=None, domeaz=None):
