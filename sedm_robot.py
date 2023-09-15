@@ -3578,13 +3578,13 @@ class SEDm:
             if 'RA_offset' in obsdict:
                 offset = obsdict['RA_offset']
                 # convert to decimal degrees if not already
-                if ':' in offset:
+                if ':' in str(offset):
                     offset = SkyCoord(ra=offset, dec="0:0:0", unit=(u.hourangle, u.deg)).ra.deg
                 nonsid_dict['RA'] += offset
             if 'Dec_offset' in obsdict:
                 offset = obsdict['Dec_offset']
                 # convert to decimal degrees if not already
-                if ':' in offset:
+                if ':' in str(offset):
                     offset = SkyCoord(ra='0:0:0', dec=offset, unit=(u.hourangle, u.deg)).dec.deg
                 nonsid_dict['Dec'] += offset
 
@@ -3715,13 +3715,13 @@ class SEDm:
             if 'RA_offset' in obsdict:
                 offset = obsdict['RA_offset']
                 # convert to decimal degrees if not already
-                if ':' in offset:
+                if ':' in str(offset):
                     offset = SkyCoord(ra=offset, dec="0:0:0", unit=(u.hourangle, u.deg)).ra.deg
                 nonsid_dict['RA'] += offset
             if 'Dec_offset' in obsdict:
                 offset = obsdict['Dec_offset']
                 # convert to decimal degrees if not already
-                if ':' in offset:
+                if ':' in str(offset):
                     offset = SkyCoord(ra='0:0:0', dec=offset, unit=(u.hourangle, u.deg)).dec.deg
                 nonsid_dict['Dec'] += offset
 
