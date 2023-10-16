@@ -644,7 +644,7 @@ class SEDm:
                 return {'elaptime': time.time()-start, 'data': latest_file}
             else:
                 send_alert_email("Last Image failed to write")
-                logger.warning("File not a match saving header info")
+                logger.warning("File not a match, saving header info")
                 save_path = os.path.join(
                     self.obs_dir, "header_dict_" +
                                   start_time.strftime("%Y%m%d_%H_%M_%S"))

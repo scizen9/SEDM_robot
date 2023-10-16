@@ -392,10 +392,14 @@ def run_observing_loop(do_focus=True, do_standard=True,
                 print("Doing morning standard")
                 ret = robot.run_standard_seq(robot.ifu)
                 print("run_standard_seq status:\n", ret)
-                with open(standard_done_file, 'w') as the_file:
-                    the_file.write('Standard completed:%s' % uttime())
-                standard_done = True
-                std_count += 1
+                if 'error' in ret:
+                    print("Morning standard failed")
+                else:
+                    print("Morning standard succeeded")
+                    with open(standard_done_file, 'w') as the_file:
+                        the_file.write('Standard completed:%s' % uttime())
+                    standard_done = True
+                    std_count += 1
                 loop_count += 1
                 time.sleep(600)
                 continue
