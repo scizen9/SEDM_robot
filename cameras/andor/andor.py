@@ -32,8 +32,8 @@ logger.info("Starting Logger: Logger file is %s", 'andor_controller.log')
 
 
 def status_msg(msg):
-    now = datetime.now()
-    dt_string = now.strftime("%d-%m-%Y %H:%M:%S")
+    now = datetime.utcnow()
+    dt_string = now.strftime("%d-%m-%Y %H:%M:%S andor:")
     msg_return = f'{dt_string} {msg}'
     print(msg_return)
 
