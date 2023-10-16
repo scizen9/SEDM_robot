@@ -202,8 +202,8 @@ def check_call(status):
 
 
 def status_msg(msg):
-    now = datetime.now()
-    dt_string = now.strftime("%d-%m-%Y %H:%M:%S")
+    now = datetime.utcnow()
+    dt_string = now.strftime("%Y-%m-%d %H:%M:%S andorLib:")
     msg_return = f'{dt_string} {msg}'
     print(msg_return)
 
