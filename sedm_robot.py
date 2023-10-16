@@ -23,6 +23,7 @@ import subprocess
 from astropy.time import Time
 from email.message import EmailMessage
 from astropy.coordinates import SkyCoord
+import astropy.units as u
 from astroquery.mpc import MPC
 from astroquery.jplhorizons import Horizons
 import astroquery.exceptions
@@ -44,6 +45,9 @@ with open(os.path.join(Version.CONFIG_DIR, 'sedm_robot.json')) as cfg_file:
 with open(os.path.join(Version.CONFIG_DIR, 'cameras.json')) as cfg_file:
     cam_cfg = json.load(cfg_file)
 
+with open(os.path.join(Version.CONFIG_DIR, 'sedm_observe.json')) as cfg_file:
+    sedm_observe_cfg = json.load(cfg_file)
+
 logger = logging.getLogger("sedmLogger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
@@ -63,7 +67,29 @@ consoleHandler = logging.StreamHandler(sys.stdout)
 consoleHandler.setFormatter(console_formatter)
 logger.addHandler(consoleHandler)
 
+status_file_dir = sedm_observe_cfg['status_dir']
+status_dict = {}
+rc_fastbias_done_file = os.path.join(os.path.join(status_file_dir, "rc_fastbias_done.txt"))
+status_dict['rc_fastbias'] = rc_fastbias_done_file
+rc_slowbias_done_file = os.path.join(os.path.join(status_file_dir, "rc_slowbias_done.txt"))
+status_dict['rc_slowbias'] = rc_slowbias_done_file
+ifu_slowbias_done_file = os.path.join(os.path.join(status_file_dir, "ifu_slowbias_done.txt"))
+status_dict['ifu_slowbias'] = ifu_slowbias_done_file
+rc_domes_done_file = os.path.join(os.path.join(status_file_dir, "rc_domes_done.txt"))
+status_dict['rc_domes'] = rc_domes_done_file
+ifu_domes_done_file = os.path.join(os.path.join(status_file_dir, "ifu_domes_done.txt"))
+status_dict['ifu_domes'] = ifu_domes_done_file
+lamps_done_file = os.path.join(os.path.join(status_file_dir, "lamps_done.txt"))
+status_dict['lamps'] = lamps_done_file
 logger.info("Starting Logger: Logger file is %s", 'sedm_robot.log')
+
+
+def uttime(offset=0):
+    if not offset:
+        return Time(datetime.datetime.utcnow())
+    else:
+        return Time(datetime.datetime.utcnow() +
+                    datetime.timedelta(seconds=offset))
 
 
 def send_alert_email(body):
@@ -1079,7 +1105,7 @@ class SEDm:
 
     def take_datacube(self, cam, cube='ifu', check_for_previous=True,
                       custom_file='', move=False, ha=None, dec=None,
-                      domeaz=None):
+                      domeaz=None, make_files=False):
         """
 
         :param move:
@@ -1090,6 +1116,7 @@ class SEDm:
         :param custom_file:
         :param cam:
         :param cube:
+        :param make_files:
         :return:
         """
         start = time.time()
@@ -1126,12 +1153,15 @@ class SEDm:
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
-            if files_completed >= N:
-                logger.info("Fast biases already done")
+            if files_completed >= N or os.path.exists(status_dict['%s_fastbias' % cube]):
+                logger.info("%s Fast biases already done" % cube.upper())
             else:
                 N = N - files_completed
                 logger.info("Taking %d fast biases for %s", N, cube)
                 self.take_bias(cam, N=N, readout=rdo)
+                if make_files:
+                    with open(status_dict['%s_fastbias' % cube], 'w') as file:
+                        file.write('%s fast biases completed:%s' % (cube.upper(), uttime()))
 
         if 'slow_bias' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['slow_bias']['N']
@@ -1145,12 +1175,15 @@ class SEDm:
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
-            if files_completed >= N:
-                logger.info("Slow biases already done")
+            if files_completed >= N or os.path.exists(status_dict['%s_slowbias' % cube]):
+                logger.info("%s Slow biases already done" % cube.upper())
             else:
                 N = N - files_completed
                 logger.info("Taking %d slow biases for %s", N, cube)
                 self.take_bias(cam, N=N, readout=rdo)
+                if make_files:
+                    with open(status_dict['%s_slowbias' % cube], 'w') as file:
+                        file.write('%s slow biases completed:%s' % (cube.upper(), uttime()))
 
         if 'dome' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['dome']['N']
@@ -1169,8 +1202,8 @@ class SEDm:
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
-            if files_completed >= N:
-                logger.info("Domes already taken")
+            if files_completed >= N or os.path.exists(status_dict['%s_domes' % cube]):
+                logger.info("%s Domes already taken" % cube.upper())
             else:
                 N = N - files_completed
                 logger.info("Taking %d %s dome flats in each set", N, cube)
@@ -1184,21 +1217,28 @@ class SEDm:
                                     N, j)
                         self.take_dome(cam, N=N, readout=i, do_lamp=False,
                                        wait=False, exptime=j, move=False)
+                if make_files:
+                    with open(status_dict['%s_domes' % cube], 'w') as file:
+                        file.write('%s domes completed:%s' % (cube.upper(), uttime()))
                 logger.info("Turning off Halogens")
                 self.ocs.halogens_off()
 
-        for lamp in ['hg', 'xe', 'cd']:
-            if lamp in cube_params[cube_type]['order']:
-                N = cube_params[cube_type][lamp]['N']
-                rdo = cube_params[cube_type][lamp]['readout']
-                if check_for_previous:
-                    pass
-                exptime = cube_params[cube_type][lamp]['exptime']
-                logger.info("Taking %d %s arcs for %s", N, lamp, cube)
-                self.take_arclamp(cam, lamp, N=N, readout=rdo, move=False,
-                                  exptime=exptime)
-        return {'elaptime': time.time() - start, 'data': '%s complete' %
-                                                         cube_type}
+        if os.path.exists(status_dict['lamps']):
+            logger.info("Arc Lamps already taken")
+        else:
+            for lamp in ['hg', 'xe', 'cd']:
+                if lamp in cube_params[cube_type]['order']:
+                    N = cube_params[cube_type][lamp]['N']
+                    rdo = cube_params[cube_type][lamp]['readout']
+                    exptime = cube_params[cube_type][lamp]['exptime']
+                    logger.info("Taking %d %s arcs for %s", N, lamp, cube)
+                    self.take_arclamp(cam, lamp, N=N, readout=rdo, move=False,
+                                      exptime=exptime)
+                if make_files:
+                    with open(status_dict['lamps'], 'a') as file:
+                        file.write('%s arclamps completed:%s\n' % (lamp.capitalize(), uttime()))
+
+        return {'elaptime': time.time() - start, 'data': '%s complete' % cube_type}
 
     def take_datacube_eff(self, custom_file='', move=True,
                           ha=None, dec=None, domeaz=None):
@@ -2435,6 +2475,8 @@ class SEDm:
                                             name=name,
                                             epoch=epoch)
                     logger.info("ocs.tel_move(RC) status:\n%s", ret)
+                    if "-3:" in ret:
+                        send_alert_email("Telescope move command for rc science sequence failed")
                     if 'data' not in ret:
                         continue
                 for k in range(int(obs_repeat_filter[j])):
@@ -2523,6 +2565,9 @@ class SEDm:
                                     ra_rate=ra_rate, dec_rate=dec_rate,
                                     motion_flag=motion_flag, epoch=epoch)
             logger.info("ocs.tel_move status:\n%s", ret)
+            if "-3:" in ret:
+                send_alert_email("Telescope move command for ifu acquisition sequence failed")
+
             logger.info("sedm.py: Pausing for 1s until telescope "
                         "is done settling")
             time.sleep(1)
@@ -3337,7 +3382,7 @@ class SEDm:
                 else:
                     alloc_id = None
                 ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                                                     typedesig="f",
+                                                     typedesig="f", exptime=obsdict['exptime'],
                                                      allocation_id=alloc_id,
                                                      ra=RA, dec=DEC)
                 logger.info("sky.get_manual_request_id status:\n%s", ret)
@@ -3397,7 +3442,7 @@ class SEDm:
             else:
                 alloc_id = None
             ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                                                 typedesig="f",
+                                                 typedesig="f", exptime=obsdict['exptime'],
                                                  allocation_id=alloc_id,
                                                  ra=RA, dec=DEC)
             logger.info("sky.get_manual_request_id status:\n%s", ret)
@@ -3515,6 +3560,7 @@ class SEDm:
 
             ret = self.sky.get_manual_request_id(name=obsdict['target'],
                                                  allocation_id=alloc_id,
+                                                 exptime=obsdict['exptime'],
                                                  ra=nonsid_dict['RA'],
                                                  dec=nonsid_dict['Dec'],
                                                  typedesig="e")
@@ -3532,6 +3578,20 @@ class SEDm:
                 p60prnm = 'Near-Earth Asteroid'
                 p60prpi = 'SEDm'
                 logger.warning("Unable to obtain request data")
+
+            # offset target position from ephemeris coordinates
+            if 'RA_offset' in obsdict:
+                offset = obsdict['RA_offset']
+                # convert to decimal degrees if not already
+                if ':' in str(offset):
+                    offset = SkyCoord(ra=offset, dec="0:0:0", unit=(u.hourangle, u.deg)).ra.deg
+                nonsid_dict['RA'] += offset
+            if 'Dec_offset' in obsdict:
+                offset = obsdict['Dec_offset']
+                # convert to decimal degrees if not already
+                if ':' in str(offset):
+                    offset = SkyCoord(ra='0:0:0', dec=offset, unit=(u.hourangle, u.deg)).dec.deg
+                nonsid_dict['Dec'] += offset
 
             ret = self.run_ifu_science_seq(
                 self.ifu, name=obsdict['target'], imgtype='Science',
@@ -3623,6 +3683,7 @@ class SEDm:
 
             ret = self.sky.get_manual_request_id(name=obsdict['target'],
                                                  allocation_id=alloc_id,
+                                                 exptime=obsdict['exptime'],
                                                  ra=nonsid_dict['RA'],
                                                  dec=nonsid_dict['Dec'],
                                                  typedesig="e")
@@ -3654,6 +3715,20 @@ class SEDm:
                 n_sets = int(obsdict['n_sets'])
             else:
                 n_sets = 1
+
+            # offset target position from ephemeris coordinates
+            if 'RA_offset' in obsdict:
+                offset = obsdict['RA_offset']
+                # convert to decimal degrees if not already
+                if ':' in str(offset):
+                    offset = SkyCoord(ra=offset, dec="0:0:0", unit=(u.hourangle, u.deg)).ra.deg
+                nonsid_dict['RA'] += offset
+            if 'Dec_offset' in obsdict:
+                offset = obsdict['Dec_offset']
+                # convert to decimal degrees if not already
+                if ':' in str(offset):
+                    offset = SkyCoord(ra='0:0:0', dec=offset, unit=(u.hourangle, u.deg)).dec.deg
+                nonsid_dict['Dec'] += offset
 
             ret = self.run_rc_science_seq(
                 self.rc, shutter="normal", readout=.1, name=obsdict['target'],
