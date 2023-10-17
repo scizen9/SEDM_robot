@@ -34,55 +34,56 @@ logger.info("Starting Logger: Logger file is %s", 'stage_controller.log')
 
 class Stage:
     """The following stage controller commands are available. Note that many
-    are not implemented at the moment.
+    are not implemented at the moment.  The asterisk indicates the commands
+    that are implemented.
 
-    AC Set/Get acceleration
-    BA  Set/Get backlash compensation
-    BH  Set/Get hysteresis compensation
-    DV  Set/Get driver voltage Not for PP
-    FD  Set/Get low pass filter for Kd Not for PP
-    FE  Set/Get following error limit Not for PP
-    FF  Set/Get friction compensation Not for PP
-    FR  Set/Get stepper motor configuration Not for CC
-    HT  Set/Get HOME search type
-    ID  Set/Get stage identifier
-    JD  Leave JOGGING state
-    JM  Enable/disable keypad
-    JR  Set/Get jerk time
-    KD  Set/Get derivative gain Not for PP
-    KI  Set/Get integral gain Not for PP
-    KP  Set/Get proportional gain Not for PP
-    KV  Set/Get velocity feed forward Not for PP
-    MM  Enter/Leave DISABLE state
-    OH  Set/Get HOME search velocity
-    OR  Execute HOME search
-    OT  Set/Get HOME search time-out
-    PA  Move absolute
-    PR  Move relative
-    PT  Get motion time for a relative move
-    PW  Enter/Leave CONFIGURATION state
-    QI  Set/Get motor’s current limits
-    RA  Get analog input value
-    RB  Get TTL input value
-    RS  Reset controller
-    SA  Set/Get controller’s RS-485 address
-    SB  Set/Get TTL output value
-    SC  Set/Get control loop state Not for PP
-    SE  Configure/Execute simultaneous started move
-    SL  Set/Get negative software limit
-    SR  Set/Get positive software limit
-    ST  Stop motion
-    SU  Set/Get encoder increment value Not for PP
-    TB  Get command error string
-    TE  Get last command error
-    TH  Get set-point position
-    TP  Get current position
-    TS  Get positioner error and controller state
-    VA  Set/Get velocity
-    VB  Set/Get base velocity Not for CC
-    VE  Get controller revision information
-    ZT  Get all axis parameters
-    ZX  Set/Get SmartStage configuration
+    AC    Set/Get acceleration
+    BA    Set/Get backlash compensation
+    BH    Set/Get hysteresis compensation
+    DV    Set/Get driver voltage Not for PP
+    FD    Set/Get low pass filter for Kd Not for PP
+    FE    Set/Get following error limit Not for PP
+    FF    Set/Get friction compensation Not for PP
+    FR    Set/Get stepper motor configuration Not for CC
+    HT  * Set/Get HOME search type
+    ID    Set/Get stage identifier
+    JD    Leave JOGGING state
+    JM    Enable/disable keypad
+    JR    Set/Get jerk time
+    KD    Set/Get derivative gain Not for PP
+    KI    Set/Get integral gain Not for PP
+    KP    Set/Get proportional gain Not for PP
+    KV    Set/Get velocity feed forward Not for PP
+    MM    Enter/Leave DISABLE state
+    OH    Set/Get HOME search velocity
+    OR  * Execute HOME search
+    OT    Set/Get HOME search time-out
+    PA  * Move absolute
+    PR    Move relative
+    PT    Get motion time for a relative move
+    PW  * Enter/Leave CONFIGURATION state
+    QI    Set/Get motor’s current limits
+    RA    Get analog input value
+    RB    Get TTL input value
+    RS  * Reset controller
+    SA    Set/Get controller’s RS-485 address
+    SB    Set/Get TTL output value
+    SC    Set/Get control loop state Not for PP
+    SE    Configure/Execute simultaneous started move
+    SL  * Set/Get negative software limit
+    SR  * Set/Get positive software limit
+    ST    Stop motion
+    SU  * Set/Get encoder increment value Not for PP
+    TB    Get command error string
+    TE    Get last command error
+    TH    Get set-point position
+    TP  * Get current position
+    TS  * Get positioner error and controller state
+    VA    Set/Get velocity
+    VB    Set/Get base velocity Not for CC
+    VE    Get controller revision information
+    ZT  * Get all axis parameters
+    ZX  * Set/Get SmartStage configuration
 
     """
 
