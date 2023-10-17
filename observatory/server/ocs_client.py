@@ -148,7 +148,7 @@ class Observatory:
         return self.__send_command(cmd="SETRATES", parameters=parameters)
 
     def tel_move(self, name='Test', ra=None, dec=None, equinox=2000,
-                 ra_rate=0, dec_rate=0, motion_flag=None, epoch=""):
+                 ra_rate=0, dec_rate=0, motion_flag="", epoch=""):
         """From the TCS manual:
         COORDS (FAST) accepts information to specify a TARGET Position.
         * If no non-sidereal motion is specified, parameters 6&7 may be omitted.
