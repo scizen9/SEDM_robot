@@ -85,6 +85,20 @@ class Stage:
     ZT  * Get all axis parameters
     ZX  * Set/Get SmartStage configuration
 
+    Values below as of 2023-Oct-17
+
+    For stage 1, current values are:
+    10 - Acceleration
+    0 - negative software limit, from 1SL?
+    3 - positive software limit, from 1SR?
+    1.76994e-05 - units per encoder increment, from 1SU?
+
+    For stage2, current values are:
+    1.6 - Acceleration
+    0 - negative software limit, from 2SL?
+    8 - positive software limit, from 2SR?
+    3.0518e-05 - units per encoder increment, from 2SU?
+
     """
 
     def __init__(self, host=None, port=None):
@@ -114,14 +128,14 @@ class Stage:
         self.socket = socket.socket()
 
         self.controller_commands = ["PA", "SU", "ZX1", "ZX2", "ZX3", "OR",
-                                    "PW1", "PW0", "SL", "SR", "SU", "HT1",
+                                    "PW1", "PW0", "SL", "SR", "HT1",
                                     "TS", "TP", "ZT", "RS"]
 
-        self.return_value_commands = ["ts", "tp"]
-        self.parameter_commands = ["pa", "SU"]
-        self.state_commands = ["ts?"]
+        self.return_value_commands = ["TS", "TP"]
+        self.parameter_commands = ["PA", "SU"]
         self.end_code_list = ['32', '33', '34', '35']
         self.not_ref_list = ['0A', '0B', '0C', '0D', '0F', '10', '11']
+        self.moving_list = ['28']
         self.msg = {
             "0A": "NOT REFERENCED from reset.",
             "0B": "NOT REFERENCED from HOMING.",
@@ -158,64 +172,79 @@ class Stage:
             logger.info("Error connecting to the socket", exc_info=True)
             return str(e)
 
-    def __decode_response(self, message_id):
-        try:
-            msg = self.msg[message_id]
-            logger.info(msg)
-            return msg
-        except Exception as e:
-            logger.error("Error decoding response", exc_info=True)
-            return str(e)
-
-    def __send_serial_command(self, stage_id=1, msg=''):
+    def __send_serial_command(self, stage_id=1, cmd=''):
         """
 
         :param stage_id:
-        :param msg:
+        :param cmd:
         :return:
         """
-        cmd = "%s%s\r\n" % (stage_id, msg)
-        logger.info("Sending command:%s", cmd)
-        x = cmd.encode('utf-8')
+
+        # Prep command
+        cmd_send = "%s%s\r\n" % (stage_id, cmd)
+        logger.info("Sending command:%s", cmd_send)
+        cmd_encoded = cmd_send.encode('utf-8')
+
+        # Make connection
         self.__connect()
         self.socket.settimeout(30)
-        self.socket.send(x)
+
+        # Send command
+        self.socket.send(cmd_encoded)
         time.sleep(.05)
         recv = None
 
-        if msg.lower() in self.return_value_commands:
+        # Return value commands
+        if cmd.upper() in self.return_value_commands:
 
+            # Get return value
             recv = self.socket.recv(2048)
-            logger.info("In return value: %d - %s", len(recv), recv)
-            if len(recv) == 11 or len(recv) == 12 or len(recv) == 13:
-                logger.info("This is a value command")
-                return recv
-        t = 300
+            recv_len = len(recv)
+            logger.info("Return: len = %d, Value = %s", recv_len, recv)
 
-        # Now handle wait commands
+            # Are we a valid return value?
+            if recv_len == 11 or recv_len == 12 or recv_len == 13:
+                logger.info("Return value validated")
+                return recv
+
+        # Non-return value commands eventually return state output
+        t = 300     # How many tries while waiting for command
         while t > 0:
+            # Check state
             statecmd = '%sTS\r\n' % stage_id
             statecmd = statecmd.encode('utf-8')
             self.socket.send(statecmd)
             time.sleep(.05)
             recv = self.socket.recv(1024)
 
+            # Valid state return
             if len(recv) == 11:
+                # Parse state
                 recv = recv.rstrip()
-                code = recv[-2:].decode('utf-8')
-                if str(code) in self.end_code_list:
+                code = str(recv[-2:].decode('utf-8'))
+
+                # Valid end code (done)
+                if code in self.end_code_list:
                     return recv
-                elif str(code) in self.not_ref_list:
+
+                # Not referenced code (done)
+                elif code in self.not_ref_list:
                     return recv
+
+                # else: moving, so loop until not
+
+            # Invalid state return (done)
             else:
-                code = "33"
-                if str(code) in self.end_code_list:
-                    return recv
-                elif str(code) in self.not_ref_list:
-                    return recv
+                logger.warning("Bad %dTS return: %s", stage_id, recv)
+                return recv
+
+            # Decrement try counter and read state again
             t -= 1
 
-        logger.info(recv)
+        # end while t > 0  (tries still left)
+
+        # If we get here, we ran out of tries
+        logger.warning("Command timed out, final state: %s", recv)
         return recv
 
     def __send_command(self, cmd="", parameters=None, stage_id=1,
@@ -236,6 +265,7 @@ class Stage:
                         'error': "%s is not a valid command" % cmd}
 
         logger.info("Input command: %s", cmd)
+
         # Check if the command should have parameters
         if cmd in self.parameter_commands and parameters:
             logger.info("add parameters")
@@ -244,30 +274,36 @@ class Stage:
             cmd += parameters
             logger.info(cmd)
 
-        # Next check if we expect a return value from command
-
+        # Send command
         response = self.__send_serial_command(stage_id, cmd)
         response = response.decode('utf-8')
         logger.info("Response from stage controller %d: %s", stage_id, response)
 
+        # Parse response
         message = self.__return_parse(response)
 
-        if cmd not in self.return_value_commands and self.__return_parse(
-                response) == "Unknown state":
-            return {'elaptime': time.time() - start, 'error': response}
+        # Next check if we expect a return value from command
+        if cmd in self.return_value_commands:
 
-        elif cmd in self.return_value_commands:
-
-            if cmd.lower() == 'tp':
+            # Parse position return
+            if cmd.upper() == 'TP':
                 response = response.rstrip()
                 return {'elaptime': time.time() - start, 'data': response[3:]}
 
+            # Return whole message (usually from TS)
             else:
                 return {'elaptime': time.time() - start, 'data': message}
 
+        # Non-return value command, but stage in unknown state
+        elif cmd not in self.return_value_commands and \
+                message == "Unknown state":
+            return {'elaptime': time.time() - start, 'error': response}
+
+        # Not referenced (needs to be homed)
         elif 'REFERENCED' in message:
             if home_when_not_ref:
-                logger.info("NOT REF")
+                # TODO: move to nominal positions after homing
+                logger.info("State is NOT REFERENCED, Homing stage...")
                 response = self.__send_serial_command(stage_id, 'OR')
                 response = response.decode('utf-8')
                 logger.info("Cmd response from stage controller: %s", response)
@@ -277,6 +313,7 @@ class Stage:
             else:
                 return {'elaptime': time.time() - start, 'error': message}
 
+        # Valid state achieved after command
         else:
             return {'elaptime': time.time() - start, 'data': message}
 
@@ -297,6 +334,36 @@ class Stage:
         code = message[-2:]
         return self.msg.get(code, "Unknown state")
 
+    def home(self, stage_id=1):
+        """
+        Home the stage
+        :return: bool, status message
+        """
+        return self.__send_command(cmd='OR', stage_id=stage_id)
+
+    def move_focus(self, position=12.5, stage_id=1):
+        """
+        Move stage and return when in position
+
+        :return:bool, status message
+        """
+        return self.__send_command(cmd="PA", stage_id=stage_id,
+                                   parameters=[position])
+
+    def get_state(self, stage_id=1):
+        return self.__send_command(cmd="TS", stage_id=stage_id)
+
+    def get_position(self, stage_id=1):
+        start = time.time()
+        try:
+            ret = self.__send_command(cmd="TP", stage_id=stage_id)
+        except Exception as e:
+            logger.error('get_position error: %s', str(e))
+            ret = {'elaptime': time.time()-start,
+                   'error': 'Unable to send stage command'}
+        return ret
+
+    # Not Used
     def enterConfigState(self, stage_id=1):
         """
 
@@ -327,8 +394,8 @@ class Stage:
             return
         custom_command = False
 
+        # Enter configuration state
         ret = self.__send_command(cmd='PW1', stage_id=stage_id)
-        # , end_code=["32", "33", "34", "35", "14"])
 
         logger.info(ret)
         while True:
@@ -337,18 +404,18 @@ class Stage:
                 logger.info(message)
                 value = int(input("Choose Configuration to Change"))
 
-            if value == 1:
+            if value == 1:      # Set HOME position
                 cmd = "HT1"
 
-            elif value == 2:
+            elif value == 2:    # Set negative software limit
                 cmd = "SL"
                 value = input("Enter value between -10^12 to 0")
 
-            elif value == 3:
+            elif value == 3:    # Set positive software limit
                 cmd = "SR"
                 value = input("Enter value between 0 to 10^12")
 
-            elif value == 4:
+            elif value == 4:    # Set encoder increment value
                 cmd = "SU"
                 value = input("Enter value between 10^-6 to 10^12")
 
@@ -356,94 +423,72 @@ class Stage:
                 cmd = input("Enter custom command")
                 custom_command = True
             elif value == 6:
+                # Exit configuration state
                 ret = self.__send_command(cmd='PW0', stage_id=stage_id)
                 logger.info(ret)
                 break
             else:
-                logger.info("Value not recognized exiting")
+                logger.info("Value not recognized, exiting config state.")
                 ret = self.__send_command(cmd='PW0', stage_id=stage_id)
                 logger.info(ret)
                 return
 
             logger.info(ret, value, custom_command)
 
+            # Send command
             ret = self.__send_command(cmd=cmd, stage_id=stage_id,
                                       custom_command=custom_command)
             logger.info(ret)
+
+            # Reset for next round of commands
             value = 0
             logger.info(value)
             time.sleep(3)
             custom_command = False
 
-    def move_focus(self, position=12.5, stage_id=1):
-        """
-        Move stage focus and return when in position
-
-        :return:bool, status message
-        """
-        return self.__send_command(cmd="pa", stage_id=stage_id,
-                                   parameters=[position])
-
+    # Not Used
     def set_encoder_value(self, value=12.5, stage_id=1):
         """
-        Move stage focus and return when in position
+        Set encoder increment value
 
         :return:bool, status message
         """
         return self.__send_command(cmd="SU", stage_id=stage_id,
                                    parameters=[value])
 
-    def home(self, stage_id=1):
-        """
-        Home the stage
-        :return: bool, status message
-        """
-        return self.__send_command(cmd='OR', stage_id=stage_id)
-
+    # Not Used
     def get_all(self, stage_id=1):
         """
-        Home the stage
+        Get all axis parameters
         :return: bool, status message
         """
         return self.__send_command(cmd='ZT', stage_id=stage_id)
 
+    # Not Used
     def disable_esp(self, stage_id=1):
         """
-        Home the stage
+        Disable loading stage eeprom data on power up
         :return: bool, status message
         """
         return self.__send_command(cmd='ZX1', stage_id=stage_id)
 
+    # Not Used
     def enable_esp(self, stage_id=1):
         """
-        Home the stage
+        Enable loading stage eeprom data on power up
         :return: bool, status message
         """
         return self.__send_command(cmd='ZX3', stage_id=stage_id)
 
-    def get_state(self, stage_id=1):
-        return self.__send_command(cmd="ts", stage_id=stage_id)
-
-    def get_position(self, stage_id=1):
-        start = time.time()
-        try:
-            x = self.__send_command(cmd="tp", stage_id=stage_id)
-        except Exception as e:
-            logger.error('get_position error: %s', str(e))
-            x = {'elaptime': time.time()-start,
-                 'error': 'Unable to send stage command'}
-        return x
-
+    # Not Used
     def reset(self, stage_id=1):
-        if stage_id == 1:
-            pass
-        return self.__send_command(cmd="RS")
+        return self.__send_command(cmd="RS", stage_id=stage_id)
 
+    # Not Used
     def get_limits(self, stage_id=1):
-        if stage_id == 1:
-            pass
-        return self.__send_command(cmd="ZT")
+        return self.__send_command(cmd="ZT", stage_id=stage_id)
 
+    # Not Used
     def run_manually(self, stage_id=1):
         while True:
 
