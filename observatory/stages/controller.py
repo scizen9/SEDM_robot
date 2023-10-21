@@ -127,6 +127,10 @@ class Stage:
 
         self.socket = socket.socket()
 
+        # nominal positions
+        self.stage1_nom = self.stage_config['stage1']
+        self.stage2_nom = self.stage_config['stage2']
+
         self.controller_commands = ["PA", "SU", "ZX1", "ZX2", "ZX3", "OR",
                                     "PW1", "PW0", "SL", "SR", "HT1",
                                     "TS", "TP", "ZT", "RS"]
@@ -364,7 +368,7 @@ class Stage:
         return ret
 
     # Not Used
-    def enterConfigState(self, stage_id=1):
+    def enter_config_state(self, stage_id=1):
         """
 
         :param stage_id:
@@ -510,7 +514,7 @@ if __name__ == "__main__":
     # time.sleep(3)
 
     # s.run_manually(1)
-    # s.enterConfigState(1)
+    # s.enter_config_state(1)
     # logger.info(s.home(1))
     # logger.info(s.reset(1))
     # logger.info(s.enable_esp(1))
