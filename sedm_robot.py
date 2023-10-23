@@ -69,15 +69,20 @@ logger.addHandler(consoleHandler)
 
 status_file_dir = sedm_observe_cfg['status_dir']
 status_dict = {}
-rc_fastbias_done_file = os.path.join(os.path.join(status_file_dir, "rc_fastbias_done.txt"))
+rc_fastbias_done_file = os.path.join(os.path.join(status_file_dir,
+                                                  "rc_fastbias_done.txt"))
 status_dict['rc_fastbias'] = rc_fastbias_done_file
-rc_slowbias_done_file = os.path.join(os.path.join(status_file_dir, "rc_slowbias_done.txt"))
+rc_slowbias_done_file = os.path.join(os.path.join(status_file_dir,
+                                                  "rc_slowbias_done.txt"))
 status_dict['rc_slowbias'] = rc_slowbias_done_file
-ifu_slowbias_done_file = os.path.join(os.path.join(status_file_dir, "ifu_slowbias_done.txt"))
+ifu_slowbias_done_file = os.path.join(os.path.join(status_file_dir,
+                                                   "ifu_slowbias_done.txt"))
 status_dict['ifu_slowbias'] = ifu_slowbias_done_file
-rc_domes_done_file = os.path.join(os.path.join(status_file_dir, "rc_domes_done.txt"))
+rc_domes_done_file = os.path.join(os.path.join(status_file_dir,
+                                               "rc_domes_done.txt"))
 status_dict['rc_domes'] = rc_domes_done_file
-ifu_domes_done_file = os.path.join(os.path.join(status_file_dir, "ifu_domes_done.txt"))
+ifu_domes_done_file = os.path.join(os.path.join(status_file_dir,
+                                                "ifu_domes_done.txt"))
 status_dict['ifu_domes'] = ifu_domes_done_file
 lamps_done_file = os.path.join(os.path.join(status_file_dir, "lamps_done.txt"))
 status_dict['lamps'] = lamps_done_file
@@ -1153,7 +1158,8 @@ class SEDm:
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
-            if files_completed >= N or os.path.exists(status_dict['%s_fastbias' % cube]):
+            if files_completed >= N or os.path.exists(status_dict['%s_fastbias'
+                                                                  % cube]):
                 logger.info("%s Fast biases already done" % cube.upper())
             else:
                 N = N - files_completed
@@ -1161,7 +1167,8 @@ class SEDm:
                 self.take_bias(cam, N=N, readout=rdo)
                 if make_files:
                     with open(status_dict['%s_fastbias' % cube], 'w') as file:
-                        file.write('%s fast biases completed:%s' % (cube.upper(), uttime()))
+                        file.write('%s fast biases completed:%s' %
+                                   (cube.upper(), uttime()))
 
         if 'slow_bias' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['slow_bias']['N']
@@ -1175,7 +1182,8 @@ class SEDm:
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
-            if files_completed >= N or os.path.exists(status_dict['%s_slowbias' % cube]):
+            if files_completed >= N or os.path.exists(status_dict['%s_slowbias'
+                                                                  % cube]):
                 logger.info("%s Slow biases already done" % cube.upper())
             else:
                 N = N - files_completed
@@ -1183,7 +1191,8 @@ class SEDm:
                 self.take_bias(cam, N=N, readout=rdo)
                 if make_files:
                     with open(status_dict['%s_slowbias' % cube], 'w') as file:
-                        file.write('%s slow biases completed:%s' % (cube.upper(), uttime()))
+                        file.write('%s slow biases completed:%s' %
+                                   (cube.upper(), uttime()))
 
         if 'dome' in cube_params[cube_type]['order']:
             N = cube_params[cube_type]['dome']['N']
@@ -1202,7 +1211,8 @@ class SEDm:
                 if 'data' in ret:
                     files_completed = int(ret['data'])
 
-            if files_completed >= N or os.path.exists(status_dict['%s_domes' % cube]):
+            if files_completed >= N or os.path.exists(status_dict['%s_domes'
+                                                                  % cube]):
                 logger.info("%s Domes already taken" % cube.upper())
             else:
                 N = N - files_completed
@@ -1219,7 +1229,8 @@ class SEDm:
                                        wait=False, exptime=j, move=False)
                 if make_files:
                     with open(status_dict['%s_domes' % cube], 'w') as file:
-                        file.write('%s domes completed:%s' % (cube.upper(), uttime()))
+                        file.write('%s domes completed:%s' % (cube.upper(),
+                                                              uttime()))
                 logger.info("Turning off Halogens")
                 self.ocs.halogens_off()
 
@@ -1236,9 +1247,11 @@ class SEDm:
                                       exptime=exptime)
                 if make_files:
                     with open(status_dict['lamps'], 'a') as file:
-                        file.write('%s arclamps completed:%s\n' % (lamp.capitalize(), uttime()))
+                        file.write('%s arclamps completed:%s\n' %
+                                   (lamp.capitalize(), uttime()))
 
-        return {'elaptime': time.time() - start, 'data': '%s complete' % cube_type}
+        return {'elaptime': time.time() - start, 'data': '%s complete' %
+                                                         cube_type}
 
     def take_datacube_eff(self, custom_file='', move=True,
                           ha=None, dec=None, domeaz=None):
@@ -1558,39 +1571,15 @@ class SEDm:
             logger.info(ret)
         return {'elaptime': time.time() - start, 'data': offsets}
 
-    def run_focus_seq(self, cam, focus_type, exptime=10, foc_range=None,
-                      solve=True, get_request_id=True, run_acquisition=True,
-                      get_focus_coords=True, focus_coords=None,
-                      shutter="normal", readout=2, name="",
-                      test="", save_as=None, imgtype='Focus',
-                      ra=0, dec=0, equinox=2000, do_lamp=False,
-                      epoch="", ra_rate=0, dec_rate=0, motion_flag="",
-                      p60prid=DEF_PROG, p60prpi='SEDm',
-                      email='neill@srl.caltech.edu', wait=True,
-                      p60prnm='SEDm Calibration File', obj_id=-999,
-                      objfilter='ifu', imgset='A', is_rc=True,
-                      req_id=-999, acq_readout=2.0, lamp='xe',
-                      offset_to_ifu=True, objtype='Focus',
-                      non_sid_targ=False, guide_readout=2.0,
-                      move_during_readout=True, abpair=False,
-                      move=True, mark_status=True, status_file=''
-                      ):
+    def run_rc_focus_seq(self, exptime=30, foc_range=None,
+                         solve=True, name="Focus", save_as=None,
+                         ra=None, dec=None, equinox=2000,
+                         p60prid=DEF_PROG, p60prpi='SEDm',
+                         p60prnm='SEDm Calibration File',
+                         get_request_id=True, req_id=-999,
+                         email='jpurdum@caltech.edu', move=True):
 
         start = time.time()  # Start the clock on the procedure
-
-        # unused parameters
-        if run_acquisition or offset_to_ifu or non_sid_targ:
-            pass
-        if move_during_readout or mark_status:
-            pass
-        if focus_coords is not None:
-            pass
-        if obj_id > 0:
-            pass
-        if acq_readout != 2.0 or guide_readout != 2.0:
-            pass
-        if status_file is not None:
-            pass
 
         # get nominal rc focus based on temperature
         weather_dict = self.ocs.check_weather()
@@ -1612,92 +1601,53 @@ class SEDm:
         img_list = []
         # error_list = []
 
-        if get_focus_coords:
+        if ra is None or dec is None:
             ret = self.sky.get_focus_coords()
             logger.info("sky.get_focus_coords status:\n%s", ret)
             if 'data' in ret:
                 ra = ret['data']['ra']
                 dec = ret['data']['dec']
-                ret = self.ocs.tel_move(name=name, ra=ra,
-                                        dec=dec)
-                if 'data' not in ret:
-                    logger.warning("could not move telescope,"
-                                   " focusing in place.")
+                if move:
+                    ret = self.ocs.tel_move(name=name, ra=ra, dec=dec,
+                                            equinox=equinox)
+                    if 'data' not in ret:
+                        logger.warning("could not move telescope,"
+                                       " focusing in place.")
             else:
                 logger.info("could not get focus coords, focusing in place.")
+        else:
+            logger.info("Using input focus coords: %s, %s", ra, dec)
+            if move:
+                ret = self.ocs.tel_move(name=name, ra=ra, dec=dec,
+                                        equinox=equinox)
+                if 'data' not in ret:
+                    logger.warning("could not move telescope to input coords,"
+                                   " focusing in place.")
 
-        obj_id = self.calibration_id_dict['focus'][cam.prefix()['data']]
+        obj_id = self.calibration_id_dict['focus']['rc']
+
         if get_request_id:
-            ret = self.sky.get_calib_request_id(camera=cam.prefix()['data'],
-                                                N=1, exptime=0,
+            ret = self.sky.get_calib_request_id(camera='rc', N=1, exptime=0,
                                                 object_id=obj_id)
             logger.info("sky.get_calib_request_id status:\n%s", ret)
             if "data" in ret:
                 req_id = ret['data']
 
-        if move and focus_type == 'ifu_stage':
-            ret = self.ocs.stow(**self.stow_profiles['calibrations'])
-            if 'data' not in ret:
-                logger.warning("Unable to reach cal stow, focusing in place")
-
-        elif move and focus_type == 'rc_focus':
-            self.ocs.tel_move(name=name, ra=ra, dec=dec, equinox=equinox,
-                              ra_rate=ra_rate, dec_rate=dec_rate,
-                              motion_flag=motion_flag, epoch=epoch)
-
-        elif move and focus_type == 'ifu_focus':
-            if get_focus_coords:
-                ret = self.sky.get_focus_coords()
-                logger.info("sky.get_focus_coords status:\n%s", ret)
-
-                if 'data' in ret:
-                    ra = ret['data']['ra']
-                    dec = ret['data']['dec']
-                    ret = self.ocs.tel_move(name=name, ra=ra,
-                                            dec=dec)
-                    if 'data' not in ret:
-                        logger.warning("could not move telescope,"
-                                       " focusing in place.")
-                else:
-                    logger.info("could not get focus coords,"
-                                " focusing in place.")
-            else:
-                self.ocs.tel_move(name=name, ra=ra, dec=dec, equinox=equinox,
-                                  ra_rate=ra_rate, dec_rate=dec_rate,
-                                  motion_flag=motion_flag, epoch=epoch)
-
-        if do_lamp:
-            ret = self.ocs.arclamp(lamp, command="ON")
-            logger.info("ocs.arclamp status:\n%s", ret)
-
-            if wait:
-                logger.info("Waiting %s seconds for %s lamp to warm up",
-                            (self.lamp_wait_time[lamp.lower()], lamp))
-                time.sleep(self.lamp_wait_time[lamp.lower()])
-
         if foc_range is None:
-            if focus_type == 'ifu_stage':
-                foc_range = np.arange(.1, .8, .1)
-            elif focus_type == 'rc_focus' or focus_type == 'ifu_focus':
-                # get nominal focus based on temperature
-                logger.info("nominal rc focus: %.2f for temperature %.1f",
-                            nominal_rc_focus, focus_temp)
-                # nominal range
-                if self.focus_guess:     # bigger range if we are guessing
-                    logger.info("Focus based on temperature estimate")
-                    foc_range = np.arange(nominal_rc_focus-0.5,
-                                          nominal_rc_focus+0.5, 0.05)
-                else:               # otherwise, smaller range
-                    logger.info("Focus based on temperature measure")
-                    foc_range = np.arange(nominal_rc_focus-0.23,
-                                          nominal_rc_focus+0.23, 0.05)
-            elif focus_type == 'ifu_stage2':
-                foc_range = np.arange(2, 3.6, .2)
-            else:
-                return {"elaptime": time.time() - start,
-                        "error": "Unknown focus type: %s" % focus_type}
+            # get nominal focus based on temperature
+            logger.info("nominal rc focus: %.2f for temperature %.1f",
+                        nominal_rc_focus, focus_temp)
+            # nominal range
+            if self.focus_guess:     # bigger range if we are guessing
+                logger.info("Focus based on temperature estimate")
+                foc_range = np.arange(nominal_rc_focus-0.5,
+                                      nominal_rc_focus+0.5, 0.05)
+            else:               # otherwise, smaller range
+                logger.info("Focus based on temperature measure")
+                foc_range = np.arange(nominal_rc_focus-0.23,
+                                      nominal_rc_focus+0.23, 0.05)
 
-        logger.info("focus type: %s, focus range: %s", focus_type, foc_range)
+        logger.info("RC Focus, focus range: %s", foc_range)
         startN = 1
         N = 1
         for pos in foc_range:
@@ -1711,31 +1661,131 @@ class SEDm:
                 do_lamps = False
 
             N += 1
-            logger.info("%s-Moving to focus position: %fmm", focus_type, pos)
+            logger.info("RC Focus - Moving to focus position: %fmm", pos)
 
-            if focus_type == 'ifu_stage':
-                logger.info("IFUSTAGE 1")
-                self.ocs.move_stage(position=pos, stage_id=1)
-            elif focus_type == 'rc_focus' or focus_type == 'ifu_focus':
-                logger.info("TELESCOPE SECONDARY")
-                if move:
-                    self.ocs.goto_focus(pos=pos)
-            elif focus_type == 'ifu_stage2':
-                logger.info("IFUSTAGE 2")
-                self.ocs.move_stage(position=pos, stage_id=2)
+            logger.info("TELESCOPE SECONDARY")
+            if move:
+                self.ocs.goto_focus(pos=pos)
 
-            ret = self.take_image(cam, exptime=exptime,
-                                  shutter=shutter, readout=readout,
-                                  start=start, save_as=save_as, test=test,
-                                  imgtype=imgtype, objtype=objtype,
+            ret = self.take_image(self.rc, exptime=exptime, readout=2,
+                                  start=start, save_as=save_as,
+                                  imgtype='Focus', objtype='Focus',
                                   object_ra=ra, object_dec=dec,
                                   email=email, p60prid=p60prid, p60prpi=p60prpi,
                                   p60prnm=p60prnm, obj_id=obj_id,
-                                  req_id=req_id, objfilter=objfilter,
-                                  imgset=imgset, do_lamps=do_lamps,
+                                  req_id=req_id, objfilter='rc_all',
+                                  imgset='A', do_lamps=do_lamps,
                                   do_stages=do_stages,
-                                  is_rc=is_rc, abpair=abpair, name=name)
+                                  is_rc=True, abpair=False, name=name)
             logger.info("take_image(FOC) status:\n%s", ret)
+
+            if 'error' in ret:
+                logger.error("Skipping this image: error in return")
+            elif 'data' in ret:
+                img_list.append(ret['data'])
+            else:
+                logger.error("Skipping this image: no return")
+
+        logger.debug("Finished RC Focus sequence")
+        logger.info("focus image list:\n%s", img_list)
+        # send_alert_email("Focus sequence finished")
+        if solve:
+            ret = self.sky.get_focus(img_list,
+                                     nominal_focus=nominal_rc_focus)
+            logger.info("sky.get_focus status:\n%s", ret)
+            if 'data' in ret:
+                best_foc = round(ret['data'][0][0], 2)
+                logger.info("Best FOCUS is: %s", best_foc)
+            else:
+                logger.warning("Could not solve, using Nominal focus: %s",
+                               nominal_rc_focus)
+                best_foc = nominal_rc_focus
+
+            if best_foc:
+                logger.info("TELESCOPE SECONDARY")
+                self.ocs.goto_focus(pos=best_foc)
+            else:
+                logger.error("Unable to calculate focus")
+                return {"elaptime": time.time() - start,
+                        "error": "Unable to calculate focus"}
+        else:
+            best_foc = None
+        return {"elaptime": time.time() - start,
+                "data": {"focus_time": Time(datetime.datetime.utcnow()).iso,
+                         "focus_temp": focus_temp,
+                         "focus_pos": best_foc}}
+
+    def run_spec_focus_seq(self, exptime=30, readout=1, foc_range=None,
+                           solve=True, name="Focus", save_as=None,
+                           p60prid=DEF_PROG, p60prpi='SEDm',
+                           p60prnm='SEDm Calibration File',
+                           get_request_id=True, req_id=-999,
+                           email='jpurdum@caltech.edu',
+                           do_lamp=True, lamp='hg', wait=True,
+                           move=True):
+
+        start = time.time()  # Start the clock on the procedure
+
+        nominal_spec_focus = self.ocs.stage1_nom
+
+        obj_id = self.calibration_id_dict['focus']['ifu']
+        if get_request_id:
+            ret = self.sky.get_calib_request_id(camera='ifu', N=1, exptime=0,
+                                                object_id=obj_id)
+            logger.info("sky.get_calib_request_id status:\n%s", ret)
+            if "data" in ret:
+                req_id = ret['data']
+
+        if move:
+            ret = self.ocs.stow(**self.stow_profiles['calibrations'])
+            if 'data' not in ret:
+                logger.warning("Unable to reach cal stow, focusing in place")
+
+        if do_lamp:
+            ret = self.ocs.arclamp(lamp, command="ON")
+            logger.info("ocs.arclamp status:\n%s", ret)
+
+            if wait:
+                logger.info("Waiting %s seconds for %s lamp to warm up",
+                            (self.lamp_wait_time[lamp.lower()], lamp))
+                time.sleep(self.lamp_wait_time[lamp.lower()])
+
+        if foc_range is None:
+            # Range limits: 0 - 3, from 1SL? and 1SR?
+            foc_range = np.arange(.1, .8, .1)
+
+        logger.info("focus type: Spec, focus range: %s", foc_range)
+
+        img_list = []
+        startN = 1
+        N = 1
+        for pos in foc_range:
+
+            # These request stage and lamp status at the start of the sequence
+            if N == startN:
+                do_stages = True
+                do_lamps = True
+            else:
+                do_stages = False
+                do_lamps = False
+
+            N += 1
+            logger.info("Spec-Moving to focus position: %fmm", pos)
+
+            logger.info("IFUSTAGE 1")
+            if move:
+                self.ocs.move_stage(position=pos, stage_id=1)
+
+            ret = self.take_image(self.ifu, exptime=exptime, readout=readout,
+                                  start=start, save_as=save_as,
+                                  imgtype='Focus', objtype='Focus',
+                                  email=email, p60prid=p60prid, p60prpi=p60prpi,
+                                  p60prnm=p60prnm, obj_id=obj_id,
+                                  req_id=req_id, objfilter='ifu',
+                                  imgset='A', do_lamps=do_lamps,
+                                  do_stages=do_stages,
+                                  is_rc=False, abpair=False, name=name)
+            logger.info("take_image(SPEC FOC) status:\n%s", ret)
 
             if 'error' in ret:
                 logger.error("Skipping this image: error in return")
@@ -1748,55 +1798,24 @@ class SEDm:
             ret = self.ocs.arclamp(lamp, command="OFF")
             logger.info("ocs.arclamp status:\n%s", ret)
 
-        logger.debug("Finished %s sequence", focus_type)
+        logger.debug("Finished spec focus sequence")
         logger.info("focus image list:\n%s", img_list)
         # send_alert_email("Focus sequence finished")
         if solve:
-            if focus_type == 'rc_focus':
-                ret = self.sky.get_focus(img_list,
-                                         nominal_focus=nominal_rc_focus)
-                logger.info("sky.get_focus status:\n%s", ret)
-                if 'data' in ret:
-                    best_foc = round(ret['data'][0][0], 2)
-                    logger.info("Best FOCUS is: %s", best_foc)
-                else:
-                    logger.warning("Could not solve, using Nominal focus: %s",
-                                   nominal_rc_focus)
-                    best_foc = nominal_rc_focus
-            elif focus_type == 'ifu_stage':
-                ret = self.sky.get_focus(img_list)
-                logger.info("sky.get_focus status:\n%s", ret)
-                if 'data' in ret:
-                    best_foc = round(ret['data'][0][0], 2)
-                    logger.info("Best IFU stage 1 focus is %s", best_foc)
-                else:
-                    logger.warning("Could not solve for ifu_stage focus")
-                    best_foc = None
-            elif focus_type == 'ifu_stage2':
-                ret = self.sky.get_focus(img_list)
-                logger.info("sky.get_focus status:\n%s", ret)
-                if 'data' in ret:
-                    best_foc = round(ret['data'][0][0], 2)
-                    logger.info("Best IFU stage 1 focus is %s", best_foc)
-                else:
-                    logger.warning("Could not solve for ifu_stage2 focus")
-                    best_foc = None
+            ret = self.sky.get_focus(img_list, header_field='IFUFOCUS',
+                                     nominal_focus=nominal_spec_focus)
+            logger.info("sky.get_focus status:\n%s", ret)
+            if 'data' in ret:
+                best_foc = round(ret['data'][0][0], 2)
+                logger.info("Best IFU stage 1 focus is %s", best_foc)
             else:
-                logger.warning("Unknown focus type: %s", focus_type)
-                best_foc = None
+                logger.warning("Could not solve for ifu_stage focus, using "
+                               "nominal focus")
+                best_foc = nominal_spec_focus
 
-            # TODO: this only really works for rc_focus,
-            #  add routines for other focus types.
             if best_foc:
-                if focus_type == 'ifu_stage':
-                    logger.info("IFUSTAGE 1")
-                    self.ocs.move_stage(position=best_foc, stage_id=1)
-                elif focus_type == 'rc_focus' or focus_type == 'ifu_focus':
-                    logger.info("TELESCOPE SECONDARY")
-                    self.ocs.goto_focus(pos=best_foc)
-                elif focus_type == 'ifu_stage2':
-                    logger.info("IFUSTAGE 2")
-                    self.ocs.move_stage(position=best_foc, stage_id=2)
+                logger.info("IFUSTAGE 1")
+                self.ocs.move_stage(position=best_foc, stage_id=1)
             else:
                 logger.error("Unable to calculate focus")
                 return {"elaptime": time.time() - start,
@@ -1805,7 +1824,123 @@ class SEDm:
             best_foc = None
         return {"elaptime": time.time() - start,
                 "data": {"focus_time": Time(datetime.datetime.utcnow()).iso,
-                         "focus_temp": focus_temp,
+                         "focus_pos": best_foc}}
+
+    def run_ifu_focus_seq(self, exptime=10, readout=1, foc_range=None,
+                          solve=True, name="Focus", save_as=None,
+                          ra=0, dec=0, equinox=2000,
+                          p60prid=DEF_PROG, p60prpi='SEDm',
+                          p60prnm='SEDm Calibration File',
+                          get_request_id=True, req_id=-999,
+                          email='jpurdum@caltech.edu', move=True):
+
+        start = time.time()  # Start the clock on the procedure
+
+        nominal_ifu_focus = self.ocs.stage2_nom
+
+        obj_id = self.calibration_id_dict['focus']['ifu']
+        if get_request_id:
+            ret = self.sky.get_calib_request_id(camera='ifu', N=1, exptime=0,
+                                                object_id=obj_id)
+            logger.info("sky.get_calib_request_id status:\n%s", ret)
+            if "data" in ret:
+                req_id = ret['data']
+
+        if ra is None or dec is None:
+            # TODO: this should get a standard star
+            ret = self.sky.get_focus_coords()
+            logger.info("sky.get_focus_coords status:\n%s", ret)
+            if 'data' in ret:
+                ra = ret['data']['ra']
+                dec = ret['data']['dec']
+                if move:
+                    ret = self.ocs.tel_move(name=name, ra=ra, dec=dec,
+                                            equinox=equinox)
+                    if 'data' not in ret:
+                        logger.warning("could not move telescope,"
+                                       " focusing in place.")
+            else:
+                logger.info("could not get focus coords, focusing in place.")
+        else:
+            logger.info("Using input focus coords: %s, %s", ra, dec)
+            if move:
+                ret = self.ocs.tel_move(name=name, ra=ra, dec=dec,
+                                        equinox=equinox)
+                if 'data' not in ret:
+                    logger.warning("could not move telescope to input coords,"
+                                   " focusing in place.")
+
+        if foc_range is None:
+            # Range limits: 0 - 8, from 2SL? and 2SR?
+            foc_range = np.arange(2, 3.6, .2)
+
+        logger.info("focus type: IFU focus, focus range: %s", foc_range)
+
+        img_list = []
+        startN = 1
+        N = 1
+        for pos in foc_range:
+
+            # These request stage and lamp status at the start of the sequence
+            if N == startN:
+                do_stages = True
+                do_lamps = True
+            else:
+                do_stages = False
+                do_lamps = False
+
+            N += 1
+            logger.info("IFU-Focus-Moving to focus position: %fmm", pos)
+
+            logger.info("IFUSTAGE 2")
+            if move:
+                self.ocs.move_stage(position=pos, stage_id=2)
+
+            ret = self.take_image(self.ifu, exptime=exptime, readout=readout,
+                                  start=start, save_as=save_as,
+                                  imgtype='Focus', objtype='Focus',
+                                  object_ra=ra, object_dec=dec,
+                                  email=email, p60prid=p60prid, p60prpi=p60prpi,
+                                  p60prnm=p60prnm, obj_id=obj_id,
+                                  req_id=req_id, objfilter='ifu',
+                                  imgset='A', do_lamps=do_lamps,
+                                  do_stages=do_stages,
+                                  is_rc=False, abpair=False, name=name)
+            logger.info("take_image(IFU FOC) status:\n%s", ret)
+
+            if 'error' in ret:
+                logger.error("Skipping this image: error in return")
+            elif 'data' in ret:
+                img_list.append(ret['data'])
+            else:
+                logger.error("Skipping this image: no return")
+
+        logger.debug("Finished IFU Focus sequence")
+        logger.info("focus image list:\n%s", img_list)
+        # send_alert_email("Focus sequence finished")
+        if solve:
+            ret = self.sky.get_focus(img_list, header_field='IFUFOC2',
+                                     nominal_focus=nominal_ifu_focus)
+            logger.info("sky.get_focus status:\n%s", ret)
+            if 'data' in ret:
+                best_foc = round(ret['data'][0][0], 2)
+                logger.info("Best IFU stage 2 focus is %s", best_foc)
+            else:
+                logger.warning("Could not solve for ifu_stage2 focus, using "
+                               "nominal focus")
+                best_foc = nominal_ifu_focus
+
+            if best_foc:
+                logger.info("IFUSTAGE 2")
+                self.ocs.move_stage(position=best_foc, stage_id=2)
+            else:
+                logger.error("Unable to calculate focus")
+                return {"elaptime": time.time() - start,
+                        "error": "Unable to calculate focus"}
+        else:
+            best_foc = None
+        return {"elaptime": time.time() - start,
+                "data": {"focus_time": Time(datetime.datetime.utcnow()).iso,
                          "focus_pos": best_foc}}
 
     def run_guider_seq(self, cam, guide_length=0, readout=2.0,
@@ -2476,7 +2611,8 @@ class SEDm:
                                             epoch=epoch)
                     logger.info("ocs.tel_move(RC) status:\n%s", ret)
                     if "-3:" in ret:
-                        send_alert_email("Telescope move command for rc science sequence failed")
+                        send_alert_email("Telescope move command for "
+                                         "rc science sequence failed")
                     if 'data' not in ret:
                         continue
                 for k in range(int(obs_repeat_filter[j])):
@@ -2566,7 +2702,8 @@ class SEDm:
                                     motion_flag=motion_flag, epoch=epoch)
             logger.info("ocs.tel_move status:\n%s", ret)
             if "-3:" in ret:
-                send_alert_email("Telescope move command for ifu acquisition sequence failed")
+                send_alert_email("Telescope move command for "
+                                 "ifu acquisition sequence failed")
 
             logger.info("sedm.py: Pausing for 1s until telescope "
                         "is done settling")
@@ -3353,14 +3490,13 @@ class SEDm:
         elif command.lower() == "focus":
             if 'range_start' in obsdict and 'range_stop' in obsdict and \
                     'range_increment' in obsdict:
-                ret = self.run_focus_seq(self.rc, 'rc_focus', name="Focus",
-                                         foc_range=np.arange(
+                ret = self.run_rc_focus_seq(foc_range=np.arange(
                                              obsdict['range_start'],
                                              obsdict['range_stop'],
                                              obsdict['range_increment']))
                 ret_lab = "MANUAL: run_focus_seq status:"
             else:
-                ret = self.run_focus_seq(self.rc, 'rc_focus', name="Focus")
+                ret = self.run_rc_focus_seq()
                 ret_lab = "MANUAL(def): run_focus_seq status:"
 
         elif command.lower() == "ifu":
@@ -3382,7 +3518,8 @@ class SEDm:
                 else:
                     alloc_id = None
                 ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                                                     typedesig="f", exptime=obsdict['exptime'],
+                                                     typedesig="f",
+                                                     exptime=obsdict['exptime'],
                                                      allocation_id=alloc_id,
                                                      ra=RA, dec=DEC)
                 logger.info("sky.get_manual_request_id status:\n%s", ret)
@@ -3442,7 +3579,8 @@ class SEDm:
             else:
                 alloc_id = None
             ret = self.sky.get_manual_request_id(name=obsdict['target'],
-                                                 typedesig="f", exptime=obsdict['exptime'],
+                                                 typedesig="f",
+                                                 exptime=obsdict['exptime'],
                                                  allocation_id=alloc_id,
                                                  ra=RA, dec=DEC)
             logger.info("sky.get_manual_request_id status:\n%s", ret)

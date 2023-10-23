@@ -17,11 +17,16 @@ status_file_dir = sedm_observe_cfg['status_dir']
 manual_dir = sedm_observe_cfg['manual_dir']
 
 calib_done_file = os.path.join(os.path.join(status_file_dir, "calib_done.txt"))
-rc_fastbias_done_file = os.path.join(os.path.join(status_file_dir, "rc_fastbias_done.txt"))
-rc_slowbias_done_file = os.path.join(os.path.join(status_file_dir, "rc_slowbias_done.txt"))
-ifu_slowbias_done_file = os.path.join(os.path.join(status_file_dir, "ifu_slowbias_done.txt"))
-rc_domes_done_file = os.path.join(os.path.join(status_file_dir, "rc_domes_done.txt"))
-ifu_domes_done_file = os.path.join(os.path.join(status_file_dir, "ifu_domes_done.txt"))
+rc_fastbias_done_file = os.path.join(os.path.join(status_file_dir,
+                                                  "rc_fastbias_done.txt"))
+rc_slowbias_done_file = os.path.join(os.path.join(status_file_dir,
+                                                  "rc_slowbias_done.txt"))
+ifu_slowbias_done_file = os.path.join(os.path.join(status_file_dir,
+                                                   "ifu_slowbias_done.txt"))
+rc_domes_done_file = os.path.join(os.path.join(status_file_dir,
+                                               "rc_domes_done.txt"))
+ifu_domes_done_file = os.path.join(os.path.join(status_file_dir,
+                                                "ifu_domes_done.txt"))
 lamps_done_file = os.path.join(os.path.join(status_file_dir, "lamps_done.txt"))
 focus_done_file = os.path.join(os.path.join(status_file_dir, "focus_done.json"))
 twilights_done_file = os.path.join(os.path.join(status_file_dir,
@@ -29,9 +34,10 @@ twilights_done_file = os.path.join(os.path.join(status_file_dir,
 standard_done_file = os.path.join(os.path.join(status_file_dir,
                                                "standard_done.txt"))
 
-status_files = [calib_done_file, rc_slowbias_done_file, rc_fastbias_done_file, rc_domes_done_file,
-                ifu_slowbias_done_file, ifu_domes_done_file, lamps_done_file, focus_done_file,
-                standard_done_file, twilights_done_file]
+status_files = [calib_done_file, rc_slowbias_done_file, rc_fastbias_done_file,
+                rc_domes_done_file, ifu_slowbias_done_file, ifu_domes_done_file,
+                lamps_done_file, focus_done_file, standard_done_file,
+                twilights_done_file]
 
 
 def uttime(offset=0):
@@ -139,10 +145,12 @@ def run_observing_loop(do_focus=True, do_standard=True,
         if not os.path.exists(calib_done_file):
             # ret = robot.take_datacube_eff()
             print("Doing IFU cals")
-            ret0 = robot.take_datacube(robot.ifu, cube='ifu', move=True, make_files=True)
+            ret0 = robot.take_datacube(robot.ifu, cube='ifu', move=True,
+                                       make_files=True)
             print("take_datacube - IFU status:\n", ret0)
             print("Doing RC cals")
-            ret1 = robot.take_datacube(robot.rc, cube='rc', move=True, make_files=True)
+            ret1 = robot.take_datacube(robot.rc, cube='rc', move=True,
+                                       make_files=True)
             print("take_datacube - RC status:\n", ret1)
             with open(calib_done_file, 'w') as the_file:
                 the_file.write('Calibration datacubes completed:%s' % uttime())
@@ -257,8 +265,7 @@ def run_observing_loop(do_focus=True, do_standard=True,
         # first need to focus
         if not focus_done:
             print("Doing focus")
-            ret = robot.run_focus_seq(robot.rc, 'rc_focus', name="Focus",
-                                      exptime=30)
+            ret = robot.run_rc_focus_seq()
             print("run_focus_seq status:\n", ret)
             if 'data' in ret:
                 focus_done = True
