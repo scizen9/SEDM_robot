@@ -2462,7 +2462,8 @@ class SEDm:
                 time.sleep(3)   # give some time for the telescope to settle
 
         # Commenting this out after 2022-June primary resurfacing
-        # exptime = exptime * 1.20
+        # 2023-Oct-23: Uncommenting after degradation observed
+        exptime = exptime * 1.20
 
         if guide:
             logger.debug("Beginning sequence for guiding IFU exposure")
