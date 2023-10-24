@@ -1690,8 +1690,8 @@ class SEDm:
         logger.info("focus image list:\n%s", img_list)
         # send_alert_email("Focus sequence finished")
         if solve:
-            ret = self.sky.get_focus(img_list,
-                                     nominal_focus=nominal_rc_focus)
+            ret = self.sky.get_rc_focus(img_list,
+                                        nominal_focus=nominal_rc_focus)
             logger.info("sky.get_focus status:\n%s", ret)
             if 'data' in ret:
                 best_foc = round(ret['data'][0][0], 2)
@@ -1802,9 +1802,9 @@ class SEDm:
         logger.info("focus image list:\n%s", img_list)
         # send_alert_email("Focus sequence finished")
         if solve:
-            ret = self.sky.get_focus(img_list, header_field='IFUFOCUS',
-                                     nominal_focus=nominal_spec_focus)
-            logger.info("sky.get_focus status:\n%s", ret)
+            ret = self.sky.get_spec_focus(img_list, header_field='IFUFOCUS',
+                                          nominal_focus=nominal_spec_focus)
+            logger.info("sky.get_spec_focus status:\n%s", ret)
             if 'data' in ret:
                 best_foc = round(ret['data'][0][0], 2)
                 logger.info("Best IFU stage 1 focus is %s", best_foc)
