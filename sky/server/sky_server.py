@@ -101,7 +101,9 @@ class SkyServer:
                         response = self.scheduler.get_focus_coords(
                             **data['parameters'])
                     elif data['command'].upper() == "GETRCFOCUS":
-                        response = self.sex.run_loop(**data['parameters'])
+                        response = self.sex.run_rc_loop(**data['parameters'])
+                    elif data['command'].upper() == "GETSPECFOCUS":
+                        response = self.sex.run_spec_loop(**data['parameters'])
                     elif data['command'].upper() == 'STARTGUIDER':
                         _ = self.guider.start_guider(**data['parameters'])
                         response = {"elaptime": time.time()-start,
