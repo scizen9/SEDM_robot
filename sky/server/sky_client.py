@@ -187,9 +187,9 @@ class Sky:
             x = ''
         return ret, x
 
-    def get_focus(self, obs_list, header_field='FOCPOS', overwrite=False,
-                  catalog_field='FWHM_IMAGE', nominal_focus=None,
-                  filter_catalog=True):
+    def get_rc_focus(self, obs_list, header_field='FOCPOS', overwrite=False,
+                     catalog_field='FWHM_IMAGE', nominal_focus=None,
+                     filter_catalog=True):
 
         parameters = {
             'obs_list': obs_list,
@@ -200,6 +200,21 @@ class Sky:
             'filter_catalog': filter_catalog
         }
         return self.__send_command(cmd="GETRCFOCUS",
+                                   parameters=parameters)
+
+    def get_spec_focus(self, obs_list, header_field='IFUFOCUS', overwrite=False,
+                       catalog_field='B_IMAGE', nominal_focus=None,
+                       filter_catalog=True):
+
+        parameters = {
+            'obs_list': obs_list,
+            'header_field': header_field,
+            'overwrite': overwrite,
+            'catalog_field': catalog_field,
+            'nominal_focus': nominal_focus,
+            'filter_catalog': filter_catalog
+        }
+        return self.__send_command(cmd="GETSPECFOCUS",
                                    parameters=parameters)
 
     def add_object(self, name, typedesig, ra=None, dec=None, epoch=None,
