@@ -271,10 +271,10 @@ class sextractor:
 
         return avgfwhm
 
-    def run_loop(self, obs_list, header_field='FOCPOS',
-                 header_field_temp='IN_AIR', overwrite=False,
-                 catalog_field='FWHM_IMAGE', nominal_focus=None,
-                 filter_catalog=True, save_catalogs=True, ):
+    def run_rc_loop(self, obs_list, header_field='FOCPOS',
+                    header_field_temp='IN_AIR', overwrite=False,
+                    catalog_field='FWHM_IMAGE', nominal_focus=None,
+                    filter_catalog=True, save_catalogs=True, ):
         """
 
         :param obs_list: (list) list of image files to analyze
@@ -298,12 +298,12 @@ class sextractor:
         # 1. Start by looping through the image list
         for obs in obs_list:
             if 'header file saved' in obs:
-                print("sex.run_loop - image not saved:", obs)
+                print("sex.run_rc_loop - image not saved:", obs)
                 continue
             # 2. Before preforming any analysis do a sanity check to make
             # sure the file exists
             if not os.path.exists(obs):
-                print("sex.run_loop - image not found:", obs)
+                print("sex.run_rc_loop - image not found:", obs)
                 # header_field_list.append(np.NaN)
                 # catalog_field_list.append(np.NaN)
                 # error_list.append(np.NaN)
@@ -318,7 +318,7 @@ class sextractor:
                 header_field_list.append(
                     float(fits.getheader(obs)[header_field]))
             except:
-                print("sex.run_loop - no hdr kwd:", header_field)
+                print("sex.run_rc_loop - no hdr kwd:", header_field)
                 # header_field_list.append(np.NaN)
                 # catalog_field_list.append(np.NaN)
                 # error_list.append(np.NaN)
@@ -330,7 +330,7 @@ class sextractor:
 
             # 5. Check that there were no errors
             if 'error' in sret:
-                print("sex.run_loop - sextractor error for", obs)
+                print("sex.run_rc_loop - sextractor error for", obs)
                 # header_field_list.append(np.NaN)
                 # catalog_field_list.append(np.NaN)
                 # error_list.append(np.NaN)
@@ -343,7 +343,7 @@ class sextractor:
 
             # 7. Again check there were no errors
             if 'error' in sret:
-                print("sex.run_loop - filter_star_catalog error:\n", sret)
+                print("sex.run_rc_loop - filter_star_catalog error:\n", sret)
                 # header_field_list.append(np.NaN)
                 # catalog_field_list.append(np.NaN)
                 # error_list.append(np.NaN)
@@ -352,14 +352,14 @@ class sextractor:
             # 8. Now we get the mean values for the catalog
             df = sret['data']
             if df.empty:
-                print("sex.run_loop - no data for", obs)
+                print("sex.run_rc_loop - no data for", obs)
                 # header_field_list.append(np.NaN)
                 # catalog_field_list.append(np.NaN)
                 # error_list.append(np.NaN)
                 continue
 
             # 9. Finally get the stats for the image
-            print("sex.run_loop - number of sources:", len(df.index))
+            print("sex.run_rc_loop - number of sources:", len(df.index))
             catalog_field_list.append(df[catalog_field].median())
             error_list.append(df.loc[:, catalog_field].std())
 
@@ -377,8 +377,8 @@ class sextractor:
 
         # test catalog for nans
         n_good = np.where(np.isfinite(catalog))[0].shape[0]
-        print("sex.run_loop - N pts, N good:", n, n_good)
-        print("sex.run_loop - catalog values:\n", catalog)
+        print("sex.run_rc_loop - N pts, N good:", n, n_good)
+        print("sex.run_rc_loop - catalog values:\n", catalog)
 
         if n_good > 5:
             best_seeing_id = np.nanargmin(catalog)
@@ -416,12 +416,165 @@ class sextractor:
                 print("Fit value outside model range, using model value")
                 best = mod_foc
         else:
-            print("sex.run_loop - not enough good values, using nominal focus")
+            print("sex.run_rc_loop - not enough good values,"
+                  " using nominal focus")
             best = mod_foc
             coefs = [0, 0]
 
         return {'elaptime': time.time()-start,
                 'data': [[best], coefs[0]]}
+
+    def run_spec_loop(self, obs_list, header_field='IFUFOCUS',
+                      header_field_temp='IN_AIR', overwrite=False,
+                      catalog_field='B_IMAGE', nominal_focus=None,
+                      filter_catalog=True, ):
+        """
+
+        :param obs_list: (list) list of image files to analyze
+        :param header_field: (str) header kwd to track
+        :param header_field_temp: (str) header kwd for temperature
+        :param overwrite: (bool) overwrite previous sextractor runs?
+        :param catalog_field: (str) field in sextractor catalog
+        :param nominal_focus: (float) focus determined from temperature only
+        :param filter_catalog: (bool) filter the catalog?
+        :return:
+        """
+        start = time.time()
+        header_field_list = []
+        catalog_field_list = []
+        error_list = []
+        pltdir = None
+
+        # 1. Start by looping through the image list
+        for obs in obs_list:
+            if 'header file saved' in obs:
+                print("sex.run_spec_loop - image not saved:", obs)
+                continue
+            # 2. Before preforming any analysis do a sanity check to make
+            # sure the file exists
+            if not os.path.exists(obs):
+                print("sex.run_spec_loop - image not found:", obs)
+                # header_field_list.append(np.NaN)
+                # catalog_field_list.append(np.NaN)
+                # error_list.append(np.NaN)
+                continue
+
+            # 2.5 Get plot directory
+            if pltdir is None:
+                pltdir = os.path.dirname(os.path.abspath(obs))
+
+            # 3. Now open the file and get the header information
+            try:
+                header_field_list.append(
+                    float(fits.getheader(obs)[header_field]))
+            except:
+                print("sex.run_spec_loop - no hdr kwd:", header_field)
+                # header_field_list.append(np.NaN)
+                # catalog_field_list.append(np.NaN)
+                # error_list.append(np.NaN)
+                continue
+
+            # 4. We should now be ready to run sextractor
+            sret = self.run(obs, arc=True, overwrite=overwrite)
+            print("sex.run status:\n", sret)
+
+            # 5. Check that there were no errors
+            if 'error' in sret:
+                print("sex.run_spec_loop - sextractor error for", obs)
+                # header_field_list.append(np.NaN)
+                # catalog_field_list.append(np.NaN)
+                # error_list.append(np.NaN)
+                continue
+
+            # 6. Filter the data if requested
+            if filter_catalog:
+                sret = self.filter_arc_catalog(sret['data'])
+                print("sex.filter_star_catalog filtered")
+
+            # 7. Again check there were no errors
+            if 'error' in sret:
+                print("sex.run_spec_loop - filter_arc_catalog error:\n", sret)
+                # header_field_list.append(np.NaN)
+                # catalog_field_list.append(np.NaN)
+                # error_list.append(np.NaN)
+                continue
+
+            # 8. Now we get the mean values for the catalog
+            df = sret['data']
+            if df.empty:
+                print("sex.run_spec_loop - no data for", obs)
+                # header_field_list.append(np.NaN)
+                # catalog_field_list.append(np.NaN)
+                # error_list.append(np.NaN)
+                continue
+
+            # 9. Finally get the stats for the image
+            print("sex.run_spec_loop - number of sources:", len(df.index))
+            catalog_field_list.append(df[catalog_field].median())
+            error_list.append(df.loc[:, catalog_field].std())
+
+        catalog = np.array(catalog_field_list)
+        header = np.array(header_field_list)
+        std_catalog = np.array(error_list)
+
+        current_temp = float(fits.getheader(obs_list[-1])[header_field_temp])
+        if nominal_focus is None:
+            mod_foc = 1.016
+        else:
+            mod_foc = nominal_focus
+
+        n = len(catalog)
+
+        # test catalog for nans
+        n_good = np.where(np.isfinite(catalog))[0].shape[0]
+        print("sex.run_spec_loop - N pts, N good:", n, n_good)
+        print("sex.run_spec_loop - catalog values:\n", catalog)
+
+        if n_good > 5:
+            best_focus_id = np.nanargmin(catalog)
+            print("FWHMS: %s\n focpos: %s\n Best focus id: %d\n "
+                  % (catalog, header, int(best_focus_id)))
+
+            std_catalog = np.maximum(1e-5, np.array(std_catalog))
+
+            coefs = np.polyfit(header, catalog, w=1 / std_catalog, deg=2)
+
+            xfp = np.linspace(np.min(header), np.max(header), 1000)
+            p = np.poly1d(coefs)
+            best = xfp[np.argmin(p(xfp))]
+
+            print("Best fit focus:%.2f" % best)
+            # make plot and save
+            tstamp = time.strftime("%Y%m%d_%H_%M_%S", time.gmtime())
+            pltfile = os.path.join(pltdir, 'specfocus%s.png' % tstamp)
+            plt.plot(header, catalog, 'b+')
+            plt.plot(xfp, p(xfp))
+            plt.axvline(x=best, label="FIT")
+            plt.axvline(x=mod_foc, c='g', label="NOM")
+            plt.xlabel(header_field)
+            plt.ylabel(catalog_field)
+            plt.title("Best Fit SPEC Focus: %.2f \n"
+                      "      Nominal Focus: %.2f at %.2f deg"
+                      % (best, mod_foc, current_temp))
+            plt.legend()
+            plt.savefig(pltfile)
+            plt.clf()
+
+            if (mod_foc - 1.0) <= best <= (mod_foc + 1.0):
+                pass
+            else:
+                print("Fit value outside nominal range, using nominal value")
+                best = mod_foc
+        else:
+            print("sex.run_spec_loop - not enough good values, "
+                  "using nominal focus")
+            best = mod_foc
+            coefs = [0, 0]
+
+        return {
+            'elaptime': time.time() - start,
+            'data': [[best], coefs[0]]
+        }
 
 
 if __name__ == "__main__":
