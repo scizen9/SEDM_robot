@@ -1697,19 +1697,20 @@ class SEDm:
                 best_foc = round(ret['data'][0][0], 2)
                 logger.info("Best FOCUS is: %s", best_foc)
             else:
-                logger.warning("Could not solve, using Nominal focus: %s",
+                logger.warning("Could not solve!  Using Nominal focus: %s",
                                nominal_rc_focus)
                 best_foc = nominal_rc_focus
-
-            if best_foc:
-                logger.info("TELESCOPE SECONDARY")
-                self.ocs.goto_focus(pos=best_foc)
-            else:
-                logger.error("Unable to calculate focus")
-                return {"elaptime": time.time() - start,
-                        "error": "Unable to calculate focus"}
         else:
-            best_foc = None
+            logger.warning("RC Focus not solved!  Using nominal focus")
+            best_foc = nominal_rc_focus
+        if best_foc:
+            logger.info("TELESCOPE SECONDARY")
+            self.ocs.goto_focus(pos=best_foc)
+        else:
+            logger.error("Unable to calculate focus")
+            return {"elaptime": time.time() - start,
+                    "error": "Unable to calculate focus"}
+
         return {"elaptime": time.time() - start,
                 "data": {"focus_time": Time(datetime.datetime.utcnow()).iso,
                          "focus_temp": focus_temp,
@@ -1721,7 +1722,7 @@ class SEDm:
                            p60prnm='SEDm Calibration File',
                            get_request_id=True, req_id=-999,
                            email='jpurdum@caltech.edu',
-                           do_lamp=True, lamp='hg', wait=True,
+                           do_lamp=True, lamp='xe', wait=True,
                            move=True):
 
         start = time.time()  # Start the clock on the procedure
@@ -1752,7 +1753,7 @@ class SEDm:
 
         if foc_range is None:
             # Range limits: 0 - 3, from 1SL? and 1SR?
-            foc_range = np.arange(.1, .8, .1)
+            foc_range = np.arange(1.0, 1.8, .1)
 
         logger.info("focus type: Spec, focus range: %s", foc_range)
 
@@ -1809,25 +1810,26 @@ class SEDm:
                 best_foc = round(ret['data'][0][0], 2)
                 logger.info("Best IFU stage 1 focus is %s", best_foc)
             else:
-                logger.warning("Could not solve for ifu_stage focus, using "
+                logger.warning("Could not solve for spec focus!  Using "
                                "nominal focus")
                 best_foc = nominal_spec_focus
-
-            if best_foc:
-                logger.info("IFUSTAGE 1")
-                self.ocs.move_stage(position=best_foc, stage_id=1)
-            else:
-                logger.error("Unable to calculate focus")
-                return {"elaptime": time.time() - start,
-                        "error": "Unable to calculate focus"}
         else:
-            best_foc = None
+            logger.warning("Spec Focus not solved!  Using nominal focus")
+            best_foc = nominal_spec_focus
+
+        if best_foc:
+            logger.info("IFUSTAGE 1")
+            self.ocs.move_stage(position=best_foc, stage_id=1)
+        else:
+            logger.error("Unable to calculate focus")
+            return {"elaptime": time.time() - start,
+                    "error": "Unable to calculate focus"}
         return {"elaptime": time.time() - start,
                 "data": {"focus_time": Time(datetime.datetime.utcnow()).iso,
                          "focus_pos": best_foc}}
 
-    def run_ifu_focus_seq(self, exptime=10, readout=1, foc_range=None,
-                          solve=True, name="Focus", save_as=None,
+    def run_ifu_focus_seq(self, exptime=240, readout=1, foc_range=None,
+                          solve=False, name="Focus", save_as=None,
                           ra=0, dec=0, equinox=2000,
                           p60prid=DEF_PROG, p60prpi='SEDm',
                           p60prnm='SEDm Calibration File',
@@ -1847,12 +1849,21 @@ class SEDm:
                 req_id = ret['data']
 
         if ra is None or dec is None:
-            # TODO: this should get a standard star
-            ret = self.sky.get_focus_coords()
-            logger.info("sky.get_focus_coords status:\n%s", ret)
-            if 'data' in ret:
-                ra = ret['data']['ra']
-                dec = ret['data']['dec']
+            stdret = self.sky.get_standard()
+            logger.info("sky.get_standard status:\n%s", stdret)
+
+            if 'data' in stdret:
+                try:
+                    name = stdret['data']['name']
+                    ra = stdret['data']['ra']
+                    dec = stdret['data']['dec']
+                    exptime = stdret['data']['exptime']
+                except KeyError:
+                    logger.error("Invalid STD record, missing keyword")
+                    return {
+                        'elaptime': time.time() - start,
+                        'error': 'Invalid standard record'
+                    }
                 if move:
                     ret = self.ocs.tel_move(name=name, ra=ra, dec=dec,
                                             equinox=equinox)
@@ -1929,16 +1940,18 @@ class SEDm:
                 logger.warning("Could not solve for ifu_stage2 focus, using "
                                "nominal focus")
                 best_foc = nominal_ifu_focus
-
-            if best_foc:
-                logger.info("IFUSTAGE 2")
-                self.ocs.move_stage(position=best_foc, stage_id=2)
-            else:
-                logger.error("Unable to calculate focus")
-                return {"elaptime": time.time() - start,
-                        "error": "Unable to calculate focus"}
         else:
-            best_foc = None
+            logger.warning("IFU Focus not solved!  Using nominal focus")
+            best_foc = nominal_ifu_focus
+
+        if best_foc:
+            logger.info("IFUSTAGE 2")
+            self.ocs.move_stage(position=best_foc, stage_id=2)
+        else:
+            logger.error("Unable to calculate focus")
+            return {"elaptime": time.time() - start,
+                    "error": "Unable to calculate focus"}
+
         return {"elaptime": time.time() - start,
                 "data": {"focus_time": Time(datetime.datetime.utcnow()).iso,
                          "focus_pos": best_foc}}
