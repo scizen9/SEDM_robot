@@ -338,6 +338,59 @@ class Stage:
         code = message[-2:]
         return self.msg.get(code, "Unknown state")
 
+    def initialize(self, stage_id=1):
+        """
+        Initialize stage positions and home and reset them if necessary
+        :return: {'elaptime': float, 'data': str}
+        """
+        start = time.time()
+
+        nom_pos = float(self.stage_config['stage%s' % stage_id])
+
+        ret = self.get_state(stage_id=stage_id)
+        if 'data' in ret:
+            message = ret['data']
+            logger.info("STATE: %s" % message)
+            if "NOT REFERENCED" in message:
+                # Home stage and set to nominal position
+                logger.info("Homing stage %s" % stage_id)
+                home_ret = self.home(stage_id=stage_id)
+                if 'data' in home_ret:
+                    if "READY" in home_ret['data']:
+                        logger.info("Homing complete, "
+                                    "moving to nominal position")
+                        move_ret = self.move_focus(nom_pos, stage_id=stage_id)
+                        if 'data' in move_ret:
+                            if "READY" in move_ret['data']:
+                                message = "Move complete, at nominal " \
+                                          "position = %.4f" % nom_pos
+                                logger.info(message)
+                            else:
+                                message = "Move error! " \
+                                          "STATE: %s" % move_ret['data']
+                                logger.error(message)
+                        else:
+                            message = "Move return error!"
+                            logger.error(message)
+                    else:
+                        message = "Homing error! STATE: %s" % home_ret['data']
+                        logger.error(message)
+                else:
+                    message = "Homing return error!"
+                    logger.error(message)
+            elif "READY" in message:
+                logger.info("Stage %s initialized" % stage_id)
+            elif "DISABLE" in message:
+                logger.error("Stage %s disabled" % stage_id)
+            elif "HOMING" in message or "MOVING" in message or \
+                    "JOGGING" in message:
+                logger.error("Stage %s is moving" % stage_id)
+        else:
+            message = "Status return error!"
+            logger.error(message)
+
+        return {'elaptime': time.time() - start, 'data': message}
+
     def home(self, stage_id=1):
         """
         Home the stage
