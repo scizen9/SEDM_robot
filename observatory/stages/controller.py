@@ -252,7 +252,7 @@ class Stage:
         return recv
 
     def __send_command(self, cmd="", parameters=None, stage_id=1,
-                       custom_command=False, home_when_not_ref=True):
+                       custom_command=False, home_when_not_ref=False):
         """
         Send a command to the stage controller and keep checking the state
         until it matches one in the end_code
@@ -306,7 +306,7 @@ class Stage:
         # Not referenced (needs to be homed)
         elif 'REFERENCED' in message:
             if home_when_not_ref:
-                # TODO: move to nominal positions after homing
+                # This is now handled in the initialize function
                 logger.info("State is NOT REFERENCED, Homing stage...")
                 response = self.__send_serial_command(stage_id, 'OR')
                 response = response.decode('utf-8')
@@ -315,6 +315,7 @@ class Stage:
                 return {'elaptime': time.time() - start, 'data': message}
 
             else:
+                logger.info("State is NOT REFERENCED, recommend homing")
                 return {'elaptime': time.time() - start, 'error': message}
 
         # Valid state achieved after command
