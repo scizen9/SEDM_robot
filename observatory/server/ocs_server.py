@@ -104,6 +104,8 @@ class ocsServer:
                         if not self.stages:
                             logger.info("Initializing Stages")
                             self.stages = stages.Stage()
+                            # self.stages.initialize(stage_id=1)
+                            # self.stages.initialize(stage_id=2)
                             response = {'elaptime': time.time() - start,
                                         'data': 'Stages initialized'}
                     elif cmd == 'INITIALIZE_TCS':
