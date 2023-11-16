@@ -92,6 +92,13 @@ class Observatory:
         return self.__send_command(cmd="OBSWEATHER")
 
     # STAGE COMMANDS
+    def stage_state(self, stage_id=1):
+        parameters = {
+            'stage_id': stage_id
+        }
+        return self.__send_command(cmd="STAGESTATE",
+                                   parameters=parameters)
+
     def move_stage(self, position=3.3, stage_id=1):
         parameters = {
             'position': position,
