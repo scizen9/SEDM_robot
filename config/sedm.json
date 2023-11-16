@@ -1,4 +1,5 @@
 {
+    "_comment": "This config file is deprecated: see sedm_robot.json instead",
     "cam_image_dir": "C:/images",
     "robot_image_dir": "/home/sedm/images",
     "ifu_ip": "10.200.155.4",
