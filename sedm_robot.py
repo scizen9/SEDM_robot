@@ -1219,6 +1219,7 @@ class SEDm:
                 logger.info("Taking %d %s dome flats in each set", N, cube)
                 logger.info("Turning on Halogens")
                 self.ocs.halogens_on()
+                logger.info("Waiting 120 seconds for Halogens to warm up")
                 time.sleep(120)
                 for i in cube_params[cube_type]['dome']['readout']:
                     logger.info("Readout speed: %s", i)
@@ -1716,7 +1717,7 @@ class SEDm:
                          "focus_temp": focus_temp,
                          "focus_pos": best_foc}}
 
-    def run_spec_focus_seq(self, exptime=30, readout=1, foc_range=None,
+    def run_spec_focus_seq(self, exptime=20, readout=1, foc_range=None,
                            solve=True, name="Focus", save_as=None,
                            p60prid=DEF_PROG, p60prpi='SEDm',
                            p60prnm='SEDm Calibration File',
