@@ -48,6 +48,9 @@ with open(os.path.join(Version.CONFIG_DIR, 'cameras.json')) as cfg_file:
 with open(os.path.join(Version.CONFIG_DIR, 'sedm_observe.json')) as cfg_file:
     sedm_observe_cfg = json.load(cfg_file)
 
+with open(os.path.join(Version.CONFIG_DIR, 'stages.json')) as cfg_file:
+    stages_cfg = json.load(cfg_file)
+
 logger = logging.getLogger("sedmLogger")
 logger.setLevel(logging.DEBUG)
 logging.Formatter.converter = time.gmtime
@@ -1717,18 +1720,18 @@ class SEDm:
                          "focus_temp": focus_temp,
                          "focus_pos": best_foc}}
 
-    def run_spec_focus_seq(self, exptime=20, readout=1, foc_range=None,
+    def run_spec_focus_seq(self, exptime=40, readout=1, foc_range=None,
                            solve=True, name="Focus", save_as=None,
                            p60prid=DEF_PROG, p60prpi='SEDm',
                            p60prnm='SEDm Calibration File',
                            get_request_id=True, req_id=-999,
                            email='jpurdum@caltech.edu',
-                           do_lamp=True, lamp='xe', wait=True,
+                           do_lamp=True, lamp='dome', wait=True,
                            move=True):
 
         start = time.time()  # Start the clock on the procedure
 
-        nominal_spec_focus = self.ocs.stage1_nom
+        nominal_spec_focus = stages_cfg['stage1']
 
         obj_id = self.calibration_id_dict['focus']['ifu']
         if get_request_id:
@@ -1744,17 +1747,24 @@ class SEDm:
                 logger.warning("Unable to reach cal stow, focusing in place")
 
         if do_lamp:
-            ret = self.ocs.arclamp(lamp, command="ON")
-            logger.info("ocs.arclamp status:\n%s", ret)
+            if 'dome' in lamp:
+                ret = self.ocs.halogens_on()
+                logger.info("ocs.halogens_on status:\n%s", ret)
+                if wait:
+                    logger.info("Waiting 120 seconds for dome lamp to warm up")
+                    time.sleep(120)
+            else:
+                ret = self.ocs.arclamp(lamp, command="ON")
+                logger.info("ocs.arclamp status:\n%s", ret)
 
-            if wait:
-                logger.info("Waiting %s seconds for %s lamp to warm up",
-                            (self.lamp_wait_time[lamp.lower()], lamp))
-                time.sleep(self.lamp_wait_time[lamp.lower()])
+                if wait:
+                    logger.info("Waiting %d seconds for %s lamp to warm up" %
+                                (self.lamp_wait_time[lamp.lower()], lamp))
+                    time.sleep(self.lamp_wait_time[lamp.lower()])
 
         if foc_range is None:
             # Range limits: 0 - 3, from 1SL? and 1SR?
-            foc_range = np.arange(1.0, 1.8, .1)
+            foc_range = np.arange(1.0, 1.7, .05)
 
         logger.info("focus type: Spec, focus range: %s", foc_range)
 
@@ -1763,12 +1773,11 @@ class SEDm:
         N = 1
         for pos in foc_range:
 
-            # These request stage and lamp status at the start of the sequence
+            do_stages = True
+            # These request lamp status at the start of the sequence
             if N == startN:
-                do_stages = True
                 do_lamps = True
             else:
-                do_stages = False
                 do_lamps = False
 
             N += 1
@@ -1797,8 +1806,12 @@ class SEDm:
                 logger.error("Skipping this image: no return")
 
         if do_lamp:
-            ret = self.ocs.arclamp(lamp, command="OFF")
-            logger.info("ocs.arclamp status:\n%s", ret)
+            if 'dome' in lamp:
+                ret = self.ocs.halogens_off()
+                logger.info("ocs.halogens_off status:\n%s", ret)
+            else:
+                ret = self.ocs.arclamp(lamp, command="OFF")
+                logger.info("ocs.arclamp status:\n%s", ret)
 
         logger.debug("Finished spec focus sequence")
         logger.info("focus image list:\n%s", img_list)
