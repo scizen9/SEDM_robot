@@ -1852,7 +1852,7 @@ class SEDm:
 
         start = time.time()  # Start the clock on the procedure
 
-        nominal_ifu_focus = self.ocs.stage2_nom
+        nominal_ifu_focus = stages_cfg['stage2']
 
         obj_id = self.calibration_id_dict['focus']['ifu']
         if get_request_id:
@@ -1897,7 +1897,7 @@ class SEDm:
 
         if foc_range is None:
             # Range limits: 0 - 8, from 2SL? and 2SR?
-            foc_range = np.arange(2, 3.6, .2)
+            foc_range = np.arange(1.6, 2.8, .1)
 
         logger.info("focus type: IFU focus, focus range: %s", foc_range)
 
@@ -1906,12 +1906,11 @@ class SEDm:
         N = 1
         for pos in foc_range:
 
+            do_stages = True
             # These request stage and lamp status at the start of the sequence
             if N == startN:
-                do_stages = True
                 do_lamps = True
             else:
-                do_stages = False
                 do_lamps = False
 
             N += 1
