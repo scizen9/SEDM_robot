@@ -203,7 +203,7 @@ class Sky:
                                    parameters=parameters)
 
     def get_spec_focus(self, obs_list, header_field='IFUFOCUS', overwrite=False,
-                       catalog_field='B_IMAGE', nominal_focus=None,
+                       catalog_field='B_IMAGE', nominal_focus=None, lamp='',
                        filter_catalog=True):
 
         parameters = {
@@ -212,6 +212,7 @@ class Sky:
             'overwrite': overwrite,
             'catalog_field': catalog_field,
             'nominal_focus': nominal_focus,
+            'lamp': lamp,
             'filter_catalog': filter_catalog
         }
         return self.__send_command(cmd="GETSPECFOCUS",

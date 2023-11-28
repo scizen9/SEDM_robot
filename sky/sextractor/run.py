@@ -427,7 +427,7 @@ class sextractor:
     def run_spec_loop(self, obs_list, header_field='IFUFOCUS',
                       header_field_temp='IN_AIR', overwrite=False,
                       catalog_field='B_IMAGE', nominal_focus=None,
-                      filter_catalog=True, ):
+                      lamp='', filter_catalog=True, ):
         """
 
         :param obs_list: (list) list of image files to analyze
@@ -436,6 +436,7 @@ class sextractor:
         :param overwrite: (bool) overwrite previous sextractor runs?
         :param catalog_field: (str) field in sextractor catalog
         :param nominal_focus: (float) focus determined from temperature only
+        :param lamp: (str) lamp used for focus run
         :param filter_catalog: (bool) filter the catalog?
         :return:
         """
@@ -553,9 +554,9 @@ class sextractor:
             plt.axvline(x=mod_foc, c='g', label="NOM")
             plt.xlabel(header_field)
             plt.ylabel(catalog_field)
-            plt.title("Best Fit SPEC Focus: %.2f \n"
+            plt.title("%s, Best Fit SPEC Focus: %.2f \n"
                       "      Nominal Focus: %.2f at %.2f deg"
-                      % (best, mod_foc, current_temp))
+                      % (lamp, best, mod_foc, current_temp))
             plt.legend()
             plt.savefig(pltfile)
             plt.clf()

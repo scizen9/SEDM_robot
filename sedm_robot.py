@@ -1818,7 +1818,8 @@ class SEDm:
         # send_alert_email("Focus sequence finished")
         if solve:
             ret = self.sky.get_spec_focus(img_list, header_field='IFUFOCUS',
-                                          nominal_focus=nominal_spec_focus)
+                                          nominal_focus=nominal_spec_focus,
+                                          lamp=lamp)
             logger.info("sky.get_spec_focus status:\n%s", ret)
             if 'data' in ret:
                 best_foc = round(ret['data'][0][0], 2)
