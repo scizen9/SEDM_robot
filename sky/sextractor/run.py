@@ -43,6 +43,10 @@ class sextractor:
 
         self.y_max = 2000
         self.y_min = 50
+        self.arc_x_min = 700
+        self.arc_x_max = 1700
+        self.arc_y_min = 800
+        self.arc_y_max = 1800
 
     def run(self, input_image, output_file=None, save_in_seperate_dir=True,
             output_type=None, create_region_file=True, overwrite=False,
@@ -139,7 +143,10 @@ class sextractor:
         cdata = ascii.read(catalog)
 
         df = cdata.to_pandas()
-        df = df[(df['Y_IMAGE'] < self.y_max) & (df['Y_IMAGE'] > self.y_min)]
+        df = df[(df['Y_IMAGE'] < self.arc_y_max) &
+                (df['Y_IMAGE'] > self.arc_y_min)]
+        df = df[(df['X_IMAGE'] < self.arc_x_max) &
+                (df['X_IMAGE'] > self.arc_x_min)]
         df = df[(df['FLAGS'] <= 0)]
         # cut on size
         size_cut_up = df['B_IMAGE'].median() + 2.5 * df['B_IMAGE'].std()
