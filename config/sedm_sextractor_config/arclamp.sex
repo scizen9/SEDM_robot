@@ -22,7 +22,7 @@ FILTER_NAME      /home/sedm/SEDM_robot/config/sedm_sextractor_config/default.con
 DEBLEND_NTHRESH  2             # Number of deblending sub-thresholds
 DEBLEND_MINCONT  0.5          # Minimum contrast parameter for deblending
  
-CLEAN            N              # Clean spurious detections? (Y or N)?
+CLEAN            Y              # Clean spurious detections? (Y or N)?
 CLEAN_PARAM      1.0            # Cleaning efficiency
  
 MASK_TYPE        CORRECT        # type of detection MASKing: can be one of
