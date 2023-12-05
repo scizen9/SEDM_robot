@@ -837,11 +837,6 @@ class SEDm:
             logger.info("%d, %d", img, N)
             if N != startN:
                 start = time.time()
-                do_stages = False
-                do_lamps = False
-            else:
-                do_stages = True
-                do_lamps = True
 
             namestr = "%s %s of %s" % (name, img, N)
             ret = self.take_image(cam, shutter=shutter, readout=readout,
@@ -853,7 +848,6 @@ class SEDm:
                                   p60prnm='SEDm Calibration File',
                                   obj_id=obj_id, req_id=req_id,
                                   objfilter='NA', imgset='NA',
-                                  do_lamps=do_lamps, do_stages=do_stages,
                                   is_rc=True, abpair=False)
             logger.info("take_image(dome) status:\n%s", ret)
 
