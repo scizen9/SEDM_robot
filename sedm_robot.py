@@ -677,7 +677,10 @@ class SEDm:
                 logger.info(self.header.set_header(latest_file, obsdict))
                 return {'elaptime': time.time()-start, 'data': latest_file}
             else:
-                send_alert_email("Last Image failed to write")
+                if is_rc:
+                    send_alert_email("Last RC Image failed to write")
+                else:
+                    send_alert_email("Last IFU Image failed to write")
                 logger.warning("File not a match, saving header info")
                 save_path = os.path.join(
                     self.obs_dir, "header_dict_" +
