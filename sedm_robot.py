@@ -333,6 +333,17 @@ class SEDm:
                 else:
                     rc_lock = rc_get_temp_status['templock']
                     rc_temp = rc_get_temp_status['camtemp']
+
+                    # Double-check the temperature is indicative of a connected camera server
+                    if type(rc_temp) == float:
+                        pass
+                    elif type(rc_temp) == int:
+                        pass
+                    else:
+                        send_alert_email("RC temperature returned a %s type object. "
+                                         "This needs to be a float or integer"
+                                         "The RC server is probably disconnected" % type(rc_temp))
+
                 logger.info("RC temp, lock = %.1f, %s", rc_temp, rc_lock)
 
             if self.run_ifu:
@@ -344,6 +355,17 @@ class SEDm:
                 else:
                     ifu_lock = ifu_get_temp_status['templock']
                     ifu_temp = ifu_get_temp_status['camtemp']
+
+                    # Double-check the temperature is indicative of a connected camera server
+                    if type(ifu_temp) == float:
+                        pass
+                    elif type(ifu_temp) == int:
+                        pass
+                    else:
+                        send_alert_email("IFU temperature returned a %s type object. "
+                                         "This needs to be a float or iteger"
+                                         "The RC server is probably disconnected" % type(ifu_temp))
+
                 logger.info("IFU temp, lock = %.1f, %s", ifu_temp, ifu_lock)
 
         logger.info("RC and IFU temperature lock achieved")
