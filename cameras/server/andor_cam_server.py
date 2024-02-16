@@ -227,7 +227,8 @@ class CamServer:
                 new_thread.start()
                 logger.debug("Started process")
         except KeyboardInterrupt:
-            q = input("Warm up before shutdown? (Y/n): ")
+            q = input("Warm up before shutdown "
+                      "(only for long-term shutdown)? (N/y): ")
             if 'Y' in q.upper():
                 self.execute_warmup()
                 logger.info("Executing camera shutdown")
