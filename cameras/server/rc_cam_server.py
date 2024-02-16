@@ -130,6 +130,9 @@ class CamServer:
                             file.write(time.strftime('%Y-%m-%d %H:%M:%S.%d',
                                                      time.gmtime()))
                         response = self.cam.take_image(**data['parameters'])
+                        # if we run into a problem, we want to reconnect
+                        if 'error' in response:
+                            self.cam = None
                         logger.info(str(response))
                     elif data['command'].upper() == 'LOGROLLOVER':
                         logger.removeHandler(logHandler)

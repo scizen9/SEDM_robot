@@ -319,6 +319,8 @@ class SEDm:
             ifu_lock = True
 
         # loop until locked
+        rc_tries = 0
+        ifu_tries = 0
         while not rc_lock or not ifu_lock:
 
             logger.info("Waiting for temperature lock")
@@ -344,6 +346,14 @@ class SEDm:
                                          "This needs to be a float or integer"
                                          "The RC server is probably disconnected" % type(rc_temp))
 
+                if not rc_lock:
+                    rc_tries += 1
+                else:
+                    rc_tries = 0
+
+                if rc_tries > 180:
+                    send_alert_email("RC not achieving temperature lock.")
+
                 logger.info("RC temp, lock = %.1f, %s", rc_temp, rc_lock)
 
             if self.run_ifu:
@@ -365,6 +375,14 @@ class SEDm:
                         send_alert_email("IFU temperature returned a %s type object. "
                                          "This needs to be a float or iteger"
                                          "The RC server is probably disconnected" % type(ifu_temp))
+
+                if not ifu_lock:
+                    ifu_tries += 1
+                else:
+                    ifu_tries = 0
+
+                if ifu_tries > 180:
+                    send_alert_email("IFU not achieving temperature lock.")
 
                 logger.info("IFU temp, lock = %.1f, %s", ifu_temp, ifu_lock)
 
@@ -671,7 +689,7 @@ class SEDm:
 
             # This is a test to see if last image failed to write or the
             # connection timed out.
-            # * means all if need specific format then *.csv
+            # * means all if we need specific format then *.csv
             list_of_files = glob.glob('/home/sedm/images/%s/*.fits' %
                                       datetime.datetime.utcnow().strftime(
                                           "%Y%m%d"))
